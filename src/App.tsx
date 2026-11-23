@@ -5,12 +5,16 @@ import { SkillTree } from "./components/SkillTree";
 import { SkillPanel } from "./components/SkillPanel";
 import { BranchTabs } from "./components/BranchTabs";
 import { useMediaQuery } from "./components/useMediaQuery";
+import { LevelPicker } from "./components/LevelPicker";
 import {
   levelInfo,
+  loadPlayerLevel,
   loadProgress,
   newlyUnlocked,
   progressSummary,
+  savePlayerLevel,
   saveProgress,
+  targetFor,
 } from "./lib/progress";
 
 export default function App() {
@@ -22,6 +26,20 @@ export default function App() {
   const isPhone = useMediaQuery("(max-width: 700px)");
   const [branchId, setBranchId] = useState(tree.branches[0].id);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [playerLevelId, setPlayerLevelId] = useState<string | null>(() => loadPlayerLevel(tree));
+  const hasLevels = (tree.playerLevels?.length ?? 0) > 0;
+  // Ask on first visit; after that, only when the player asks to change.
+  const [pickerOpen, setPickerOpen] = useState(() => hasLevels && loadPlayerLevel(tree) === null);
+  const playerLevelName = tree.playerLevels?.find((l) => l.id === playerLevelId)?.name ?? null;
+  const selectedSkill = tree.skills.find((s) => s.id === selectedId)!;
+
+  function pickLevel(id: string) {
+    setPlayerLevelId(id);
+    savePlayerLevel(tree.id, id);
+    setPickerOpen(false);
+    const name = tree.playerLevels?.find((l) => l.id === id)?.name;
+    showToast(`Showing ${name} targets.`);
+  }
 
   function select(id: string) {
     setSelectedId(id);
@@ -43,7 +61,7 @@ export default function App() {
     const before = levelInfo(tree.levels, done.size).current.name;
     const after = levelInfo(tree.levels, next.size).current.name;
     setDone(next);
-    if (after !== before) showToast(`New level: ${after}.`);
+    if (after !== before) showToast(`New rank: ${after}.`);
     else if (unlocked.length) showToast(`${skill.name} complete. Unlocked: ${unlocked.map((s) => s.name).join(", ")}.`);
     else showToast(`${skill.name} complete.`);
   }
@@ -56,7 +74,7 @@ export default function App() {
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(progressSummary(tree, done));
+      await navigator.clipboard.writeText(progressSummary(tree, done, playerLevelId));
       showToast("Progress copied. Paste it anywhere.");
     } catch {
       showToast("Copy didn't work in this browser.");
@@ -71,7 +89,14 @@ export default function App() {
 
   return (
     <div className="app">
-      <Header tree={tree} doneCount={done.size} onCopy={copy} onReset={reset} />
+      <Header
+        tree={tree}
+        doneCount={done.size}
+        onCopy={copy}
+        onReset={reset}
+        playerLevelName={playerLevelName}
+        onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
+      />
       {isPhone && <BranchTabs tree={tree} done={done} activeId={branchId} onChange={setBranchId} />}
       <main>
         <SkillTree
@@ -89,9 +114,20 @@ export default function App() {
             onComplete={complete}
             onUndo={undo}
             onClose={isPhone ? () => setSheetOpen(false) : undefined}
+            playerLevelName={playerLevelName}
+            target={targetFor(selectedSkill, playerLevelId)}
+            onChangeLevel={() => setPickerOpen(true)}
           />
         )}
       </main>
+      {pickerOpen && tree.playerLevels && (
+        <LevelPicker
+          levels={tree.playerLevels}
+          currentId={playerLevelId}
+          onPick={pickLevel}
+          onClose={playerLevelId ? () => setPickerOpen(false) : undefined}
+        />
+      )}
       <div className={`toast${toast ? " show" : ""}`} role="status">
         {toast}
       </div>

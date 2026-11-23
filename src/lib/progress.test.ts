@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { football } from "../data/football";
-import { levelInfo, newlyUnlocked, skillState, validateTree } from "./progress";
+import { levelInfo, newlyUnlocked, skillState, targetFor, validateTree } from "./progress";
 
 describe("progress rules", () => {
   it("starts with only the root skill available", () => {
@@ -33,5 +33,27 @@ describe("tree checker", () => {
       skills: football.skills.map((s) => (s.id === "ps1" ? { ...s, requires: ["nope"] } : s)),
     };
     expect(validateTree(broken)).toContain("ps1: requires unknown skill nope");
+  });
+});
+
+describe("player levels", () => {
+  const sprint = football.skills.find((s) => s.id === "ft2")!;
+
+  it("shows only the chosen level's target", () => {
+    expect(targetFor(sprint, "intermediate")).toBe("Under 5.3 seconds.");
+    expect(targetFor(sprint, "expert")).toBe("Under 4.55 seconds.");
+  });
+
+  it("shows no target before a level is picked, or for skills without targets", () => {
+    expect(targetFor(sprint, null)).toBeNull();
+    expect(targetFor(football.skills[0], "expert")).toBeNull();
+  });
+
+  it("catches a skill missing a level's target", () => {
+    const broken = {
+      ...football,
+      skills: football.skills.map((s) => (s.id === "ft2" ? { ...s, targets: { beginner: "Under 6 seconds." } } : s)),
+    };
+    expect(validateTree(broken).some((e) => e.startsWith("ft2: no target for level"))).toBe(true);
   });
 });

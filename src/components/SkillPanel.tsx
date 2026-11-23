@@ -7,13 +7,28 @@ interface Props {
   skillId: string;
   onComplete: (id: string) => void;
   onUndo: (id: string) => void;
+  /** Name of the player's chosen level, or null if not picked yet. */
+  playerLevelName: string | null;
+  /** The chosen level's target for this skill, or null. */
+  target: string | null;
+  onChangeLevel: () => void;
   /** When set, the panel shows as a bottom sheet with a Close button (phones). */
   onClose?: () => void;
 }
 
 const STATUS_TEXT = { done: "Completed", available: "Ready to train", locked: "Locked" } as const;
 
-export function SkillPanel({ tree, done, skillId, onComplete, onUndo, onClose }: Props) {
+export function SkillPanel({
+  tree,
+  done,
+  skillId,
+  onComplete,
+  onUndo,
+  onClose,
+  playerLevelName,
+  target,
+  onChangeLevel,
+}: Props) {
   const skill = tree.skills.find((s) => s.id === skillId)!;
   const state = skillState(skill, done);
   const branch = tree.branches.find((b) => b.id === skill.branch);
@@ -48,6 +63,20 @@ export function SkillPanel({ tree, done, skillId, onComplete, onUndo, onClose }:
       <div className="block test">
         <h3>Pass the test</h3>
         <p>{skill.test}</p>
+        {skill.targets &&
+          (target && playerLevelName ? (
+            <p className="target">
+              <span className="target-label">{playerLevelName} target</span>
+              <strong>{target}</strong>
+              <button className="link-btn" type="button" onClick={onChangeLevel}>
+                Change level
+              </button>
+            </p>
+          ) : (
+            <button className="link-btn" type="button" onClick={onChangeLevel}>
+              Pick your level to see your target
+            </button>
+          ))}
       </div>
       <div className="block">
         <h3>Coach's tip</h3>
