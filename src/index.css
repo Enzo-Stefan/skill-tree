@@ -236,7 +236,7 @@ main { flex: 1; display: flex; min-height: 0; }
 .branch-tab.active { background: var(--c); color: #0b1c14; }
 .branch-tab-count { font-family: var(--font-body); font-weight: 700; font-size: 12px; font-variant-numeric: tabular-nums; opacity: 0.85; }
 
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   .header { gap: 12px; }
   .brand h1 { font-size: 22px; }
   .brand p { display: none; }
