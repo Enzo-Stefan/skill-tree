@@ -360,3 +360,21 @@ main { flex: 1; display: flex; min-height: 0; }
   .node.fx-unlock .tile { animation: unlock-ring 0.9s ease-out; }
   .level.bump { animation: level-flash 0.9s ease-out; }
 }
+
+.levelup {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 20px;
+  flex-wrap: wrap;
+  padding: 12px 28px;
+  background: rgba(242, 193, 78, 0.1);
+  border-bottom: 2px solid var(--gold);
+}
+.levelup p { margin: 0; }
+.levelup-actions { display: flex; gap: 10px; }
+@media (max-width: 700px) {
+  .levelup { padding: 12px 16px; }
+  .levelup-actions { width: 100%; }
+  .levelup-actions .btn { flex: 1; }
+}

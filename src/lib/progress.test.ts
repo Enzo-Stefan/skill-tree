@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { football } from "../data/football";
-import { levelInfo, newlyUnlocked, skillState, targetFor, validateTree } from "./progress";
+import { LEVEL_UP_AFTER, levelInfo, levelUpOffer, newlyUnlocked, skillState, targetFor, validateTree } from "./progress";
 
 describe("progress rules", () => {
   it("starts with only the root skill available", () => {
@@ -64,5 +64,28 @@ describe("player levels", () => {
       skills: football.skills.map((s) => (s.id === "ft2" ? { ...s, targets } : s)),
     };
     expect(validateTree(broken)).toContain("ft2: target for level beginner has no number in it");
+  });
+});
+
+describe("level-up offer", () => {
+  it("offers the next level after enough finished skills", () => {
+    expect(levelUpOffer(football, "beginner", LEVEL_UP_AFTER, 0)?.id).toBe("intermediate");
+    expect(levelUpOffer(football, "advanced", 10 + LEVEL_UP_AFTER, 10)?.id).toBe("expert");
+  });
+
+  it("waits until the skills are finished, counting from the checkpoint", () => {
+    expect(levelUpOffer(football, "beginner", LEVEL_UP_AFTER - 1, 0)).toBeNull();
+    expect(levelUpOffer(football, "beginner", 8, 5)).toBeNull();
+  });
+
+  it("asks again after another stretch once the player says not yet", () => {
+    expect(levelUpOffer(football, "beginner", 6, 6)).toBeNull();
+    expect(levelUpOffer(football, "beginner", 12, 6)?.id).toBe("intermediate");
+  });
+
+  it("never offers past the top level, without a level, or after undoing below the checkpoint", () => {
+    expect(levelUpOffer(football, "expert", 30, 0)).toBeNull();
+    expect(levelUpOffer(football, null, 30, 0)).toBeNull();
+    expect(levelUpOffer(football, "beginner", 2, 10)).toBeNull();
   });
 });

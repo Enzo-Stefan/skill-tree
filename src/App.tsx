@@ -6,12 +6,16 @@ import { SkillPanel } from "./components/SkillPanel";
 import { BranchTabs } from "./components/BranchTabs";
 import { useMediaQuery } from "./components/useMediaQuery";
 import { LevelPicker } from "./components/LevelPicker";
+import { LevelUpBanner } from "./components/LevelUpBanner";
 import {
   levelInfo,
+  levelUpOffer,
+  loadLevelCheckpoint,
   loadPlayerLevel,
   loadProgress,
   newlyUnlocked,
   progressSummary,
+  saveLevelCheckpoint,
   savePlayerLevel,
   saveProgress,
   targetFor,
@@ -32,11 +36,20 @@ export default function App() {
   // Ask on first visit; after that, only when the player asks to change.
   const [pickerOpen, setPickerOpen] = useState(() => hasLevels && loadPlayerLevel(tree) === null);
   const playerLevelName = tree.playerLevels?.find((l) => l.id === playerLevelId)?.name ?? null;
+  // Players who already have a level start counting from their current progress, so nobody is asked straight away.
+  const [checkpoint, setCheckpoint] = useState(() => loadLevelCheckpoint(tree.id) ?? loadProgress(tree.id).size);
+  const offer = pickerOpen ? null : levelUpOffer(tree, playerLevelId, done.size, checkpoint);
   const selectedSkill = tree.skills.find((s) => s.id === selectedId)!;
+
+  function moveCheckpoint(count: number) {
+    setCheckpoint(count);
+    saveLevelCheckpoint(tree.id, count);
+  }
 
   function pickLevel(id: string) {
     setPlayerLevelId(id);
     savePlayerLevel(tree.id, id);
+    moveCheckpoint(done.size);
     setPickerOpen(false);
     const name = tree.playerLevels?.find((l) => l.id === id)?.name;
     showToast(`Showing ${name} targets.`);
@@ -85,6 +98,7 @@ export default function App() {
 
   function reset() {
     setDone(new Set());
+    moveCheckpoint(0);
     setSelectedId(tree.skills[0].id);
     showToast("Progress reset.");
   }
@@ -99,6 +113,15 @@ export default function App() {
         playerLevelName={playerLevelName}
         onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
       />
+      {offer && playerLevelName && (
+        <LevelUpBanner
+          finished={done.size - checkpoint}
+          currentName={playerLevelName}
+          nextName={offer.name}
+          onAccept={() => pickLevel(offer.id)}
+          onLater={() => moveCheckpoint(done.size)}
+        />
+      )}
       {isPhone && <BranchTabs tree={tree} done={done} activeId={branchId} onChange={setBranchId} />}
       <main>
         <SkillTree
