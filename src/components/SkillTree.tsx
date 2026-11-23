@@ -6,21 +6,33 @@ const SLOT = 104;
 const ROW = 140;
 const PAD_X = 56;
 const TOP = 70;
-const SLOTS = 12;
-
-const pos = (s: Skill) => ({ x: PAD_X + s.x * SLOT + SLOT / 2, y: TOP + s.row * ROW + 40 });
 
 interface Props {
   tree: Tree;
   done: Set<string>;
   selectedId: string;
   onSelect: (id: string) => void;
+  /** Show one branch only, as a narrow column. Used on phones. */
+  branchId?: string | null;
 }
 
-export function SkillTree({ tree, done, selectedId, onSelect }: Props) {
+export function SkillTree({ tree, done, selectedId, onSelect, branchId = null }: Props) {
+  const narrow = branchId !== null;
+  const branchIndex = tree.branches.findIndex((b) => b.id === branchId);
+
+  // In narrow mode keep the start, the chosen branch and the final skill,
+  // and squeeze the branch's two slots down to slots 0 and 1.
+  const visible = narrow
+    ? tree.skills.filter((s) => s.branch === null || s.branch === branchId)
+    : tree.skills;
+  const slotOf = (s: Skill) => (!narrow ? s.x : s.branch === null ? 0.5 : s.x - branchIndex * 2);
+  const slots = narrow ? 2 : tree.branches.length * 2;
+
+  const pos = (s: Skill) => ({ x: PAD_X + slotOf(s) * SLOT + SLOT / 2, y: TOP + s.row * ROW + 40 });
   const maxRow = Math.max(...tree.skills.map((s) => s.row));
-  const width = PAD_X * 2 + SLOTS * SLOT;
+  const width = PAD_X * 2 + slots * SLOT;
   const height = TOP + maxRow * ROW + 140;
+  const visibleIds = new Set(visible.map((s) => s.id));
   const byId = new Map(tree.skills.map((s) => [s.id, s]));
   const colorOf = (s: Skill) => tree.branches.find((b) => b.id === s.branch)?.color ?? "#f2c14e";
 
@@ -29,41 +41,44 @@ export function SkillTree({ tree, done, selectedId, onSelect }: Props) {
       <div className="pitch" style={{ width, height }}>
         <svg className="lines" viewBox={`0 0 ${width} ${height}`} width={width} height={height} aria-hidden="true">
           <circle cx={width / 2} cy={TOP + 40} r={70} fill="none" stroke="rgba(238,243,234,0.07)" strokeWidth={2} />
-          {tree.skills.flatMap((child) =>
-            child.requires.map((parentId) => {
-              const parent = byId.get(parentId)!;
-              const a = pos(parent);
-              const b = pos(child);
-              const y1 = a.y + (parent.big ? 42 : 34);
-              const y2 = b.y - (child.big ? 42 : 34);
-              const mid = (y1 + y2) / 2;
-              const both = done.has(parentId) && done.has(child.id);
-              const lit = done.has(parentId);
-              return (
-                <path
-                  key={`${parentId}-${child.id}`}
-                  d={`M${a.x} ${y1} C ${a.x} ${mid}, ${b.x} ${mid}, ${b.x} ${y2}`}
-                  fill="none"
-                  stroke={both ? colorOf(child) : lit ? "rgba(238,243,234,0.55)" : "rgba(238,243,234,0.16)"}
-                  strokeWidth={both ? 3 : 2}
-                  strokeDasharray={both ? undefined : "6 6"}
-                />
-              );
-            }),
+          {visible.flatMap((child) =>
+            child.requires
+              .filter((parentId) => visibleIds.has(parentId))
+              .map((parentId) => {
+                const parent = byId.get(parentId)!;
+                const a = pos(parent);
+                const b = pos(child);
+                const y1 = a.y + (parent.big ? 42 : 34);
+                const y2 = b.y - (child.big ? 42 : 34);
+                const mid = (y1 + y2) / 2;
+                const both = done.has(parentId) && done.has(child.id);
+                const lit = done.has(parentId);
+                return (
+                  <path
+                    key={`${parentId}-${child.id}`}
+                    d={`M${a.x} ${y1} C ${a.x} ${mid}, ${b.x} ${mid}, ${b.x} ${y2}`}
+                    fill="none"
+                    stroke={both ? colorOf(child) : lit ? "rgba(238,243,234,0.55)" : "rgba(238,243,234,0.16)"}
+                    strokeWidth={both ? 3 : 2}
+                    strokeDasharray={both ? undefined : "6 6"}
+                  />
+                );
+              }),
           )}
         </svg>
 
-        {tree.branches.map((b, i) => (
-          <div
-            key={b.id}
-            className="branch-label"
-            style={{ color: b.color, left: PAD_X + (i * 2 + 1) * SLOT, top: TOP + ROW - 72 }}
-          >
-            {b.name}
-          </div>
-        ))}
+        {!narrow &&
+          tree.branches.map((b, i) => (
+            <div
+              key={b.id}
+              className="branch-label"
+              style={{ color: b.color, left: PAD_X + (i * 2 + 1) * SLOT, top: TOP + ROW - 26 }}
+            >
+              {b.name}
+            </div>
+          ))}
 
-        {tree.skills.map((s) => {
+        {visible.map((s) => {
           const state = skillState(s, done);
           const p = pos(s);
           return (
@@ -76,7 +91,7 @@ export function SkillTree({ tree, done, selectedId, onSelect }: Props) {
               aria-label={`${s.name}, ${state}`}
             >
               <span className="tile">
-                {state === "done" ? <CheckIcon /> : state === "locked" ? <LockIcon /> : s.big ? "90'" : s.row || 1}
+                {state === "done" ? <CheckIcon /> : state === "locked" ? <LockIcon /> : tileLabel(s)}
               </span>
               <span className="name">{s.name}</span>
             </button>
@@ -85,6 +100,13 @@ export function SkillTree({ tree, done, selectedId, onSelect }: Props) {
       </div>
     </div>
   );
+}
+
+/** Text inside an open (available) tile: GO for the start, 90' for the final, else the tier number. */
+function tileLabel(s: Skill): string {
+  if (s.big) return "90'";
+  if (s.requires.length === 0) return "GO";
+  return String(s.row);
 }
 
 function CheckIcon() {
