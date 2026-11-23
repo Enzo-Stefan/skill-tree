@@ -167,7 +167,7 @@ export default function App() {
         doneCount={done.size}
         onCopy={copy}
         onShare={() =>
-          setSharing(shareStats(tree, done, playerLevelName, streakWeeks(practiceDays, streakState.since), window.location.host))
+          setSharing(shareStats(tree, done, playerRungName, streakWeeks(practiceDays, streakState.since), window.location.host))
         }
         onReset={reset}
         playerLevelName={playerRungName}
