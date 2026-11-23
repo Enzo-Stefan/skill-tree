@@ -3,6 +3,8 @@ import { trees } from "./data";
 import { Header } from "./components/Header";
 import { SkillTree } from "./components/SkillTree";
 import { SkillPanel } from "./components/SkillPanel";
+import { BranchTabs } from "./components/BranchTabs";
+import { useMediaQuery } from "./components/useMediaQuery";
 import {
   levelInfo,
   loadProgress,
@@ -17,6 +19,14 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(tree.skills[0].id);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
+  const isPhone = useMediaQuery("(max-width: 700px)");
+  const [branchId, setBranchId] = useState(tree.branches[0].id);
+  const [sheetOpen, setSheetOpen] = useState(false);
+
+  function select(id: string) {
+    setSelectedId(id);
+    setSheetOpen(true);
+  }
 
   useEffect(() => saveProgress(tree.id, done), [tree.id, done]);
 
@@ -62,9 +72,25 @@ export default function App() {
   return (
     <div className="app">
       <Header tree={tree} doneCount={done.size} onCopy={copy} onReset={reset} />
+      {isPhone && <BranchTabs tree={tree} done={done} activeId={branchId} onChange={setBranchId} />}
       <main>
-        <SkillTree tree={tree} done={done} selectedId={selectedId} onSelect={setSelectedId} />
-        <SkillPanel tree={tree} done={done} skillId={selectedId} onComplete={complete} onUndo={undo} />
+        <SkillTree
+          tree={tree}
+          done={done}
+          selectedId={selectedId}
+          onSelect={select}
+          branchId={isPhone ? branchId : null}
+        />
+        {(!isPhone || sheetOpen) && (
+          <SkillPanel
+            tree={tree}
+            done={done}
+            skillId={selectedId}
+            onComplete={complete}
+            onUndo={undo}
+            onClose={isPhone ? () => setSheetOpen(false) : undefined}
+          />
+        )}
       </main>
       <div className={`toast${toast ? " show" : ""}`} role="status">
         {toast}

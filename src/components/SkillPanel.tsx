@@ -7,11 +7,13 @@ interface Props {
   skillId: string;
   onComplete: (id: string) => void;
   onUndo: (id: string) => void;
+  /** When set, the panel shows as a bottom sheet with a Close button (phones). */
+  onClose?: () => void;
 }
 
 const STATUS_TEXT = { done: "Completed", available: "Ready to train", locked: "Locked" } as const;
 
-export function SkillPanel({ tree, done, skillId, onComplete, onUndo }: Props) {
+export function SkillPanel({ tree, done, skillId, onComplete, onUndo, onClose }: Props) {
   const skill = tree.skills.find((s) => s.id === skillId)!;
   const state = skillState(skill, done);
   const branch = tree.branches.find((b) => b.id === skill.branch);
@@ -24,10 +26,17 @@ export function SkillPanel({ tree, done, skillId, onComplete, onUndo }: Props) {
   const query = encodeURIComponent(`football ${skill.name} drill tutorial`);
 
   return (
-    <aside className="panel" aria-live="polite">
-      <span className="chip" style={{ color }}>
-        {label}
-      </span>
+    <aside className={`panel${onClose ? " sheet" : ""}`} aria-live="polite">
+      <div className="panel-top">
+        <span className="chip" style={{ color }}>
+          {label}
+        </span>
+        {onClose && (
+          <button className="close" type="button" onClick={onClose} aria-label="Close skill details">
+            Close
+          </button>
+        )}
+      </div>
       <h2>{skill.name}</h2>
       <span className={`status ${state}`}>{STATUS_TEXT[state]}</span>
       {state === "locked" && <p className="hint">Finish these first: {missing.join(", ")}.</p>}
