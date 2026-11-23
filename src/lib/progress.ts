@@ -68,21 +68,87 @@ export function savePlayerLevel(treeId: string, levelId: string): void {
   }
 }
 
-/** The target a player at `levelId` must hit for this skill, or null if the skill has one test for everyone. */
-export function targetFor(skill: Skill, levelId: string | null): string | null {
-  if (!skill.targets || !levelId) return null;
-  return skill.targets[levelId] ?? null;
+const playerStepKey = (treeId: string) => `skill-tree:${treeId}:player-step`;
+
+/** The player's step inside their level, 1 if they have none saved yet. */
+export function loadPlayerStep(treeId: string): number {
+  try {
+    return cleanStep(Number(localStorage.getItem(playerStepKey(treeId))));
+  } catch {
+    return 1;
+  }
 }
 
-export function progressSummary(tree: Tree, done: Set<string>, playerLevelId: string | null = null): string {
+export function savePlayerStep(treeId: string, step: number): void {
+  try {
+    localStorage.setItem(playerStepKey(treeId), String(cleanStep(step)));
+  } catch {
+    // Storage can be blocked. The step still works for this visit.
+  }
+}
+
+/** Steps inside each player level: Beginner 1 to 4, Intermediate 1 to 4 and so on. */
+export const STEPS_PER_LEVEL = 4;
+
+/** Where a player trains: a player level and a step inside it, 1 to STEPS_PER_LEVEL. */
+export interface Rung {
+  levelId: string;
+  step: number;
+}
+
+/** A whole step between 1 and STEPS_PER_LEVEL. Anything else becomes 1. */
+export function cleanStep(step: unknown): number {
+  return Number.isInteger(step) && (step as number) >= 1 && (step as number) <= STEPS_PER_LEVEL ? (step as number) : 1;
+}
+
+/** "Beginner 2", or null if the level isn't in the tree. */
+export function rungName(tree: Tree, rung: Rung | null): string | null {
+  const level = tree.playerLevels?.find((l) => l.id === rung?.levelId);
+  return level && rung ? `${level.name} ${cleanStep(rung.step)}` : null;
+}
+
+/** The step after this one: the next step in the same level, or step 1 of the next level. Null at the very top. */
+export function nextRung(tree: Tree, rung: Rung | null): Rung | null {
+  const levels = tree.playerLevels ?? [];
+  const index = levels.findIndex((l) => l.id === rung?.levelId);
+  if (!rung || index < 0) return null;
+  const step = cleanStep(rung.step);
+  if (step < STEPS_PER_LEVEL) return { levelId: rung.levelId, step: step + 1 };
+  return index + 1 < levels.length ? { levelId: levels[index + 1].id, step: 1 } : null;
+}
+
+/**
+ * The target number for this skill at a level and step, or null if the skill has one test
+ * for everyone. Step 1 is the level's own number, steps 2 to 4 sit evenly between it and the
+ * next level's number. The top level keeps going at the same pace as the step below it.
+ */
+export function targetValue(tree: Tree, skill: Skill, rung: Rung | null): number | null {
+  const levels = tree.playerLevels ?? [];
+  const index = levels.findIndex((l) => l.id === rung?.levelId);
+  const values = skill.targets?.values;
+  if (!values || !rung || index < 0) return null;
+  // Work in hundredths so halfway cases round the way people expect (5.675 becomes 5.68).
+  const at = (i: number) => Math.round(values[levels[i].id] * 100);
+  const from = at(index);
+  const to = index + 1 < levels.length ? at(index + 1) : index > 0 ? from + (from - at(index - 1)) : from;
+  return Math.round(from + ((to - from) * (cleanStep(rung.step) - 1)) / STEPS_PER_LEVEL) / 100;
+}
+
+/** The target sentence for this skill at a level and step, e.g. "Under 5.68 seconds.", or null. */
+export function targetFor(tree: Tree, skill: Skill, rung: Rung | null): string | null {
+  const value = targetValue(tree, skill, rung);
+  return value === null || !skill.targets ? null : skill.targets.text.replace("{n}", String(value));
+}
+
+export function progressSummary(tree: Tree, done: Set<string>, rung: Rung | null = null): string {
   const { current } = levelInfo(tree.levels, done.size);
-  const playerLevel = tree.playerLevels?.find((l) => l.id === playerLevelId);
+  const training = rungName(tree, rung);
   const lines = tree.branches.map((b) => {
     const skills = tree.skills.filter((s) => s.branch === b.id);
     const count = skills.filter((s) => done.has(s.id)).length;
     return `${b.name}: ${count}/${skills.length}`;
   });
-  const levelText = playerLevel ? ` Training at ${playerLevel.name} level.` : "";
+  const levelText = training ? ` Training at ${training}.` : "";
   return [`My ${tree.title}: ${done.size}/${tree.skills.length} skills, rank ${current.name}.${levelText}`, ...lines].join("\n");
 }
 
@@ -106,19 +172,24 @@ export function validateTree(tree: Tree): string[] {
       errors.push(`${s.id}: name "${s.name}" is longer than ${MAX_NAME_LENGTH} characters and won't fit under its tile`);
     }
     if (s.targets) {
-      for (const [levelId, target] of Object.entries(s.targets)) {
-        if (!/\d/.test(target)) errors.push(`${s.id}: target for level ${levelId} has no number in it`);
+      const { text, values } = s.targets;
+      if (!text.includes("{n}")) errors.push(`${s.id}: target text has no {n} where the number goes`);
+      const levelIds = (tree.playerLevels ?? []).map((l) => l.id);
+      if (levelIds.length === 0) errors.push(`${s.id}: has targets, but the tree has no playerLevels`);
+      const missing = levelIds.filter((id) => !(id in values));
+      const extra = Object.keys(values).filter((id) => !levelIds.includes(id));
+      const bad = levelIds.filter((id) => id in values && !(Number.isFinite(values[id]) && values[id] > 0));
+      if (missing.length) errors.push(`${s.id}: no target for level ${missing.join(", ")}`);
+      if (extra.length) errors.push(`${s.id}: target for unknown level ${extra.join(", ")}`);
+      if (bad.length) errors.push(`${s.id}: target for level ${bad.join(", ")} is not a positive number`);
+      // Each level must be harder than the one before, all in the same direction (faster times or more reps).
+      const nums = levelIds.map((id) => values[id]).filter((v) => Number.isFinite(v));
+      const ups = nums.slice(1).map((v, i) => Math.sign(v - nums[i]));
+      if (nums.length === levelIds.length && ups.length > 0 && !(ups.every((d) => d > 0) || ups.every((d) => d < 0))) {
+        errors.push(`${s.id}: targets must get harder at every level, all in the same direction`);
       }
     } else if (!/\d/.test(s.test)) {
       errors.push(`${s.id}: test has no number in it, so nobody can tell when they've passed`);
-    }
-    if (s.targets) {
-      const levelIds = (tree.playerLevels ?? []).map((l) => l.id);
-      if (levelIds.length === 0) errors.push(`${s.id}: has targets, but the tree has no playerLevels`);
-      const missing = levelIds.filter((id) => !s.targets![id]?.trim());
-      const extra = Object.keys(s.targets).filter((id) => !levelIds.includes(id));
-      if (missing.length) errors.push(`${s.id}: no target for level ${missing.join(", ")}`);
-      if (extra.length) errors.push(`${s.id}: target for unknown level ${extra.join(", ")}`);
     }
   }
   const roots = tree.skills.filter((s) => s.requires.length === 0);

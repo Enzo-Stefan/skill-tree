@@ -9,7 +9,7 @@ interface Props {
   onCopy: () => void;
   onShare: () => void;
   onReset: () => void;
-  /** Name of the player's chosen level, or null. Leave undefined for trees without levels. */
+  /** The player's level and step, e.g. "Beginner 2", or null. Leave undefined for trees without levels. */
   playerLevelName?: string | null;
   onChangeLevel?: () => void;
   /** Sign in button or the signed-in account, shown first in the actions. */

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Tree } from "../types";
+import { cleanStep } from "./progress";
 
 // Saving progress to a player's account. The table and its security rules live in
 // supabase/migrations/001_progress.sql. The Supabase client itself comes from
@@ -47,7 +48,7 @@ export function cleanProgress(tree: Tree, p: SavedProgress): SavedProgress {
   return {
     done,
     playerLevel: levelOk ? p.playerLevel : null,
-    playerStep: levelOk && Number.isInteger(p.playerStep) && p.playerStep >= 1 && p.playerStep <= 4 ? p.playerStep : 1,
+    playerStep: levelOk ? cleanStep(p.playerStep) : 1,
     practiceDays,
     // A streak only means something next to a level, so it goes when the level does.
     streak: levelOk
