@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Tree } from "../types";
 import { levelInfo } from "../lib/progress";
 import { useIncreased } from "./useIncreased";
@@ -11,9 +11,11 @@ interface Props {
   /** Name of the player's chosen level, or null. Leave undefined for trees without levels. */
   playerLevelName?: string | null;
   onChangeLevel?: () => void;
+  /** Sign in button or the signed-in account, shown first in the actions. */
+  account?: ReactNode;
 }
 
-export function Header({ tree, doneCount, onCopy, onReset, playerLevelName, onChangeLevel }: Props) {
+export function Header({ tree, doneCount, onCopy, onReset, playerLevelName, onChangeLevel, account }: Props) {
   const total = tree.skills.length;
   const { current, next } = levelInfo(tree.levels, doneCount);
   const leveledUp = useIncreased(tree.levels.indexOf(current));
@@ -54,6 +56,7 @@ export function Header({ tree, doneCount, onCopy, onReset, playerLevelName, onCh
         </span>
       </div>
       <div className="actions">
+        {account}
         {onChangeLevel && (
           <button className="btn" type="button" onClick={onChangeLevel}>
             Level: {playerLevelName ?? "Pick"}

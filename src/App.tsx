@@ -6,6 +6,8 @@ import { SkillPanel } from "./components/SkillPanel";
 import { BranchTabs } from "./components/BranchTabs";
 import { useMediaQuery } from "./components/useMediaQuery";
 import { LevelPicker } from "./components/LevelPicker";
+import { AccountMenu } from "./components/AccountMenu";
+import { useAuth } from "./auth/useAuth";
 import {
   levelInfo,
   loadPlayerLevel,
@@ -19,6 +21,7 @@ import {
 
 export default function App() {
   const tree = trees[0];
+  const auth = useAuth();
   const [done, setDone] = useState<Set<string>>(() => loadProgress(tree.id));
   const [selectedId, setSelectedId] = useState(tree.skills[0].id);
   const [toast, setToast] = useState<string | null>(null);
@@ -98,6 +101,7 @@ export default function App() {
         onReset={reset}
         playerLevelName={playerLevelName}
         onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
+        account={<AccountMenu auth={auth} />}
       />
       {isPhone && <BranchTabs tree={tree} done={done} activeId={branchId} onChange={setBranchId} />}
       <main>

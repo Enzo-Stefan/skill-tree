@@ -56,3 +56,13 @@ Each of you works mostly in your own folders, so you rarely edit the same file. 
 1. Copy `src/data/football.ts` to a new file and change the content.
 2. Add it to the list in `src/data/index.ts`.
 3. Run `npm test`. It catches duplicate ids and skills that point to missing skills.
+
+## Accounts (Google sign-in)
+
+Accounts use Supabase. Without the two keys below the app runs exactly as before and the Sign in button is hidden.
+
+1. Copy `.env.example` to `.env.local` and fill in `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
+2. In Vercel, add the same two variables for Production and Preview, then redeploy (Vite reads them at build time).
+3. In Supabase, turn on the Google provider and add the production URL and the preview-link pattern under Authentication, URL Configuration.
+
+The shared client is `src/auth/client.ts` and the sign-in state is `useAuth()` in `src/auth/useAuth.ts`.
