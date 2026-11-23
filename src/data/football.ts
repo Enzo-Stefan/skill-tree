@@ -404,7 +404,7 @@ export const football: Tree = {
       "x": 10,
       "row": 2,
       "drill": "Sprint 10 metres from standing, 8 times, with full rest between.",
-      "test": "Sprint 30 metres from standing in under 4.8 seconds, timed by a friend. Best of 3 tries.",
+      "test": "Sprint 30 metres from standing, timed by a friend, best of 3 tries. Beginner: under 5.8 seconds. Intermediate: under 5.3. Advanced: under 4.8. Expert: under 4.55.",
       "tip": "Drive your arms. Your legs follow your arms."
     },
     {
@@ -430,7 +430,7 @@ export const football: Tree = {
       "x": 10,
       "row": 3,
       "drill": "Sprint 40 metres, rest 30 seconds, repeat.",
-      "test": "10 sprints of 40 metres, each under 6.5 seconds, with 30 seconds rest between.",
+      "test": "10 sprints of 40 metres with 30 seconds rest between, each one under your level's time. Beginner: 7.5 seconds. Intermediate: 7.0. Advanced: 6.5. Expert: 6.25.",
       "tip": "Walk back slowly during the rest to recover faster."
     },
     {
