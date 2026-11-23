@@ -6,6 +6,10 @@ import { SkillPanel } from "./components/SkillPanel";
 import { BranchTabs } from "./components/BranchTabs";
 import { useMediaQuery } from "./components/useMediaQuery";
 import { LevelPicker } from "./components/LevelPicker";
+import { LevelUpBanner } from "./components/LevelUpBanner";
+import { LevelTestDialog } from "./components/LevelTestDialog";
+import { PracticeBar } from "./components/PracticeBar";
+import { useToday } from "./components/useToday";
 import { AccountMenu } from "./components/AccountMenu";
 import { useAuth } from "./auth/useAuth";
 import {
@@ -18,6 +22,19 @@ import {
   saveProgress,
   targetFor,
 } from "./lib/progress";
+import {
+  canPickLevel,
+  dayKey,
+  daysThisWeek,
+  levelUpDue,
+  loadPracticeDays,
+  loadStreakState,
+  savePracticeDays,
+  saveStreakState,
+  streakWeeks,
+  weekOf,
+  type StreakState,
+} from "./lib/streak";
 
 export default function App() {
   const tree = trees[0];
@@ -35,9 +52,42 @@ export default function App() {
   // Ask on first visit; after that, only when the player asks to change.
   const [pickerOpen, setPickerOpen] = useState(() => hasLevels && loadPlayerLevel(tree) === null);
   const playerLevelName = tree.playerLevels?.find((l) => l.id === playerLevelId)?.name ?? null;
+  const [practiceDays, setPracticeDays] = useState(() => loadPracticeDays(tree.id));
+  const [streakState, setStreakState] = useState(() => loadStreakState(tree.id));
+  const [testOpen, setTestOpen] = useState(false);
+  const today = useToday();
+  const trainedToday = practiceDays.includes(today);
+  const nextLevel = pickerOpen || testOpen ? null : levelUpDue(tree, playerLevelId, practiceDays, today, streakState);
+  const nextLevelForTest = levelUpDue(tree, playerLevelId, practiceDays, today, streakState);
+  const testItems = nextLevelForTest
+    ? tree.skills.flatMap((s) => {
+        const target = targetFor(s, nextLevelForTest.id);
+        return target ? [{ skillName: s.name, target }] : [];
+      })
+    : [];
   const selectedSkill = tree.skills.find((s) => s.id === selectedId)!;
 
+  function updateStreak(next: StreakState) {
+    setStreakState(next);
+    saveStreakState(tree.id, next);
+  }
+
+  function toggleTrainedToday() {
+    // Work the date out now: the page may have been open since yesterday.
+    const now = dayKey(new Date());
+    const next = practiceDays.includes(now) ? practiceDays.filter((d) => d !== now) : [...practiceDays, now];
+    setPracticeDays(next);
+    savePracticeDays(tree.id, next);
+  }
+
+  function askLater() {
+    setTestOpen(false);
+    updateStreak({ ...streakState, askedWeek: weekOf(dayKey(new Date())) });
+  }
+
   function pickLevel(id: string) {
+    // Moving to a different level starts a fresh streak. The very first pick doesn't, so that week counts.
+    if (playerLevelId !== null && id !== playerLevelId) updateStreak({ since: weekOf(dayKey(new Date())), askedWeek: null });
     setPlayerLevelId(id);
     savePlayerLevel(tree.id, id);
     setPickerOpen(false);
@@ -103,6 +153,15 @@ export default function App() {
         onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
         account={<AccountMenu auth={auth} />}
       />
+      {hasLevels && playerLevelId && (
+        <PracticeBar
+          daysThisWeek={daysThisWeek(practiceDays, today)}
+          streak={streakWeeks(practiceDays, streakState.since)}
+          trainedToday={trainedToday}
+          onToggle={toggleTrainedToday}
+        />
+      )}
+      {nextLevel && <LevelUpBanner onYes={() => setTestOpen(true)} onLater={askLater} />}
       {isPhone && <BranchTabs tree={tree} done={done} activeId={branchId} onChange={setBranchId} />}
       <main>
         <SkillTree
@@ -131,10 +190,23 @@ export default function App() {
           levels={tree.playerLevels}
           currentId={playerLevelId}
           onPick={pickLevel}
+          canPick={(id) => canPickLevel(tree, playerLevelId, id)}
           // Skipping saves nothing, so the picker asks again next visit. Players who skip
           // (or whose browser can't save, like private windows) can still pick from the panel.
           onClose={() => setPickerOpen(false)}
           closeLabel={playerLevelId ? "Cancel" : "Skip for now"}
+        />
+      )}
+      {testOpen && nextLevelForTest && (
+        <LevelTestDialog
+          nextName={nextLevelForTest.name}
+          items={testItems}
+          onPass={() => {
+            setTestOpen(false);
+            pickLevel(nextLevelForTest.id);
+          }}
+          onNotYet={askLater}
+          onDismiss={() => setTestOpen(false)}
         />
       )}
       <div className={`toast${toast ? " show" : ""}`} role="status">
