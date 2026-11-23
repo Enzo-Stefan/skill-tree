@@ -23,7 +23,8 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(tree.skills[0].id);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
-  const isPhone = useMediaQuery("(max-width: 700px)");
+  // Keep in sync with the phone media query in index.css. The height clause catches phones held sideways.
+  const isPhone = useMediaQuery("(max-width: 700px), (max-height: 500px) and (pointer: coarse)");
   const [branchId, setBranchId] = useState(tree.branches[0].id);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [playerLevelId, setPlayerLevelId] = useState<string | null>(() => loadPlayerLevel(tree));
@@ -61,6 +62,7 @@ export default function App() {
     const before = levelInfo(tree.levels, done.size).current.name;
     const after = levelInfo(tree.levels, next.size).current.name;
     setDone(next);
+    setSheetOpen(false);
     if (after !== before) showToast(`New rank: ${after}.`);
     else if (unlocked.length) showToast(`${skill.name} complete. Unlocked: ${unlocked.map((s) => s.name).join(", ")}.`);
     else showToast(`${skill.name} complete.`);
