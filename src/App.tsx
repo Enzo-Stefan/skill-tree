@@ -127,7 +127,10 @@ export default function App() {
           levels={tree.playerLevels}
           currentId={playerLevelId}
           onPick={pickLevel}
-          onClose={playerLevelId ? () => setPickerOpen(false) : undefined}
+          // Skipping saves nothing, so the picker asks again next visit. Players who skip
+          // (or whose browser can't save, like private windows) can still pick from the panel.
+          onClose={() => setPickerOpen(false)}
+          closeLabel={playerLevelId ? "Cancel" : "Skip for now"}
         />
       )}
       <div className={`toast${toast ? " show" : ""}`} role="status">

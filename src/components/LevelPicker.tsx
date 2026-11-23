@@ -5,11 +5,12 @@ interface Props {
   levels: PlayerLevel[];
   currentId: string | null;
   onPick: (id: string) => void;
-  /** Leave out on first visit, so the player has to pick. */
-  onClose?: () => void;
+  onClose: () => void;
+  /** Text on the close button: "Cancel" when changing level, "Skip for now" on first visit. */
+  closeLabel: string;
 }
 
-export function LevelPicker({ levels, currentId, onPick, onClose }: Props) {
+export function LevelPicker({ levels, currentId, onPick, onClose, closeLabel }: Props) {
   const dialog = useRef<HTMLDivElement>(null);
   const firstButton = useRef<HTMLButtonElement>(null);
   // App passes a new onClose function on every render, so read it through a ref
@@ -28,7 +29,7 @@ export function LevelPicker({ levels, currentId, onPick, onClose }: Props) {
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
-        onCloseRef.current?.();
+        onCloseRef.current();
         return;
       }
       if (e.key !== "Tab" || !dialog.current) return;
@@ -75,11 +76,9 @@ export function LevelPicker({ levels, currentId, onPick, onClose }: Props) {
             </button>
           ))}
         </div>
-        {onClose && (
-          <button className="btn" type="button" onClick={onClose}>
-            Cancel
-          </button>
-        )}
+        <button className="btn" type="button" onClick={onClose}>
+          {closeLabel}
+        </button>
       </div>
     </div>
   );
