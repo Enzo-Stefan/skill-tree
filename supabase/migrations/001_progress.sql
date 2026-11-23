@@ -43,7 +43,9 @@ create policy "delete own progress" on public.progress
 
 -- Keep updated_at current on every change.
 create or replace function public.touch_updated_at() returns trigger
-language plpgsql as $$
+language plpgsql
+set search_path = ''
+as $$
 begin
   new.updated_at = now();
   return new;
