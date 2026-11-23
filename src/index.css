@@ -270,7 +270,17 @@ main { flex: 1; display: flex; min-height: 0; }
 .node.fx-unlock .tile { animation: unlock-glow 0.8s ease-out; }
 .level.bump { display: inline-block; animation: level-bump 0.7s ease-out; }
 
+/* Reduced motion: nothing moves or changes size, but the same events still get a brief colour cue. */
+@keyframes tile-flash { from { background-color: var(--chalk); } }
+@keyframes unlock-ring {
+  from { box-shadow: 0 0 0 6px color-mix(in srgb, var(--c) 70%, transparent); }
+  to { box-shadow: 0 0 0 6px transparent; }
+}
+@keyframes level-flash { from { color: var(--chalk); } }
+
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
-  .node .tile, .level { animation: none !important; }
+  .node.fx-done .tile { animation: tile-flash 0.8s ease-out; }
+  .node.fx-unlock .tile { animation: unlock-ring 0.9s ease-out; }
+  .level.bump { animation: level-flash 0.9s ease-out; }
 }
