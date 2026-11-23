@@ -56,4 +56,13 @@ describe("player levels", () => {
     };
     expect(validateTree(broken).some((e) => e.startsWith("ft2: no target for level"))).toBe(true);
   });
+
+  it("names the level whose target has no number", () => {
+    const targets = { beginner: "Take your time.", intermediate: "Under 5.3 seconds.", advanced: "Under 4.8 seconds.", expert: "Under 4.55 seconds." };
+    const broken = {
+      ...football,
+      skills: football.skills.map((s) => (s.id === "ft2" ? { ...s, targets } : s)),
+    };
+    expect(validateTree(broken)).toContain("ft2: target for level beginner has no number in it");
+  });
 });

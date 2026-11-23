@@ -10,19 +10,49 @@ interface Props {
 }
 
 export function LevelPicker({ levels, currentId, onPick, onClose }: Props) {
+  const dialog = useRef<HTMLDivElement>(null);
   const firstButton = useRef<HTMLButtonElement>(null);
+  // App passes a new onClose function on every render, so read it through a ref
+  // instead of re-running the effects (which would move focus back to the first option).
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     firstButton.current?.focus();
-    if (!onClose) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    return () => opener?.focus();
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onCloseRef.current?.();
+        return;
+      }
+      if (e.key !== "Tab" || !dialog.current) return;
+      const items = dialog.current.querySelectorAll<HTMLElement>("button");
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      if (!first || !last) return;
+      if (!dialog.current.contains(active) || (e.shiftKey && active === first)) {
+        e.preventDefault();
+        (e.shiftKey ? last : first).focus();
+      } else if (!e.shiftKey && active === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
+  }, []);
 
   return (
     <div className="overlay" onClick={onClose}>
       <div
+        ref={dialog}
         className="level-picker"
         role="dialog"
         aria-modal="true"
