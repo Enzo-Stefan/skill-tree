@@ -9,6 +9,8 @@ import type { Tree } from "../types";
 export interface SavedProgress {
   done: string[];
   playerLevel: string | null;
+  /** Step within the level, 1 to 4 (Beginner 1 ... Expert 4). */
+  playerStep: number;
   /** Days the player checked in "I trained today", as YYYY-MM-DD. */
   practiceDays: string[];
   /** Streak bookkeeping from src/lib/streak.ts. Both are week-start dates (Mondays) or null. */
@@ -20,6 +22,7 @@ const TABLE = "progress";
 interface Row {
   done: string[] | null;
   player_level: string | null;
+  player_step: number | null;
   practice_days: string[] | null;
   streak_since: string | null;
   streak_asked_week: string | null;
@@ -37,6 +40,7 @@ export function cleanProgress(tree: Tree, p: SavedProgress): SavedProgress {
   return {
     done,
     playerLevel: levelOk ? p.playerLevel : null,
+    playerStep: levelOk && Number.isInteger(p.playerStep) && p.playerStep >= 1 && p.playerStep <= 4 ? p.playerStep : 1,
     practiceDays,
     // A streak only means something next to a level, so it goes when the level does.
     streak: levelOk
@@ -60,6 +64,7 @@ export function mergeProgress(tree: Tree, local: SavedProgress, cloud: SavedProg
   return {
     done,
     playerLevel: fromCloud ? c.playerLevel : l.playerLevel,
+    playerStep: fromCloud ? c.playerStep : l.playerStep,
     practiceDays,
     streak: fromCloud ? c.streak : l.streak,
   };
@@ -73,7 +78,7 @@ export async function fetchCloudProgress(
 ): Promise<SavedProgress | null> {
   const { data, error } = await client
     .from(TABLE)
-    .select("done, player_level, practice_days, streak_since, streak_asked_week")
+    .select("done, player_level, player_step, practice_days, streak_since, streak_asked_week")
     .eq("user_id", userId)
     .eq("tree_id", treeId)
     .maybeSingle<Row>();
@@ -82,6 +87,7 @@ export async function fetchCloudProgress(
   return {
     done: data.done ?? [],
     playerLevel: data.player_level,
+    playerStep: data.player_step ?? 1,
     practiceDays: data.practice_days ?? [],
     streak: { since: data.streak_since, askedWeek: data.streak_asked_week },
   };
@@ -99,6 +105,7 @@ export async function saveCloudProgress(
       tree_id: treeId,
       done: p.done,
       player_level: p.playerLevel,
+      player_step: p.playerStep,
       practice_days: p.practiceDays,
       streak_since: p.streak.since,
       streak_asked_week: p.streak.askedWeek,

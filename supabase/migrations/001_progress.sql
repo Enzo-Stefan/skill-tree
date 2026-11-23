@@ -6,6 +6,7 @@ create table if not exists public.progress (
   tree_id          text        not null check (char_length(tree_id) between 1 and 64),
   done             text[]      not null default '{}' check (cardinality(done) <= 500),
   player_level     text                 check (char_length(player_level) <= 64),
+  player_step      smallint    not null default 1 check (player_step between 1 and 4),
   -- Training check-ins and streak state (src/lib/streak.ts). Weeks are identified by their Monday.
   practice_days    date[]      not null default '{}' check (cardinality(practice_days) <= 4000),
   streak_since     date,

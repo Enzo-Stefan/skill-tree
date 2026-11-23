@@ -11,7 +11,7 @@ import {
 } from "./cloud";
 
 const noStreak = { since: null, askedWeek: null };
-const empty: SavedProgress = { done: [], playerLevel: null, practiceDays: [], streak: noStreak };
+const empty: SavedProgress = { done: [], playerLevel: null, playerStep: 1, practiceDays: [], streak: noStreak };
 
 describe("mergeProgress (first sign-in on a device)", () => {
   it("keeps finished skills from both the browser and the account", () => {
@@ -27,15 +27,16 @@ describe("mergeProgress (first sign-in on a device)", () => {
   });
 
   it("uses the browser's progress when the account is new", () => {
-    const local = { done: ["root"], playerLevel: "advanced", practiceDays: ["2026-11-20"], streak: { since: "2026-11-16", askedWeek: null } };
+    const local = { done: ["root"], playerLevel: "advanced", playerStep: 3, practiceDays: ["2026-11-20"], streak: { since: "2026-11-16", askedWeek: null } };
     expect(mergeProgress(football, local, null)).toEqual(local);
   });
 
   it("keeps the account's level and streak over the browser's", () => {
-    const local = { ...empty, playerLevel: "beginner", streak: { since: "2026-11-16", askedWeek: null } };
-    const cloud = { ...empty, playerLevel: "expert", streak: { since: "2026-10-05", askedWeek: "2026-11-09" } };
+    const local = { ...empty, playerLevel: "beginner", playerStep: 4, streak: { since: "2026-11-16", askedWeek: null } };
+    const cloud = { ...empty, playerLevel: "expert", playerStep: 2, streak: { since: "2026-10-05", askedWeek: "2026-11-09" } };
     const merged = mergeProgress(football, local, cloud);
     expect(merged.playerLevel).toBe("expert");
+    expect(merged.playerStep).toBe(2);
     expect(merged.streak).toEqual({ since: "2026-10-05", askedWeek: "2026-11-09" });
   });
 
@@ -58,6 +59,10 @@ describe("cleanProgress (old or broken saves)", () => {
     expect(cleanProgress(football, { ...empty, practiceDays: ["2026-11-20", "yesterday", ""] }).practiceDays).toEqual([
       "2026-11-20",
     ]);
+  });
+
+  it("keeps the step between 1 and 4", () => {
+    expect(cleanProgress(football, { ...empty, playerLevel: "beginner", playerStep: 9 }).playerStep).toBe(1);
   });
 
   it("clears the streak when there is no valid level", () => {
@@ -85,6 +90,7 @@ function fakeClient(row: object | null, error: { message: string } | null = null
 const savedRow = {
   done: ["root"],
   player_level: "expert",
+  player_step: 3,
   practice_days: ["2026-11-20"],
   streak_since: "2026-11-02",
   streak_asked_week: null,
@@ -95,6 +101,7 @@ describe("loading and saving", () => {
     expect(await fetchCloudProgress(fakeClient(savedRow).client, "u1", "football")).toEqual({
       done: ["root"],
       playerLevel: "expert",
+      playerStep: 3,
       practiceDays: ["2026-11-20"],
       streak: { since: "2026-11-02", askedWeek: null },
     });
