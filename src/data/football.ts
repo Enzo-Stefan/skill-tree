@@ -127,7 +127,7 @@ export const football: Tree = {
       "x": 2.5,
       "row": 1,
       "drill": "Mark a target zone one ball wide on a wall. Pass to it from 10 metres with your strong foot.",
-      "test": "8 of 10 passes hit the target zone.",
+      "test": "8 of 10 passes hit the target zone from 10 metres.",
       "tip": "Plant your standing foot next to the ball, pointing at the target."
     },
     {
@@ -153,7 +153,7 @@ export const football: Tree = {
       "x": 3,
       "row": 2,
       "drill": "Stand 5 metres from a wall. Pass back every rebound first time, alternating feet.",
-      "test": "30 clean one-touch passes in 60 seconds.",
+      "test": "40 clean one-touch passes in 60 seconds, without the ball stopping.",
       "tip": "Stay on your toes so you are ready for a bad bounce."
     },
     {
@@ -350,7 +350,7 @@ export const football: Tree = {
       ],
       "x": 9,
       "row": 2,
-      "drill": "A partner throws the ball high to you. Head it up and away using your forehead.",
+      "drill": "A partner throws the ball high to you. Head it up and away using your forehead. Keep it to 10 headers a session, and use a lighter ball while you learn.",
       "test": "Head 8 of 10 throws at least 10 metres.",
       "tip": "Eyes open, neck firm, attack the ball instead of waiting for it."
     },
@@ -377,7 +377,7 @@ export const football: Tree = {
       ],
       "x": 8.5,
       "row": 4,
-      "drill": "Play 3 against 1 in a small square. You are the 1. Try to step in and cut out passes.",
+      "drill": "Play 3 against 1 in a 10 by 10 metre square. You are the 1. Try to step in and cut out passes.",
       "test": "Intercept 5 passes in 2 minutes.",
       "tip": "Watch the passer's hips. They point where the ball is going."
     },
@@ -404,7 +404,7 @@ export const football: Tree = {
       "x": 10,
       "row": 2,
       "drill": "Sprint 10 metres from standing, 8 times, with full rest between.",
-      "test": "8 sprints of 30 metres, each one at full effort with good form.",
+      "test": "Sprint 30 metres from standing, timed by a friend, best of 3 tries. Beginner: under 5.8 seconds. Intermediate: under 5.3. Advanced: under 4.8. Expert: under 4.55.",
       "tip": "Drive your arms. Your legs follow your arms."
     },
     {
@@ -430,7 +430,7 @@ export const football: Tree = {
       "x": 10,
       "row": 3,
       "drill": "Sprint 40 metres, rest 30 seconds, repeat.",
-      "test": "10 sprints of 40 metres, each under 7 seconds, with 30 seconds rest.",
+      "test": "10 sprints of 40 metres with 30 seconds rest between, each one under your level's time. Beginner: 7.5 seconds. Intermediate: 7.0. Advanced: 6.5. Expert: 6.25.",
       "tip": "Walk back slowly during the rest to recover faster."
     },
     {
@@ -462,7 +462,7 @@ export const football: Tree = {
       "x": 5.5,
       "row": 5,
       "drill": "Play full matches and use every skill you unlocked. Film a game if you can and watch it back.",
-      "test": "Play a full match and complete at least one skill from every branch in it.",
+      "test": "Play a full 90-minute match and use at least 1 skill from every branch in it.",
       "tip": "This is where the work pays off. Enjoy it.",
       "big": true
     }
