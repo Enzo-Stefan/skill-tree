@@ -28,15 +28,22 @@ interface Row {
   streak_asked_week: string | null;
 }
 
-const DAY = /^\d{4}-\d{2}-\d{2}$/;
-const dayOrNull = (d: string | null) => (d !== null && DAY.test(d) ? d : null);
+/** True for a real calendar date written YYYY-MM-DD. "2026-02-31" is rejected, which the database would refuse. */
+export function isRealDay(d: string): boolean {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);
+  if (!m) return false;
+  const [y, mo, day] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const date = new Date(Date.UTC(y, mo - 1, day));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === day;
+}
+const dayOrNull = (d: string | null) => (d !== null && isRealDay(d) ? d : null);
 
 /** Drop anything the tree no longer has (a renamed skill, a removed level), so old saves can't break the app. */
 export function cleanProgress(tree: Tree, p: SavedProgress): SavedProgress {
   const ids = new Set(tree.skills.map((s) => s.id));
   const done = [...new Set(p.done)].filter((id) => ids.has(id));
   const levelOk = p.playerLevel !== null && (tree.playerLevels ?? []).some((l) => l.id === p.playerLevel);
-  const practiceDays = [...new Set(p.practiceDays)].filter((d) => DAY.test(d)).sort();
+  const practiceDays = [...new Set(p.practiceDays)].filter(isRealDay).sort();
   return {
     done,
     playerLevel: levelOk ? p.playerLevel : null,
@@ -144,17 +151,24 @@ export function createCloudSaver(
 ) {
   let pending: SavedProgress | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
+  // Saves run one at a time. Each save sends the whole snapshot, so if two overlapped and the
+  // older one finished last, it would overwrite newer progress.
+  let inFlight: Promise<void> = Promise.resolve();
 
-  async function flush(): Promise<void> {
+  function flush(): Promise<void> {
     clearTimeout(timer);
-    if (!pending) return;
-    const p = pending;
-    pending = null;
-    try {
-      await saveCloudProgress(client, userId, treeId, p);
-    } catch (e) {
-      onError(e instanceof Error ? e.message : "Couldn't save your progress.");
-    }
+    inFlight = inFlight.then(async () => {
+      // Read pending only when it's this save's turn, so it always sends the latest progress.
+      if (!pending) return;
+      const p = pending;
+      pending = null;
+      try {
+        await saveCloudProgress(client, userId, treeId, p);
+      } catch (e) {
+        onError(e instanceof Error ? e.message : "Couldn't save your progress.");
+      }
+    });
+    return inFlight;
   }
 
   function save(p: SavedProgress): void {

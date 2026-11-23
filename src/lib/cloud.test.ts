@@ -56,9 +56,13 @@ describe("cleanProgress (old or broken saves)", () => {
   });
 
   it("drops training days that aren't real dates", () => {
-    expect(cleanProgress(football, { ...empty, practiceDays: ["2026-11-20", "yesterday", ""] }).practiceDays).toEqual([
-      "2026-11-20",
-    ]);
+    const days = ["2026-11-20", "yesterday", "", "2026-02-31", "2026-13-01", "2028-02-29"];
+    expect(cleanProgress(football, { ...empty, practiceDays: days }).practiceDays).toEqual(["2026-11-20", "2028-02-29"]);
+  });
+
+  it("drops an impossible streak date", () => {
+    const p = { ...empty, playerLevel: "beginner", streak: { since: "2026-02-30", askedWeek: "2026-11-23" } };
+    expect(cleanProgress(football, p).streak).toEqual({ since: null, askedWeek: "2026-11-23" });
   });
 
   it("keeps the step between 1 and 4", () => {
@@ -144,6 +148,32 @@ describe("createCloudSaver", () => {
     await vi.runAllTimersAsync();
     expect(upserts).toHaveLength(1);
     expect(upserts[0]).toMatchObject({ done: ["root", "bc1"] });
+  });
+
+  it("never lets an older save finish after a newer one", async () => {
+    vi.useFakeTimers();
+    // The first save is slow. While it is still running, the player makes another change.
+    const finished: string[][] = [];
+    let release!: () => void;
+    let calls = 0;
+    const query = {
+      upsert: async (value: { done: string[] }) => {
+        calls++;
+        if (calls === 1) await new Promise<void>((r) => (release = r));
+        finished.push(value.done);
+        return { error: null };
+      },
+    };
+    const client = { from: () => query } as unknown as SupabaseClient;
+    const saver = createCloudSaver(client, "u1", "football", () => {});
+    saver.save({ ...empty, done: ["root"] });
+    await vi.advanceTimersByTimeAsync(800); // first save starts and hangs
+    saver.save({ ...empty, done: ["root", "bc1"] });
+    await vi.advanceTimersByTimeAsync(800); // second save is queued, not sent yet
+    expect(calls).toBe(1);
+    release();
+    await vi.runAllTimersAsync();
+    expect(finished).toEqual([["root"], ["root", "bc1"]]);
   });
 
   it("reports a failed save instead of crashing", async () => {
