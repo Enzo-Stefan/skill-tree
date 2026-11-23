@@ -10,6 +10,8 @@ import { LevelUpBanner } from "./components/LevelUpBanner";
 import { LevelTestDialog } from "./components/LevelTestDialog";
 import { PracticeBar } from "./components/PracticeBar";
 import { useToday } from "./components/useToday";
+import { ShareDialog } from "./components/ShareDialog";
+import { shareStats, type ShareStats } from "./components/shareImage";
 import { AccountMenu } from "./components/AccountMenu";
 import { useAuth } from "./auth/useAuth";
 import {
@@ -55,6 +57,8 @@ export default function App() {
   const [practiceDays, setPracticeDays] = useState(() => loadPracticeDays(tree.id));
   const [streakState, setStreakState] = useState(() => loadStreakState(tree.id));
   const [testOpen, setTestOpen] = useState(false);
+  // Snapshot of the progress when Share was tapped, so the image isn't redrawn on every re-render.
+  const [sharing, setSharing] = useState<ShareStats | null>(null);
   const today = useToday();
   const trainedToday = practiceDays.includes(today);
   const nextLevel = pickerOpen || testOpen ? null : levelUpDue(tree, playerLevelId, practiceDays, today, streakState);
@@ -148,6 +152,9 @@ export default function App() {
         tree={tree}
         doneCount={done.size}
         onCopy={copy}
+        onShare={() =>
+          setSharing(shareStats(tree, done, playerLevelName, streakWeeks(practiceDays, streakState.since), window.location.host))
+        }
         onReset={reset}
         playerLevelName={playerLevelName}
         onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
@@ -209,6 +216,7 @@ export default function App() {
           onDismiss={() => setTestOpen(false)}
         />
       )}
+      {sharing && <ShareDialog stats={sharing} onClose={() => setSharing(null)} />}
       <div className={`toast${toast ? " show" : ""}`} role="status">
         {toast}
       </div>
