@@ -1,5 +1,6 @@
 import type { Tree } from "../types";
 import { completedDependents, skillState } from "../lib/progress";
+import { SkillVideo } from "./SkillVideo";
 
 interface Props {
   tree: Tree;
@@ -59,6 +60,7 @@ export function SkillPanel({
       <div className="block">
         <h3>The drill</h3>
         <p>{skill.drill}</p>
+        {skill.video && <SkillVideo key={skill.id} link={skill.video} title={skill.name} />}
       </div>
       <div className="block test">
         <h3>Pass the test</h3>
@@ -82,9 +84,11 @@ export function SkillPanel({
         <h3>Coach's tip</h3>
         <p>{skill.tip}</p>
       </div>
-      <a className="yt" href={`https://www.youtube.com/results?search_query=${query}`} target="_blank" rel="noopener">
-        Watch tutorials on YouTube
-      </a>
+      {!skill.video && (
+        <a className="yt" href={`https://www.youtube.com/results?search_query=${query}`} target="_blank" rel="noopener">
+          Watch tutorials on YouTube
+        </a>
+      )}
 
       <div className="panel-actions">
         {state === "available" && (

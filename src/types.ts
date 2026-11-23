@@ -19,6 +19,12 @@ export interface Skill {
   /** Tier, 0 at the top. */
   row: number;
   drill: string;
+  /**
+   * A video of the drill: a YouTube link (watch, youtu.be or shorts) or a direct link
+   * to a video file (.mp4, .webm, .mov). Replace it with our own video by changing the link.
+   * Without one, the panel links to a YouTube search instead.
+   */
+  video?: string;
   test: string;
   tip: string;
   /**
