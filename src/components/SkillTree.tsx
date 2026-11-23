@@ -1,5 +1,5 @@
-import type { CSSProperties } from "react";
-import type { Skill, Tree } from "../types";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
+import type { Skill, SkillState, Tree } from "../types";
 import { skillState } from "../lib/progress";
 
 const SLOT = 104;
@@ -17,6 +17,7 @@ interface Props {
 }
 
 export function SkillTree({ tree, done, selectedId, onSelect, branchId = null }: Props) {
+  const effects = useUnlockEffects(tree, done);
   const narrow = branchId !== null;
   const branchIndex = tree.branches.findIndex((b) => b.id === branchId);
 
@@ -85,7 +86,7 @@ export function SkillTree({ tree, done, selectedId, onSelect, branchId = null }:
             <button
               key={s.id}
               type="button"
-              className={`node ${state}${s.big ? " big" : ""}${s.id === selectedId ? " selected" : ""}`}
+              className={`node ${state}${s.big ? " big" : ""}${s.id === selectedId ? " selected" : ""}${effects.get(s.id) ? ` fx-${effects.get(s.id)}` : ""}`}
               style={{ left: p.x, top: p.y, "--c": colorOf(s) } as CSSProperties}
               onClick={() => onSelect(s.id)}
               aria-label={`${s.name}, ${state}`}
@@ -124,4 +125,31 @@ function LockIcon() {
       <path d="M8 11V8a4 4 0 0 1 8 0v3" />
     </svg>
   );
+}
+
+type Effect = "done" | "unlock";
+
+/** Which skills just finished or just unlocked, so their tiles can animate for a moment. */
+function useUnlockEffects(tree: Tree, done: Set<string>): Map<string, Effect> {
+  const previous = useRef<Map<string, SkillState> | null>(null);
+  const [effects, setEffects] = useState<Map<string, Effect>>(new Map());
+
+  useEffect(() => {
+    const current = new Map(tree.skills.map((s) => [s.id, skillState(s, done)]));
+    const before = previous.current;
+    previous.current = current;
+    if (!before) return;
+    const changed = new Map<string, Effect>();
+    for (const [id, state] of current) {
+      const was = before.get(id);
+      if (state === "done" && was !== "done") changed.set(id, "done");
+      else if (state === "available" && was === "locked") changed.set(id, "unlock");
+    }
+    if (changed.size === 0) return;
+    setEffects(changed);
+    const timer = window.setTimeout(() => setEffects(new Map()), 900);
+    return () => window.clearTimeout(timer);
+  }, [tree, done]);
+
+  return effects;
 }

@@ -43,6 +43,7 @@ export default function App() {
     const before = levelInfo(tree.levels, done.size).current.name;
     const after = levelInfo(tree.levels, next.size).current.name;
     setDone(next);
+    setSheetOpen(false);
     if (after !== before) showToast(`New level: ${after}.`);
     else if (unlocked.length) showToast(`${skill.name} complete. Unlocked: ${unlocked.map((s) => s.name).join(", ")}.`);
     else showToast(`${skill.name} complete.`);
