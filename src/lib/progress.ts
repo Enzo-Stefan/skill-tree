@@ -105,8 +105,11 @@ export function validateTree(tree: Tree): string[] {
     if (s.name.length > MAX_NAME_LENGTH) {
       errors.push(`${s.id}: name "${s.name}" is longer than ${MAX_NAME_LENGTH} characters and won't fit under its tile`);
     }
-    const measurable = s.targets ? Object.values(s.targets).every((t) => /\d/.test(t)) : /\d/.test(s.test);
-    if (!measurable) {
+    if (s.targets) {
+      for (const [levelId, target] of Object.entries(s.targets)) {
+        if (!/\d/.test(target)) errors.push(`${s.id}: target for level ${levelId} has no number in it`);
+      }
+    } else if (!/\d/.test(s.test)) {
       errors.push(`${s.id}: test has no number in it, so nobody can tell when they've passed`);
     }
     if (s.targets) {

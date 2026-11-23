@@ -283,6 +283,7 @@ main { flex: 1; display: flex; min-height: 0; }
 .level-option.current { border-color: var(--gold); background: rgba(242, 193, 78, 0.1); }
 .level-option-name { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.06em; text-transform: uppercase; }
 .level-option-hint { font-size: 14px; color: var(--chalk-dim); }
+.level-picker > .btn { align-self: flex-start; }
 
 .branch-tabs {
   display: flex;

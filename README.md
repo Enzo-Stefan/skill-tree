@@ -19,7 +19,7 @@ npm run build   # production build in dist/
 src/
   types.ts          The contract. Both sides agree before changing it.
   data/             Tree content (football.ts) and the list of trees
-  lib/progress.ts   Rules: what is locked, levels, saving, validation
+  lib/progress.ts   Rules: what is locked, ranks, player levels, saving, validation
   components/       What you see: tree, skill panel, header
   App.tsx           Wires the rules to the screen
   index.css         Styles
@@ -37,7 +37,7 @@ src/
 **Interface and launch (partner):** `src/components/`, `src/App.tsx`, `src/index.css`
 
 - Make the tree work well on phones (pinch to zoom, or a vertical layout).
-- Animations when a skill unlocks or the level changes.
+- Animations when a skill unlocks or the rank changes.
 - A "share my tree" image people can post.
 - Deploy to Vercel or GitHub Pages so anyone can open a link.
 
