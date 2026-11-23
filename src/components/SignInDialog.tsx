@@ -35,6 +35,11 @@ export function SignInDialog({ onGoogle, onClose }: Props) {
       >
         <h2 id="sign-in-title">Sign in</h2>
         <p>Sign in to keep your progress on every device. The app works without an account too.</p>
+        <p className="dialog-note">
+          <a className="privacy-link" href="/privacy.html" target="_blank" rel="noopener">
+            What we save and how to delete it
+          </a>
+        </p>
         {error && (
           <p className="dialog-error" role="alert">
             {error}

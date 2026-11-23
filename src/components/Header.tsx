@@ -39,7 +39,9 @@ export function Header({ tree, doneCount, onCopy, onReset, playerLevelName, onCh
     <header className="header">
       <div className="brand">
         <h1>{tree.title}</h1>
-        <p>{tree.tagline}</p>
+        <p>
+          {tree.tagline} <a className="privacy-link" href="/privacy.html">Privacy</a>
+        </p>
       </div>
       <div className="progress">
         <div className="progress-top">

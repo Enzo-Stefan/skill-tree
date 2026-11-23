@@ -45,6 +45,9 @@ button { font: inherit; color: inherit; cursor: pointer; }
   text-wrap: balance;
 }
 .brand p { margin: 2px 0 0; color: var(--chalk-dim); font-size: 14px; }
+.privacy-link { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.privacy-link:hover { color: var(--chalk); }
+.dialog-note { font-size: 14px; }
 .progress { flex: 1 1 260px; display: flex; flex-direction: column; gap: 6px; min-width: 220px; }
 .progress-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-variant-numeric: tabular-nums; }
 .level { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); }
