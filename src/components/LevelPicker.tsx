@@ -5,13 +5,16 @@ interface Props {
   levels: PlayerLevel[];
   currentId: string | null;
   onPick: (id: string) => void;
+  /** Levels this player may switch to right now. Others show as locked. Defaults to all. */
+  canPick?: (id: string) => boolean;
   onClose: () => void;
   /** Text on the close button: "Cancel" when changing level, "Skip for now" on first visit. */
   closeLabel: string;
 }
 
-export function LevelPicker({ levels, currentId, onPick, onClose, closeLabel }: Props) {
+export function LevelPicker({ levels, currentId, onPick, canPick = () => true, onClose, closeLabel }: Props) {
   const dialog = useRef<HTMLDivElement>(null);
+  const locked = levels.some((l) => !canPick(l.id));
   const firstButton = useRef<HTMLButtonElement>(null);
   // App passes a new onClose function on every render, so read it through a ref
   // instead of re-running the effects (which would move focus back to the first option).
@@ -61,20 +64,28 @@ export function LevelPicker({ levels, currentId, onPick, onClose, closeLabel }: 
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="level-picker-title">What's your level?</h2>
-        <p>Some tests have a different target for each level. You'll only see yours. You can change it any time.</p>
+        <p>
+          {locked
+            ? "You can move to a lower level any time. To move up, train 3 days a week for 4 weeks in a row and pass the test."
+            : "Some tests have a different target for each level. You'll only see yours."}
+        </p>
         <div className="level-options">
-          {levels.map((l, i) => (
-            <button
-              key={l.id}
-              ref={i === 0 ? firstButton : undefined}
-              type="button"
-              className={`level-option${l.id === currentId ? " current" : ""}`}
-              onClick={() => onPick(l.id)}
-            >
-              <span className="level-option-name">{l.name}</span>
-              <span className="level-option-hint">{l.hint}</span>
-            </button>
-          ))}
+          {levels.map((l, i) => {
+            const allowed = canPick(l.id);
+            return (
+              <button
+                key={l.id}
+                ref={i === 0 ? firstButton : undefined}
+                type="button"
+                className={`level-option${l.id === currentId ? " current" : ""}${allowed ? "" : " locked"}`}
+                disabled={!allowed}
+                onClick={() => onPick(l.id)}
+              >
+                <span className="level-option-name">{l.name}</span>
+                <span className="level-option-hint">{allowed ? l.hint : "Pass the test to move up"}</span>
+              </button>
+            );
+          })}
         </div>
         <button className="btn" type="button" onClick={onClose}>
           {closeLabel}

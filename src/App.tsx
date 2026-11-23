@@ -9,6 +9,8 @@ import { LevelPicker } from "./components/LevelPicker";
 import { LevelUpBanner } from "./components/LevelUpBanner";
 import { LevelTestDialog } from "./components/LevelTestDialog";
 import { PracticeBar } from "./components/PracticeBar";
+import { AccountMenu } from "./components/AccountMenu";
+import { useAuth } from "./auth/useAuth";
 import {
   levelInfo,
   loadPlayerLevel,
@@ -20,6 +22,7 @@ import {
   targetFor,
 } from "./lib/progress";
 import {
+  canPickLevel,
   dayKey,
   daysThisWeek,
   levelUpDue,
@@ -34,6 +37,7 @@ import {
 
 export default function App() {
   const tree = trees[0];
+  const auth = useAuth();
   const [done, setDone] = useState<Set<string>>(() => loadProgress(tree.id));
   const [selectedId, setSelectedId] = useState(tree.skills[0].id);
   const [toast, setToast] = useState<string | null>(null);
@@ -131,9 +135,6 @@ export default function App() {
 
   function reset() {
     setDone(new Set());
-    setPracticeDays([]);
-    savePracticeDays(tree.id, []);
-    updateStreak({ since: null, askedWeek: null });
     setSelectedId(tree.skills[0].id);
     showToast("Progress reset.");
   }
@@ -147,6 +148,7 @@ export default function App() {
         onReset={reset}
         playerLevelName={playerLevelName}
         onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
+        account={<AccountMenu auth={auth} />}
       />
       {hasLevels && playerLevelId && (
         <PracticeBar
@@ -185,6 +187,7 @@ export default function App() {
           levels={tree.playerLevels}
           currentId={playerLevelId}
           onPick={pickLevel}
+          canPick={(id) => canPickLevel(tree, playerLevelId, id)}
           // Skipping saves nothing, so the picker asks again next visit. Players who skip
           // (or whose browser can't save, like private windows) can still pick from the panel.
           onClose={() => setPickerOpen(false)}

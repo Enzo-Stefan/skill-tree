@@ -85,6 +85,17 @@ export function levelUpDue(
   return streakWeeks(days, today, state.since) >= STREAK_WEEKS ? levels[index + 1] : null;
 }
 
+/**
+ * Whether the Level picker may switch to `targetId`. The first pick is free, after that the picker
+ * only goes down or stays put. The only way up is passing the test.
+ */
+export function canPickLevel(tree: Tree, currentId: string | null, targetId: string): boolean {
+  const levels = tree.playerLevels ?? [];
+  const current = levels.findIndex((l) => l.id === currentId);
+  if (current < 0) return true;
+  return levels.findIndex((l) => l.id === targetId) <= current;
+}
+
 const daysKey = (treeId: string) => `skill-tree:${treeId}:practice-days`;
 const stateKey = (treeId: string) => `skill-tree:${treeId}:streak-state`;
 

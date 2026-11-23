@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { football } from "../data/football";
-import { daysThisWeek, levelUpDue, streakWeeks, weekOf, type StreakState } from "./streak";
+import { canPickLevel, daysThisWeek, levelUpDue, streakWeeks, weekOf, type StreakState } from "./streak";
 
 // 2026-11-23 is a Monday.
 const week = (monday: string, count: number): string[] =>
@@ -70,5 +70,18 @@ describe("level-up question", () => {
 
   it("needs a fresh streak after moving up", () => {
     expect(levelUpDue(football, "intermediate", days, today, { since: "2026-11-23", askedWeek: null })).toBeNull();
+  });
+});
+
+describe("level picker", () => {
+  it("lets a new player pick any level", () => {
+    expect(canPickLevel(football, null, "expert")).toBe(true);
+  });
+
+  it("only goes down or stays put after the first pick", () => {
+    expect(canPickLevel(football, "intermediate", "beginner")).toBe(true);
+    expect(canPickLevel(football, "intermediate", "intermediate")).toBe(true);
+    expect(canPickLevel(football, "intermediate", "advanced")).toBe(false);
+    expect(canPickLevel(football, "beginner", "expert")).toBe(false);
   });
 });
