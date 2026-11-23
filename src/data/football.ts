@@ -404,7 +404,13 @@ export const football: Tree = {
       "x": 10,
       "row": 2,
       "drill": "Sprint 10 metres from standing, 8 times, with full rest between.",
-      "test": "Sprint 30 metres from standing, timed by a friend, best of 3 tries. Beginner: under 5.8 seconds. Intermediate: under 5.3. Advanced: under 4.8. Expert: under 4.55.",
+      "test": "Sprint 30 metres from standing, timed by a friend, best of 3 tries.",
+      "targets": {
+        "beginner": "Under 5.8 seconds.",
+        "intermediate": "Under 5.3 seconds.",
+        "advanced": "Under 4.8 seconds.",
+        "expert": "Under 4.55 seconds."
+      },
       "tip": "Drive your arms. Your legs follow your arms."
     },
     {
@@ -430,7 +436,13 @@ export const football: Tree = {
       "x": 10,
       "row": 3,
       "drill": "Sprint 40 metres, rest 30 seconds, repeat.",
-      "test": "10 sprints of 40 metres with 30 seconds rest between, each one under your level's time. Beginner: 7.5 seconds. Intermediate: 7.0. Advanced: 6.5. Expert: 6.25.",
+      "test": "10 sprints of 40 metres with 30 seconds rest between, each one under your target time.",
+      "targets": {
+        "beginner": "Each sprint under 7.5 seconds.",
+        "intermediate": "Each sprint under 7.0 seconds.",
+        "advanced": "Each sprint under 6.5 seconds.",
+        "expert": "Each sprint under 6.25 seconds."
+      },
       "tip": "Walk back slowly during the rest to recover faster."
     },
     {
@@ -466,6 +478,12 @@ export const football: Tree = {
       "tip": "This is where the work pays off. Enjoy it.",
       "big": true
     }
+  ],
+  "playerLevels": [
+    { "id": "beginner", "name": "Beginner", "hint": "New to football or just starting to train" },
+    { "id": "intermediate", "name": "Intermediate", "hint": "Play regularly for a school or local team" },
+    { "id": "advanced", "name": "Advanced", "hint": "Play at a high club or academy level" },
+    { "id": "expert", "name": "Expert", "hint": "Semi-pro level or above" }
   ],
   "levels": [
     {

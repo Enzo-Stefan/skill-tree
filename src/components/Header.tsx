@@ -8,9 +8,12 @@ interface Props {
   doneCount: number;
   onCopy: () => void;
   onReset: () => void;
+  /** Name of the player's chosen level, or null. Leave undefined for trees without levels. */
+  playerLevelName?: string | null;
+  onChangeLevel?: () => void;
 }
 
-export function Header({ tree, doneCount, onCopy, onReset }: Props) {
+export function Header({ tree, doneCount, onCopy, onReset, playerLevelName, onChangeLevel }: Props) {
   const total = tree.skills.length;
   const { current, next } = levelInfo(tree.levels, doneCount);
   const leveledUp = useIncreased(tree.levels.indexOf(current));
@@ -51,6 +54,11 @@ export function Header({ tree, doneCount, onCopy, onReset }: Props) {
         </span>
       </div>
       <div className="actions">
+        {onChangeLevel && (
+          <button className="btn" type="button" onClick={onChangeLevel}>
+            Level: {playerLevelName ?? "Pick"}
+          </button>
+        )}
         <button className="btn" type="button" onClick={onCopy}>
           Copy my progress
         </button>

@@ -48,14 +48,42 @@ export function saveProgress(treeId: string, done: Set<string>): void {
   }
 }
 
-export function progressSummary(tree: Tree, done: Set<string>): string {
+const playerLevelKey = (treeId: string) => `skill-tree:${treeId}:player-level`;
+
+/** The player's chosen ability level for a tree, or null if they haven't picked one. */
+export function loadPlayerLevel(tree: Tree): string | null {
+  try {
+    const id = localStorage.getItem(playerLevelKey(tree.id));
+    return tree.playerLevels?.some((l) => l.id === id) ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+export function savePlayerLevel(treeId: string, levelId: string): void {
+  try {
+    localStorage.setItem(playerLevelKey(treeId), levelId);
+  } catch {
+    // Storage can be blocked. The choice still works for this visit.
+  }
+}
+
+/** The target a player at `levelId` must hit for this skill, or null if the skill has one test for everyone. */
+export function targetFor(skill: Skill, levelId: string | null): string | null {
+  if (!skill.targets || !levelId) return null;
+  return skill.targets[levelId] ?? null;
+}
+
+export function progressSummary(tree: Tree, done: Set<string>, playerLevelId: string | null = null): string {
   const { current } = levelInfo(tree.levels, done.size);
+  const playerLevel = tree.playerLevels?.find((l) => l.id === playerLevelId);
   const lines = tree.branches.map((b) => {
     const skills = tree.skills.filter((s) => s.branch === b.id);
     const count = skills.filter((s) => done.has(s.id)).length;
     return `${b.name}: ${count}/${skills.length}`;
   });
-  return [`My ${tree.title}: ${done.size}/${tree.skills.length} skills, level ${current.name}.`, ...lines].join("\n");
+  const levelText = playerLevel ? ` Training at ${playerLevel.name} level.` : "";
+  return [`My ${tree.title}: ${done.size}/${tree.skills.length} skills, rank ${current.name}.${levelText}`, ...lines].join("\n");
 }
 
 const MAX_NAME_LENGTH = 24;
@@ -77,8 +105,20 @@ export function validateTree(tree: Tree): string[] {
     if (s.name.length > MAX_NAME_LENGTH) {
       errors.push(`${s.id}: name "${s.name}" is longer than ${MAX_NAME_LENGTH} characters and won't fit under its tile`);
     }
-    if (!/\d/.test(s.test)) {
+    if (s.targets) {
+      for (const [levelId, target] of Object.entries(s.targets)) {
+        if (!/\d/.test(target)) errors.push(`${s.id}: target for level ${levelId} has no number in it`);
+      }
+    } else if (!/\d/.test(s.test)) {
       errors.push(`${s.id}: test has no number in it, so nobody can tell when they've passed`);
+    }
+    if (s.targets) {
+      const levelIds = (tree.playerLevels ?? []).map((l) => l.id);
+      if (levelIds.length === 0) errors.push(`${s.id}: has targets, but the tree has no playerLevels`);
+      const missing = levelIds.filter((id) => !s.targets![id]?.trim());
+      const extra = Object.keys(s.targets).filter((id) => !levelIds.includes(id));
+      if (missing.length) errors.push(`${s.id}: no target for level ${missing.join(", ")}`);
+      if (extra.length) errors.push(`${s.id}: target for unknown level ${extra.join(", ")}`);
     }
   }
   const roots = tree.skills.filter((s) => s.requires.length === 0);
