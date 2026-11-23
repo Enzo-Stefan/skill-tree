@@ -127,14 +127,17 @@ export function targetValue(tree: Tree, skill: Skill, rung: Rung | null): number
   const index = levels.findIndex((l) => l.id === rung?.levelId);
   const values = skill.targets?.values;
   if (!values || !rung || index < 0) return null;
-  // Work in hundredths so halfway cases round the way people expect (5.675 becomes 5.68).
+  // Work in hundredths. An exact half rounds toward the harder target, so a step is never
+  // easier than the exact in-between number: falling times round down (5.675 becomes 5.67),
+  // rising targets like reps round up.
   const at = (i: number) => Math.round(values[levels[i].id] * 100);
   const from = at(index);
   const to = index + 1 < levels.length ? at(index + 1) : index > 0 ? from + (from - at(index - 1)) : from;
-  return Math.round(from + ((to - from) * (cleanStep(rung.step) - 1)) / STEPS_PER_LEVEL) / 100;
+  const exact = from + ((to - from) * (cleanStep(rung.step) - 1)) / STEPS_PER_LEVEL;
+  return (to < from ? Math.ceil(exact - 0.5) : Math.round(exact)) / 100;
 }
 
-/** The target sentence for this skill at a level and step, e.g. "Under 5.68 seconds.", or null. */
+/** The target sentence for this skill at a level and step, e.g. "Under 5.67 seconds.", or null. */
 export function targetFor(tree: Tree, skill: Skill, rung: Rung | null): string | null {
   const value = targetValue(tree, skill, rung);
   return value === null || !skill.targets ? null : skill.targets.text.replace("{n}", String(value));
@@ -173,7 +176,9 @@ export function validateTree(tree: Tree): string[] {
     }
     if (s.targets) {
       const { text, values } = s.targets;
-      if (!text.includes("{n}")) errors.push(`${s.id}: target text has no {n} where the number goes`);
+      const slots = text.split("{n}").length - 1;
+      if (slots === 0) errors.push(`${s.id}: target text has no {n} where the number goes`);
+      if (slots > 1) errors.push(`${s.id}: target text has more than one {n}, only the first gets the number`);
       const levelIds = (tree.playerLevels ?? []).map((l) => l.id);
       if (levelIds.length === 0) errors.push(`${s.id}: has targets, but the tree has no playerLevels`);
       const missing = levelIds.filter((id) => !(id in values));

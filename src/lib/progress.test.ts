@@ -60,20 +60,30 @@ describe("player levels", () => {
 
   it("shows only the chosen step's target", () => {
     expect(targetFor(football, sprint, at("intermediate", 1))).toBe("Under 5.3 seconds.");
-    expect(targetFor(football, sprint, at("beginner", 2))).toBe("Under 5.68 seconds.");
+    expect(targetFor(football, sprint, at("beginner", 2))).toBe("Under 5.67 seconds.");
     expect(targetFor(football, repeat, at("intermediate", 1))).toBe("Each sprint under 7 seconds.");
   });
 
   it("puts steps 2 to 4 evenly between one level and the next", () => {
-    expect(steps(sprint, "beginner")).toEqual([5.8, 5.68, 5.55, 5.43]);
-    expect(steps(sprint, "intermediate")).toEqual([5.3, 5.18, 5.05, 4.93]);
-    expect(steps(sprint, "advanced")).toEqual([4.8, 4.74, 4.68, 4.61]);
-    expect(steps(repeat, "beginner")).toEqual([7.5, 7.38, 7.25, 7.13]);
+    expect(steps(sprint, "beginner")).toEqual([5.8, 5.67, 5.55, 5.42]);
+    expect(steps(sprint, "intermediate")).toEqual([5.3, 5.17, 5.05, 4.92]);
+    expect(steps(sprint, "advanced")).toEqual([4.8, 4.74, 4.67, 4.61]);
+    expect(steps(repeat, "beginner")).toEqual([7.5, 7.37, 7.25, 7.12]);
   });
 
   it("keeps the top level going at the same pace as the level below it", () => {
-    expect(steps(sprint, "expert")).toEqual([4.55, 4.49, 4.43, 4.36]);
-    expect(steps(repeat, "expert")).toEqual([6.25, 6.19, 6.13, 6.06]);
+    expect(steps(sprint, "expert")).toEqual([4.55, 4.49, 4.42, 4.36]);
+    expect(steps(repeat, "expert")).toEqual([6.25, 6.19, 6.12, 6.06]);
+  });
+
+  it("rounds an exact half toward the harder target, whichever way targets go", () => {
+    const rising = withTargets({ text: "{n} reps.", values: { beginner: 1, intermediate: 1.02, advanced: 1.04, expert: 1.06 } });
+    const falling = withTargets({ text: "Under {n} s.", values: { beginner: 1.06, intermediate: 1.04, advanced: 1.02, expert: 1 } });
+    const risingSprint = rising.skills.find((s) => s.id === "ft2")!;
+    const fallingSprint = falling.skills.find((s) => s.id === "ft2")!;
+    const of = (tree: typeof football, skill: typeof sprint) => [1, 2, 3, 4].map((n) => targetValue(tree, skill, at("beginner", n)));
+    expect(of(rising, risingSprint)).toEqual([1, 1.01, 1.01, 1.02]);
+    expect(of(falling, fallingSprint)).toEqual([1.06, 1.05, 1.05, 1.04]);
   });
 
   it("shows no target before a level is picked, or for skills without targets", () => {
@@ -105,6 +115,11 @@ describe("player levels", () => {
   it("catches target text with nowhere to put the number", () => {
     const broken = withTargets({ ...sprint.targets!, text: "Run fast." });
     expect(validateTree(broken)).toContain("ft2: target text has no {n} where the number goes");
+  });
+
+  it("catches target text with more than one place for the number", () => {
+    const broken = withTargets({ ...sprint.targets!, text: "Under {n} seconds, then {n} again." });
+    expect(validateTree(broken)).toContain("ft2: target text has more than one {n}, only the first gets the number");
   });
 
   it("catches targets that don't get harder at every level", () => {
