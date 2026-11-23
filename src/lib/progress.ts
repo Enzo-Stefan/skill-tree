@@ -1,4 +1,4 @@
-import type { Level, PlayerLevel, Skill, SkillState, Tree } from "../types";
+import type { Level, Skill, SkillState, Tree } from "../types";
 
 export function skillState(skill: Skill, done: Set<string>): SkillState {
   if (done.has(skill.id)) return "done";
@@ -66,45 +66,6 @@ export function savePlayerLevel(treeId: string, levelId: string): void {
   } catch {
     // Storage can be blocked. The choice still works for this visit.
   }
-}
-
-/** How many more finished skills it takes before the app offers the next player level. */
-export const LEVEL_UP_AFTER = 6;
-
-const checkpointKey = (treeId: string) => `skill-tree:${treeId}:level-checkpoint`;
-
-/** Finished-skill count when the player last picked a level or answered "not yet". Null if never saved. */
-export function loadLevelCheckpoint(treeId: string): number | null {
-  try {
-    const n = Number(localStorage.getItem(checkpointKey(treeId)));
-    return localStorage.getItem(checkpointKey(treeId)) !== null && Number.isInteger(n) && n >= 0 ? n : null;
-  } catch {
-    return null;
-  }
-}
-
-export function saveLevelCheckpoint(treeId: string, count: number): void {
-  try {
-    localStorage.setItem(checkpointKey(treeId), String(count));
-  } catch {
-    // Storage can be blocked. The offer timing then only lasts for this visit.
-  }
-}
-
-/**
- * The player level to offer next, or null. Offered once the player has finished
- * LEVEL_UP_AFTER skills since their checkpoint, one level at a time, never past the top.
- */
-export function levelUpOffer(
-  tree: Tree,
-  levelId: string | null,
-  doneCount: number,
-  checkpoint: number,
-): PlayerLevel | null {
-  const levels = tree.playerLevels ?? [];
-  const index = levels.findIndex((l) => l.id === levelId);
-  if (index < 0 || index === levels.length - 1) return null;
-  return doneCount - checkpoint >= LEVEL_UP_AFTER ? levels[index + 1] : null;
 }
 
 /** The target a player at `levelId` must hit for this skill, or null if the skill has one test for everyone. */

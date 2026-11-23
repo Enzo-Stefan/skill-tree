@@ -7,19 +7,30 @@ import { BranchTabs } from "./components/BranchTabs";
 import { useMediaQuery } from "./components/useMediaQuery";
 import { LevelPicker } from "./components/LevelPicker";
 import { LevelUpBanner } from "./components/LevelUpBanner";
+import { LevelTestDialog } from "./components/LevelTestDialog";
+import { PracticeBar } from "./components/PracticeBar";
 import {
   levelInfo,
-  levelUpOffer,
-  loadLevelCheckpoint,
   loadPlayerLevel,
   loadProgress,
   newlyUnlocked,
   progressSummary,
-  saveLevelCheckpoint,
   savePlayerLevel,
   saveProgress,
   targetFor,
 } from "./lib/progress";
+import {
+  dayKey,
+  daysThisWeek,
+  levelUpDue,
+  loadPracticeDays,
+  loadStreakState,
+  savePracticeDays,
+  saveStreakState,
+  streakWeeks,
+  weekOf,
+  type StreakState,
+} from "./lib/streak";
 
 export default function App() {
   const tree = trees[0];
@@ -36,20 +47,42 @@ export default function App() {
   // Ask on first visit; after that, only when the player asks to change.
   const [pickerOpen, setPickerOpen] = useState(() => hasLevels && loadPlayerLevel(tree) === null);
   const playerLevelName = tree.playerLevels?.find((l) => l.id === playerLevelId)?.name ?? null;
-  // Players who already have a level start counting from their current progress, so nobody is asked straight away.
-  const [checkpoint, setCheckpoint] = useState(() => loadLevelCheckpoint(tree.id) ?? loadProgress(tree.id).size);
-  const offer = pickerOpen ? null : levelUpOffer(tree, playerLevelId, done.size, checkpoint);
+  const [practiceDays, setPracticeDays] = useState(() => loadPracticeDays(tree.id));
+  const [streakState, setStreakState] = useState(() => loadStreakState(tree.id));
+  const [testOpen, setTestOpen] = useState(false);
+  const today = dayKey(new Date());
+  const trainedToday = practiceDays.includes(today);
+  const nextLevel = pickerOpen || testOpen ? null : levelUpDue(tree, playerLevelId, practiceDays, today, streakState);
+  const nextLevelForTest = levelUpDue(tree, playerLevelId, practiceDays, today, streakState);
+  const testItems = nextLevelForTest
+    ? tree.skills.flatMap((s) => {
+        const target = targetFor(s, nextLevelForTest.id);
+        return target ? [{ skillName: s.name, target }] : [];
+      })
+    : [];
   const selectedSkill = tree.skills.find((s) => s.id === selectedId)!;
 
-  function moveCheckpoint(count: number) {
-    setCheckpoint(count);
-    saveLevelCheckpoint(tree.id, count);
+  function updateStreak(next: StreakState) {
+    setStreakState(next);
+    saveStreakState(tree.id, next);
+  }
+
+  function toggleTrainedToday() {
+    const next = trainedToday ? practiceDays.filter((d) => d !== today) : [...practiceDays, today];
+    setPracticeDays(next);
+    savePracticeDays(tree.id, next);
+  }
+
+  function askLater() {
+    setTestOpen(false);
+    updateStreak({ ...streakState, askedWeek: weekOf(today) });
   }
 
   function pickLevel(id: string) {
+    // A different level starts a fresh streak.
+    if (id !== playerLevelId) updateStreak({ since: weekOf(today), askedWeek: null });
     setPlayerLevelId(id);
     savePlayerLevel(tree.id, id);
-    moveCheckpoint(done.size);
     setPickerOpen(false);
     const name = tree.playerLevels?.find((l) => l.id === id)?.name;
     showToast(`Showing ${name} targets.`);
@@ -98,7 +131,9 @@ export default function App() {
 
   function reset() {
     setDone(new Set());
-    moveCheckpoint(0);
+    setPracticeDays([]);
+    savePracticeDays(tree.id, []);
+    updateStreak({ since: null, askedWeek: null });
     setSelectedId(tree.skills[0].id);
     showToast("Progress reset.");
   }
@@ -113,15 +148,15 @@ export default function App() {
         playerLevelName={playerLevelName}
         onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
       />
-      {offer && playerLevelName && (
-        <LevelUpBanner
-          finished={done.size - checkpoint}
-          currentName={playerLevelName}
-          nextName={offer.name}
-          onAccept={() => pickLevel(offer.id)}
-          onLater={() => moveCheckpoint(done.size)}
+      {hasLevels && playerLevelId && (
+        <PracticeBar
+          daysThisWeek={daysThisWeek(practiceDays, today)}
+          streak={streakWeeks(practiceDays, today, streakState.since)}
+          trainedToday={trainedToday}
+          onToggle={toggleTrainedToday}
         />
       )}
+      {nextLevel && <LevelUpBanner onYes={() => setTestOpen(true)} onLater={askLater} />}
       {isPhone && <BranchTabs tree={tree} done={done} activeId={branchId} onChange={setBranchId} />}
       <main>
         <SkillTree
@@ -154,6 +189,17 @@ export default function App() {
           // (or whose browser can't save, like private windows) can still pick from the panel.
           onClose={() => setPickerOpen(false)}
           closeLabel={playerLevelId ? "Cancel" : "Skip for now"}
+        />
+      )}
+      {testOpen && nextLevelForTest && (
+        <LevelTestDialog
+          nextName={nextLevelForTest.name}
+          items={testItems}
+          onPass={() => {
+            setTestOpen(false);
+            pickLevel(nextLevelForTest.id);
+          }}
+          onLater={askLater}
         />
       )}
       <div className={`toast${toast ? " show" : ""}`} role="status">

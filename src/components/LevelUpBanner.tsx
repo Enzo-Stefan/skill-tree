@@ -1,21 +1,20 @@
+import { PRACTICE_DAYS_PER_WEEK, STREAK_WEEKS } from "../lib/streak";
+
 interface Props {
-  /** Skills finished since the player last picked a level or said "not yet". */
-  finished: number;
-  currentName: string;
-  nextName: string;
-  onAccept: () => void;
+  onYes: () => void;
   onLater: () => void;
 }
 
-export function LevelUpBanner({ finished, currentName, nextName, onAccept, onLater }: Props) {
+export function LevelUpBanner({ onYes, onLater }: Props) {
   return (
-    <section className="levelup" role="region" aria-label="Level up offer">
+    <section className="levelup" role="region" aria-label="Level up question">
       <p>
-        You've finished {finished} skills at {currentName}. Move up to <strong>{nextName}</strong>?
+        You've trained at least {PRACTICE_DAYS_PER_WEEK} days a week for {STREAK_WEEKS} weeks in a row.{" "}
+        <strong>Do you think you've improved?</strong>
       </p>
       <div className="levelup-actions">
-        <button className="btn primary" type="button" onClick={onAccept}>
-          Move up
+        <button className="btn primary" type="button" onClick={onYes}>
+          Yes
         </button>
         <button className="btn" type="button" onClick={onLater}>
           Not yet
