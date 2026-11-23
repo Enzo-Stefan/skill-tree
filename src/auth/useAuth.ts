@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
-import { supabase } from "./client";
+import { accountsConfigured, loadSupabase, mayHaveSession } from "./client";
 
 export interface Account {
   id: string;
@@ -32,43 +32,54 @@ function toAccount(user: User): Account {
 
 export function useAuth(): Auth {
   const [account, setAccount] = useState<Account | null>(null);
-  const [loading, setLoading] = useState(supabase !== null);
+  // Only wait for a session check when there may be a session; everyone else never loads the library at startup.
+  const [loading, setLoading] = useState(mayHaveSession);
 
   useEffect(() => {
-    if (!supabase) return;
+    if (!mayHaveSession()) return;
     let active = true;
-    supabase.auth
-      .getSession()
-      .then(({ data }) => {
+    let unsubscribe = () => {};
+    loadSupabase()
+      .then(async (supabase) => {
+        if (!supabase || !active) return;
+        const { data } = await supabase.auth.getSession();
         if (active) setAccount(data.session ? toAccount(data.session.user) : null);
+        const listener = supabase.auth.onAuthStateChange((_event, session) => {
+          setAccount(session ? toAccount(session.user) : null);
+        });
+        unsubscribe = () => listener.data.subscription.unsubscribe();
+        if (!active) unsubscribe();
       })
       .catch(() => {
-        // A failed session check just means the player is signed out.
+        // A failed download or session check just means the player looks signed out.
       })
       .finally(() => {
         if (active) setLoading(false);
       });
-    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAccount(session ? toAccount(session.user) : null);
-    });
     return () => {
       active = false;
-      data.subscription.unsubscribe();
+      unsubscribe();
     };
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
-    if (!supabase) return "Accounts aren't set up yet.";
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: window.location.origin },
-    });
-    return error ? error.message : null;
+    try {
+      const supabase = await loadSupabase();
+      if (!supabase) return "Accounts aren't set up yet.";
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: window.location.origin },
+      });
+      return error ? error.message : null;
+    } catch {
+      return "Couldn't load sign-in. Check your connection and try again.";
+    }
   }, []);
 
   const signOut = useCallback(async () => {
+    const supabase = await loadSupabase();
     await supabase?.auth.signOut();
   }, []);
 
-  return { configured: supabase !== null, account, loading, signInWithGoogle, signOut };
+  return { configured: accountsConfigured, account, loading, signInWithGoogle, signOut };
 }
