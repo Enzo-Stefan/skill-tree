@@ -145,8 +145,10 @@ function useUnlockEffects(tree: Tree, done: Set<string>): Map<string, Effect> {
       if (state === "done" && was !== "done") changed.set(id, "done");
       else if (state === "available" && was === "locked") changed.set(id, "unlock");
     }
-    if (changed.size === 0) return;
+    // Always replace the effects, even with an empty map. A quick undo cancels the
+    // previous clear-timer, so returning early here would leave old fx classes stuck.
     setEffects(changed);
+    if (changed.size === 0) return;
     const timer = window.setTimeout(() => setEffects(new Map()), 900);
     return () => window.clearTimeout(timer);
   }, [tree, done]);
