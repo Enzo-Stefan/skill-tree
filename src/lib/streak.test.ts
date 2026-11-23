@@ -26,24 +26,24 @@ describe("weeks", () => {
 });
 
 describe("streak", () => {
-  it("counts weeks in a row with 3 training days, including the current one", () => {
+  it("counts weeks with 3 training days, including the current one", () => {
     const days = MONDAYS.flatMap((m) => week(m, 3));
-    expect(streakWeeks(days, "2026-11-25")).toBe(4);
+    expect(streakWeeks(days)).toBe(4);
   });
 
-  it("does not break the streak while the current week is still in progress", () => {
-    const days = [...MONDAYS.slice(0, 3).flatMap((m) => week(m, 3)), ...week("2026-11-23", 1)];
-    expect(streakWeeks(days, "2026-11-23")).toBe(3);
+  it("does not count the current week until it has 3 days", () => {
+    const days = [...MONDAYS.slice(0, 3).flatMap((m) => week(m, 3)), ...week("2026-11-23", 2)];
+    expect(streakWeeks(days)).toBe(3);
   });
 
-  it("resets after a missed week", () => {
+  it("pauses after a missed week and carries on when training resumes", () => {
     const days = [...week(MONDAYS[0], 3), ...week(MONDAYS[1], 2), ...week(MONDAYS[2], 3), ...week(MONDAYS[3], 3)];
-    expect(streakWeeks(days, "2026-11-25")).toBe(2);
+    expect(streakWeeks(days)).toBe(3);
   });
 
-  it("ignores weeks up to the one the player moved up in", () => {
+  it("ignores weeks up to the one the player moved level in", () => {
     const days = MONDAYS.flatMap((m) => week(m, 3));
-    expect(streakWeeks(days, "2026-11-25", "2026-11-09")).toBe(2);
+    expect(streakWeeks(days, "2026-11-09")).toBe(2);
   });
 });
 
@@ -51,7 +51,7 @@ describe("level-up question", () => {
   const days = MONDAYS.flatMap((m) => week(m, 3));
   const today = "2026-11-25";
 
-  it("asks after 4 weeks in a row, about the next level", () => {
+  it("asks after 4 training weeks, about the next level", () => {
     expect(levelUpDue(football, "beginner", days, today, none)?.id).toBe("intermediate");
   });
 

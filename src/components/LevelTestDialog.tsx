@@ -10,15 +10,18 @@ interface Props {
   nextName: string;
   items: TestItem[];
   onPass: () => void;
-  onLater: () => void;
+  /** The "Not yet" button: the player says they are not ready, so the question waits until next week. */
+  onNotYet: () => void;
+  /** Closing with Escape or a tap outside: just closes, the question can come back straight away. */
+  onDismiss: () => void;
 }
 
-export function LevelTestDialog({ nextName, items, onPass, onLater }: Props) {
+export function LevelTestDialog({ nextName, items, onPass, onNotYet, onDismiss }: Props) {
   const dialog = useRef<HTMLDivElement>(null);
-  useModalFocus(dialog, onLater);
+  useModalFocus(dialog, onDismiss);
 
   return (
-    <div className="overlay" onClick={onLater}>
+    <div className="overlay" onClick={onDismiss}>
       <div
         ref={dialog}
         className="level-picker"
@@ -43,7 +46,7 @@ export function LevelTestDialog({ nextName, items, onPass, onLater }: Props) {
           <button className="btn primary" type="button" onClick={onPass}>
             I passed
           </button>
-          <button className="btn" type="button" onClick={onLater}>
+          <button className="btn" type="button" onClick={onNotYet}>
             Not yet
           </button>
         </div>

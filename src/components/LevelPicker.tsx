@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { PlayerLevel } from "../types";
+import { PRACTICE_DAYS_PER_WEEK, STREAK_WEEKS } from "../lib/streak";
 
 interface Props {
   levels: PlayerLevel[];
@@ -66,7 +67,7 @@ export function LevelPicker({ levels, currentId, onPick, canPick = () => true, o
         <h2 id="level-picker-title">What's your level?</h2>
         <p>
           {locked
-            ? "You can move to a lower level any time. To move up, train 3 days a week for 4 weeks in a row and pass the test."
+            ? `You can move to a lower level any time. To move up, train ${PRACTICE_DAYS_PER_WEEK} days a week for ${STREAK_WEEKS} weeks and pass the test.`
             : "Some tests have a different target for each level. You'll only see yours."}
         </p>
         <div className="level-options">

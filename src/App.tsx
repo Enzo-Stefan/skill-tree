@@ -9,6 +9,7 @@ import { LevelPicker } from "./components/LevelPicker";
 import { LevelUpBanner } from "./components/LevelUpBanner";
 import { LevelTestDialog } from "./components/LevelTestDialog";
 import { PracticeBar } from "./components/PracticeBar";
+import { useToday } from "./components/useToday";
 import { AccountMenu } from "./components/AccountMenu";
 import { useAuth } from "./auth/useAuth";
 import {
@@ -54,7 +55,7 @@ export default function App() {
   const [practiceDays, setPracticeDays] = useState(() => loadPracticeDays(tree.id));
   const [streakState, setStreakState] = useState(() => loadStreakState(tree.id));
   const [testOpen, setTestOpen] = useState(false);
-  const today = dayKey(new Date());
+  const today = useToday();
   const trainedToday = practiceDays.includes(today);
   const nextLevel = pickerOpen || testOpen ? null : levelUpDue(tree, playerLevelId, practiceDays, today, streakState);
   const nextLevelForTest = levelUpDue(tree, playerLevelId, practiceDays, today, streakState);
@@ -72,19 +73,21 @@ export default function App() {
   }
 
   function toggleTrainedToday() {
-    const next = trainedToday ? practiceDays.filter((d) => d !== today) : [...practiceDays, today];
+    // Work the date out now: the page may have been open since yesterday.
+    const now = dayKey(new Date());
+    const next = practiceDays.includes(now) ? practiceDays.filter((d) => d !== now) : [...practiceDays, now];
     setPracticeDays(next);
     savePracticeDays(tree.id, next);
   }
 
   function askLater() {
     setTestOpen(false);
-    updateStreak({ ...streakState, askedWeek: weekOf(today) });
+    updateStreak({ ...streakState, askedWeek: weekOf(dayKey(new Date())) });
   }
 
   function pickLevel(id: string) {
-    // A different level starts a fresh streak.
-    if (id !== playerLevelId) updateStreak({ since: weekOf(today), askedWeek: null });
+    // Moving to a different level starts a fresh streak. The very first pick doesn't, so that week counts.
+    if (playerLevelId !== null && id !== playerLevelId) updateStreak({ since: weekOf(dayKey(new Date())), askedWeek: null });
     setPlayerLevelId(id);
     savePlayerLevel(tree.id, id);
     setPickerOpen(false);
@@ -153,7 +156,7 @@ export default function App() {
       {hasLevels && playerLevelId && (
         <PracticeBar
           daysThisWeek={daysThisWeek(practiceDays, today)}
-          streak={streakWeeks(practiceDays, today, streakState.since)}
+          streak={streakWeeks(practiceDays, streakState.since)}
           trainedToday={trainedToday}
           onToggle={toggleTrainedToday}
         />
@@ -202,7 +205,8 @@ export default function App() {
             setTestOpen(false);
             pickLevel(nextLevelForTest.id);
           }}
-          onLater={askLater}
+          onNotYet={askLater}
+          onDismiss={() => setTestOpen(false)}
         />
       )}
       <div className={`toast${toast ? " show" : ""}`} role="status">

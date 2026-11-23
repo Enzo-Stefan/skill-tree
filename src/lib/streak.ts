@@ -2,7 +2,7 @@ import type { PlayerLevel, Tree } from "../types";
 
 /** A week counts toward the streak when the player trained on at least this many different days. */
 export const PRACTICE_DAYS_PER_WEEK = 3;
-/** Weeks in a row before the app asks "Do you think you've improved?". */
+/** Training weeks needed before the app asks "Do you think you've improved?". */
 export const STREAK_WEEKS = 4;
 
 /** Dates are local calendar days written as `YYYY-MM-DD`, weeks are identified by their Monday. */
@@ -34,12 +34,6 @@ export function weekOf(day: DayKey): WeekKey {
   return dayKey(date);
 }
 
-function previousWeek(week: WeekKey): WeekKey {
-  const date = parse(week);
-  date.setDate(date.getDate() - 7);
-  return dayKey(date);
-}
-
 /** Days the player trained in the week containing `today`. */
 export function daysThisWeek(days: DayKey[], today: DayKey): number {
   const week = weekOf(today);
@@ -47,25 +41,19 @@ export function daysThisWeek(days: DayKey[], today: DayKey): number {
 }
 
 /**
- * Weeks in a row with enough training days. The current week counts once it has enough days,
- * but doesn't break the streak while it is still in progress. A missed week resets the streak.
+ * Weeks with enough training days since the player last moved level. A missed week
+ * pauses the streak: the count stays where it was and carries on when training resumes.
+ * The current week counts once it has enough days.
  */
-export function streakWeeks(days: DayKey[], today: DayKey, since: WeekKey | null = null): number {
+export function streakWeeks(days: DayKey[], since: WeekKey | null = null): number {
   const perWeek = new Map<WeekKey, Set<DayKey>>();
   for (const d of days) {
     const week = weekOf(d);
     perWeek.set(week, (perWeek.get(week) ?? new Set()).add(d));
   }
-  const counts = (week: WeekKey) =>
-    (perWeek.get(week)?.size ?? 0) >= PRACTICE_DAYS_PER_WEEK && (since === null || week > since);
-
-  let week = weekOf(today);
   let streak = 0;
-  if (counts(week)) streak++;
-  week = previousWeek(week);
-  while (counts(week)) {
-    streak++;
-    week = previousWeek(week);
+  for (const [week, trained] of perWeek) {
+    if (trained.size >= PRACTICE_DAYS_PER_WEEK && (since === null || week > since)) streak++;
   }
   return streak;
 }
@@ -82,7 +70,7 @@ export function levelUpDue(
   const index = levels.findIndex((l) => l.id === levelId);
   if (index < 0 || index === levels.length - 1) return null;
   if (state.askedWeek === weekOf(today)) return null;
-  return streakWeeks(days, today, state.since) >= STREAK_WEEKS ? levels[index + 1] : null;
+  return streakWeeks(days, state.since) >= STREAK_WEEKS ? levels[index + 1] : null;
 }
 
 /**

@@ -9,7 +9,7 @@ export function LevelUpBanner({ onYes, onLater }: Props) {
   return (
     <section className="levelup" role="region" aria-label="Level up question">
       <p>
-        You've trained at least {PRACTICE_DAYS_PER_WEEK} days a week for {STREAK_WEEKS} weeks in a row.{" "}
+        You've trained at least {PRACTICE_DAYS_PER_WEEK} days a week for {STREAK_WEEKS} weeks.{" "}
         <strong>Do you think you've improved?</strong>
       </p>
       <div className="levelup-actions">
