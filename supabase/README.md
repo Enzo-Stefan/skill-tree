@@ -31,7 +31,7 @@ Never put the `service_role` key anywhere in this app. It bypasses all security 
 ## What's stored
 
 One row per player per tree in `public.progress`: finished skill ids, chosen player level,
-and the level-up checkpoint. Row-level security means a signed-in player can only read and
+training check-in days and the streak state. Row-level security means a signed-in player can only read and
 write their own rows, and signed-out visitors can read nothing. Deleting a user deletes their rows.
 
 ## Free plan

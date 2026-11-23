@@ -9,8 +9,10 @@ import type { Tree } from "../types";
 export interface SavedProgress {
   done: string[];
   playerLevel: string | null;
-  /** Finished-skill count when the player last picked a level or said "not yet". */
-  levelCheckpoint: number | null;
+  /** Days the player checked in "I trained today", as YYYY-MM-DD. */
+  practiceDays: string[];
+  /** Streak bookkeeping from src/lib/streak.ts. Both are week-start dates (Mondays) or null. */
+  streak: { since: string | null; askedWeek: string | null };
 }
 
 const TABLE = "progress";
@@ -18,36 +20,48 @@ const TABLE = "progress";
 interface Row {
   done: string[] | null;
   player_level: string | null;
-  level_checkpoint: number | null;
+  practice_days: string[] | null;
+  streak_since: string | null;
+  streak_asked_week: string | null;
 }
+
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const dayOrNull = (d: string | null) => (d !== null && DAY.test(d) ? d : null);
 
 /** Drop anything the tree no longer has (a renamed skill, a removed level), so old saves can't break the app. */
 export function cleanProgress(tree: Tree, p: SavedProgress): SavedProgress {
   const ids = new Set(tree.skills.map((s) => s.id));
   const done = [...new Set(p.done)].filter((id) => ids.has(id));
   const levelOk = p.playerLevel !== null && (tree.playerLevels ?? []).some((l) => l.id === p.playerLevel);
-  const checkpoint =
-    p.levelCheckpoint !== null && Number.isInteger(p.levelCheckpoint) && p.levelCheckpoint >= 0
-      ? Math.min(p.levelCheckpoint, done.length)
-      : null;
-  return { done, playerLevel: levelOk ? p.playerLevel : null, levelCheckpoint: levelOk ? checkpoint : null };
+  const practiceDays = [...new Set(p.practiceDays)].filter((d) => DAY.test(d)).sort();
+  return {
+    done,
+    playerLevel: levelOk ? p.playerLevel : null,
+    practiceDays,
+    // A streak only means something next to a level, so it goes when the level does.
+    streak: levelOk
+      ? { since: dayOrNull(p.streak.since), askedWeek: dayOrNull(p.streak.askedWeek) }
+      : { since: null, askedWeek: null },
+  };
 }
 
 /**
  * Combine this browser's progress with the account's the first time a player signs in here.
- * Finished skills from both are kept, so nothing is lost. If the account already has a level,
- * it wins over the browser's, because it was chosen first.
+ * Finished skills and training days from both are kept, so nothing is lost. If the account
+ * already has a level, it wins over the browser's (with its streak), because it was chosen first.
  */
 export function mergeProgress(tree: Tree, local: SavedProgress, cloud: SavedProgress | null): SavedProgress {
   const l = cleanProgress(tree, local);
   if (!cloud) return l;
   const c = cleanProgress(tree, cloud);
   const done = [...new Set([...c.done, ...l.done])];
+  const practiceDays = [...new Set([...c.practiceDays, ...l.practiceDays])].sort();
   const fromCloud = c.playerLevel !== null;
   return {
     done,
     playerLevel: fromCloud ? c.playerLevel : l.playerLevel,
-    levelCheckpoint: fromCloud ? c.levelCheckpoint : l.levelCheckpoint,
+    practiceDays,
+    streak: fromCloud ? c.streak : l.streak,
   };
 }
 
@@ -59,13 +73,18 @@ export async function fetchCloudProgress(
 ): Promise<SavedProgress | null> {
   const { data, error } = await client
     .from(TABLE)
-    .select("done, player_level, level_checkpoint")
+    .select("done, player_level, practice_days, streak_since, streak_asked_week")
     .eq("user_id", userId)
     .eq("tree_id", treeId)
     .maybeSingle<Row>();
   if (error) throw new Error(`Couldn't load your saved progress: ${error.message}`);
   if (!data) return null;
-  return { done: data.done ?? [], playerLevel: data.player_level, levelCheckpoint: data.level_checkpoint };
+  return {
+    done: data.done ?? [],
+    playerLevel: data.player_level,
+    practiceDays: data.practice_days ?? [],
+    streak: { since: data.streak_since, askedWeek: data.streak_asked_week },
+  };
 }
 
 export async function saveCloudProgress(
@@ -75,7 +94,15 @@ export async function saveCloudProgress(
   p: SavedProgress,
 ): Promise<void> {
   const { error } = await client.from(TABLE).upsert(
-    { user_id: userId, tree_id: treeId, done: p.done, player_level: p.playerLevel, level_checkpoint: p.levelCheckpoint },
+    {
+      user_id: userId,
+      tree_id: treeId,
+      done: p.done,
+      player_level: p.playerLevel,
+      practice_days: p.practiceDays,
+      streak_since: p.streak.since,
+      streak_asked_week: p.streak.askedWeek,
+    },
     { onConflict: "user_id,tree_id" },
   );
   if (error) throw new Error(`Couldn't save your progress: ${error.message}`);

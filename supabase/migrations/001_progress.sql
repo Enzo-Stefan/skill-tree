@@ -1,4 +1,4 @@
--- One row per player per tree: which skills they finished and which level they train at.
+-- One row per player per tree: finished skills, the level they train at, and their training streak.
 -- Run this once in the Supabase dashboard: SQL Editor -> New query -> paste -> Run.
 
 create table if not exists public.progress (
@@ -6,7 +6,10 @@ create table if not exists public.progress (
   tree_id          text        not null check (char_length(tree_id) between 1 and 64),
   done             text[]      not null default '{}' check (cardinality(done) <= 500),
   player_level     text                 check (char_length(player_level) <= 64),
-  level_checkpoint integer              check (level_checkpoint >= 0),
+  -- Training check-ins and streak state (src/lib/streak.ts). Weeks are identified by their Monday.
+  practice_days    date[]      not null default '{}' check (cardinality(practice_days) <= 4000),
+  streak_since     date,
+  streak_asked_week date,
   updated_at       timestamptz not null default now(),
   primary key (user_id, tree_id)
 );
