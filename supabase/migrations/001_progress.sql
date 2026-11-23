@@ -19,6 +19,12 @@ create table if not exists public.progress (
 -- Without these policies the public anon key could read everyone's progress.
 alter table public.progress enable row level security;
 
+-- Let signed-in players reach the table through the API at all. The policies above still limit
+-- them to their own rows. Signed-out visitors (anon) get no access. Needed when the project has
+-- "Grant API access to new tables automatically" turned off.
+revoke all on public.progress from anon;
+grant select, insert, update, delete on public.progress to authenticated;
+
 drop policy if exists "read own progress" on public.progress;
 create policy "read own progress" on public.progress
   for select to authenticated using (auth.uid() = user_id);
