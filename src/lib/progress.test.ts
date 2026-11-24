@@ -156,3 +156,13 @@ describe("clearPlayerLevel", () => {
     }
   });
 });
+
+describe("test targets", () => {
+  it("lists each skill with a target at that level and step", async () => {
+    const { testTargets } = await import("./progress");
+    const items = testTargets(football, { levelId: "intermediate", step: 1 });
+    expect(items.length).toBe(football.skills.filter((s) => s.targets).length);
+    expect(items.length).toBeGreaterThan(0);
+    expect(testTargets(football, null)).toEqual([]);
+  });
+});

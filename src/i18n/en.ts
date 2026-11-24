@@ -120,7 +120,7 @@ export const en = {
     title: "What's your level?",
     lockedIntro: (days: number, weeks: number) =>
       `You can move to a lower level any time. To move up, train ${days} days a week for ${weeks} weeks and pass the test.`,
-    intro: "Some tests have a different target for each level. You'll only see yours.",
+    intro: "Some tests have a different target for each level. You'll only see yours. The easiest level is open to everyone. For a higher one, you pass its test first.",
     lockedHint: "Pass the test to move up",
   },
   levelTest: {
@@ -128,6 +128,8 @@ export const en = {
     intro: (rung: string) => `Do these at the ${rung} targets. Pass them all and you move up to ${rung}.`,
     passed: "I passed",
     notYet: "Not yet",
+    placementIntro: (rung: string) => `To start at ${rung}, do these at its targets. Pass them all and you start there.`,
+    pickAnother: "Pick another level",
   },
   share: {
     title: "Share my tree",
