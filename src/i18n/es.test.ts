@@ -47,6 +47,14 @@ describe("Spanish language file", () => {
     expect(es.lifts.upFrom("20 kg", 2)).toBe("Antes: 20 kg · 2 registros");
   });
 
+  it("writes test times with a decimal comma", () => {
+    expect(es.testMode.seconds(5.8)).toBe("5,8 s");
+    expect(es.testMode.seconds(5.61)).toBe("5,61 s");
+    expect(es.testMode.duration(7.5)).toBe("7,5 segundos");
+    expect(es.testMode.duration(90.5)).toBe("1 min 30,5 s");
+    expect(es.testMode.eachTry(2.5)).toMatch(/^Cada intento dura 2,5 segundos\./);
+  });
+
   it("writes dates the Spanish way", () => {
     const year = new Date().getFullYear();
     expect(es.lifts.on(`${year}-11-03`)).toBe("3 nov");

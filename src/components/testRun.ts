@@ -256,10 +256,11 @@ export function runResult(state: RunState): number | null {
   return value !== null && value > 0 ? value : null;
 }
 
-/** Seconds as the clock shows them: "8.4" under a minute, "24:59" from a minute up. */
-export function formatClock(seconds: number, tenths = true): string {
+/** Seconds as the clock shows them: "8.4" ("8,4" in Spanish) under a minute, "24:59" from a minute up. */
+export function formatClock(seconds: number, tenths = true, locale = "en"): string {
   // Countdowns round up, so the clock never shows 0 while time is left.
   const whole = tenths ? Math.floor(seconds) : Math.ceil(seconds);
-  if (whole < 60) return tenths ? (Math.floor(seconds * 10) / 10).toFixed(1) : String(whole);
-  return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
+  if (whole >= 60) return `${Math.floor(whole / 60)}:${String(whole % 60).padStart(2, "0")}`;
+  if (!tenths) return String(whole);
+  return new Intl.NumberFormat(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(Math.floor(seconds * 10) / 10);
 }

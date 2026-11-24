@@ -19,7 +19,7 @@ import {
 } from "./testRun";
 import type { Results, SavedResult } from "./useResults";
 import { useModalFocus } from "./useModalFocus";
-import { t } from "../i18n";
+import { language, t } from "../i18n";
 
 interface Props {
   skill: Skill;
@@ -273,12 +273,12 @@ function Display({ state, now }: { state: RunState; now: number }) {
   return (
     <div className="test-display">
       {runs > 1 && <span className="test-sub">{t.testMode.run(Math.max(runNumber, 1), runs)}</span>}
-      <span className="test-number test-time">{formatClock(shownTime(state, now))}</span>
+      <span className="test-number test-time">{formatClock(shownTime(state, now), true, language)}</span>
       {state.times.length > 0 && (
         <ol className="test-times" aria-label={t.testMode.times}>
           {state.times.map((time, i) => (
             <li key={i} className={state.limit !== null && time >= state.limit ? "slow" : undefined}>
-              {formatClock(time)}
+              {formatClock(time, true, language)}
             </li>
           ))}
         </ol>

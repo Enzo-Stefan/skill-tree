@@ -237,6 +237,12 @@ describe("formatClock", () => {
     expect(formatClock(59.2, false)).toBe("1:00");
     expect(formatClock(90, false)).toBe("1:30");
   });
+
+  it("uses a decimal comma in Spanish", () => {
+    expect(formatClock(8.46, true, "es")).toBe("8,4");
+    expect(formatClock(5, true, "es")).toBe("5,0");
+    expect(formatClock(1499.9, true, "es")).toBe("24:59");
+  });
 });
 
 describe("a tap after the countdown ran out", () => {

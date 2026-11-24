@@ -1,9 +1,15 @@
+import { formatNumber } from "../lib/progress";
 import type { Strings } from "./en";
 
 /**
  * Every piece of app text in Spanish: neutral Spanish with "tú", like the skill content in src/data/es/.
  * First draft: a fluent speaker should check it before players see it.
  */
+
+/** A number written the Spanish way: "5,8". */
+function num(n: number): string {
+  return formatNumber(n, "es");
+}
 
 /** "A" or "A y B". */
 function listAnd(items: string[]): string {
@@ -150,11 +156,11 @@ export const es: Strings = {
     goalHold: (time: string) => `Aguanta ${time}.`,
     /** A length of time in words, for the goal line: "60 segundos", "25 minutos", "1 min 30 s". */
     duration: (s: number) =>
-      s < 60 ? `${s} segundos` : s % 60 === 0 ? `${s / 60} minutos` : `${Math.floor(s / 60)} min ${s % 60} s`,
+      s < 60 ? `${num(s)} segundos` : s % 60 === 0 ? `${s / 60} minutos` : `${Math.floor(s / 60)} min ${num(s % 60)} s`,
     bestOf: (n: number) => `El mejor de ${n} intentos.`,
     everyRun: (n: number) => `${n} intentos, todos por debajo del tiempo.`,
     eachTry: (seconds: number) =>
-      `Cada intento dura ${seconds} segundos. Toca Empezar intento en cada uno, y Fallo si sale mal. Si aguantas todo el tiempo, cuenta como acierto.`,
+      `Cada intento dura ${num(seconds)} segundos. Toca Empezar intento en cada uno, y Fallo si sale mal. Si aguantas todo el tiempo, cuenta como acierto.`,
     hitsFrom: (tries: number) => `aciertos de ${tries} ${tries === 1 ? "intento" : "intentos"}`,
     countOf: (needed: number) => `de ${needed}`,
     hitsLeft: (left: number) => `${left === 1 ? "Queda" : "Quedan"} ${left} ${left === 1 ? "intento" : "intentos"}`,
@@ -178,7 +184,7 @@ export const es: Strings = {
     finished: "Hecho. Elige tu nivel para ver si estos tiempos superan la prueba.",
     markPassed: "Marcar la habilidad como superada",
     alreadyPassed: "Ya has superado esta habilidad.",
-    seconds: (value: number) => `${value} s`,
+    seconds: (value: number) => `${num(value)} s`,
     saveTime: (time: string) => `Guardar mi tiempo: ${time}`,
     saved: (time: string) => `Guardado: ${time}.`,
     newBest: (time: string) => `¡Nuevo mejor tiempo: ${time}!`,
