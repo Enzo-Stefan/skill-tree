@@ -125,6 +125,7 @@
 .settings-row-sub { font-size: 0.8125rem; color: var(--text-2); }
 .settings-row-value { color: var(--text-2); }
 .settings-chevron { width: 16px; height: 16px; flex-shrink: 0; color: var(--text-2); }
+.settings-check { width: 20px; height: 20px; flex-shrink: 0; color: var(--gold-text); }
 .settings-note { margin: -8px 16px 0; font-size: 0.8125rem; color: var(--text-2); }
 
 /* Keep in sync with the phone media query in App.tsx. */

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { trees } from "./data";
+import { treesIn } from "./data";
 import { activeTree, switchTree, treeSummaries } from "./lib/activeTree";
 import { Header } from "./components/Header";
 import { TreeSwitch } from "./components/TreeSwitch";
@@ -54,7 +54,10 @@ import {
 import { useLiftLog } from "./components/useLiftLog";
 import type { SavedProgress } from "./lib/cloud";
 import { useCloudSync } from "./lib/useCloudSync";
-import { t } from "./i18n";
+import { chooseLanguage, language, t, type Language } from "./i18n";
+
+// The trees with their skill content in the app's language (English where a translation is missing).
+const trees = treesIn(language);
 
 interface ToastAction {
   label: string;
@@ -145,6 +148,12 @@ export default function App() {
   async function switchToTree(id: string) {
     await Promise.race([cloud.flush(), new Promise((resolve) => window.setTimeout(resolve, 3000))]);
     switchTree(trees, tree, id);
+  }
+
+  /** Like switching trees: send any waiting save first, then reload in the new language. */
+  async function switchLanguage(code: Language | null) {
+    await Promise.race([cloud.flush(), new Promise((resolve) => window.setTimeout(resolve, 3000))]);
+    chooseLanguage(code);
   }
 
   /** Show progress loaded from the account, and keep it in the browser too. */
@@ -413,6 +422,7 @@ export default function App() {
             onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
             onCopy={copy}
             onReset={reset}
+            onLanguage={(code) => void switchLanguage(code)}
             onDeleted={() => showToast(t.app.accountDeleted)}
           />
         )}
