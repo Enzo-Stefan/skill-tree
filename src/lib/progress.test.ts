@@ -156,3 +156,24 @@ describe("clearPlayerLevel", () => {
     }
   });
 });
+
+describe("loadProgress", () => {
+  it("drops skill ids the tree no longer has, so the count can't pass the total", async () => {
+    const { loadProgress } = await import("./progress");
+    const store = new Map<string, string>();
+    const real = globalThis.localStorage;
+    globalThis.localStorage = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+    } as Storage;
+    try {
+      store.set(`skill-tree:${football.id}`, JSON.stringify(["root", "renamed-skill", 42, "bc1"]));
+      expect([...loadProgress(football)]).toEqual(["root", "bc1"]);
+      store.set(`skill-tree:${football.id}`, JSON.stringify({ not: "a list" }));
+      expect(loadProgress(football).size).toBe(0);
+    } finally {
+      globalThis.localStorage = real;
+    }
+  });
+});
