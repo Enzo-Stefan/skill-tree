@@ -62,8 +62,8 @@ describe("tree summaries (for a picker)", () => {
     store.set("skill-tree:football", JSON.stringify(["root", "bc1", "bc2", "bc3", "ps1", "ps2", "gone"]));
     store.set("skill-tree:weights", JSON.stringify(["root", "lg1"]));
     const [f, w] = treeSummaries(trees, weights);
-    expect(f).toMatchObject({ id: "football", done: 6, total: 32, rank: "Academy", active: false });
-    expect(w).toMatchObject({ id: "weights", done: 2, total: 22, rank: "Rookie", active: true });
+    expect(f).toMatchObject({ id: "football", shortName: "Football", done: 6, total: 32, rank: "Academy", active: false });
+    expect(w).toMatchObject({ id: "weights", shortName: "Strength", done: 2, total: 22, rank: "Rookie", active: true });
   });
 
   it("starts every tree at zero", () => {
