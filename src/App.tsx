@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { trees } from "./data";
 import { Header } from "./components/Header";
 import { SkillTree } from "./components/SkillTree";
@@ -41,6 +41,8 @@ import {
   weekOf,
   type StreakState,
 } from "./lib/streak";
+import type { SavedProgress } from "./lib/cloud";
+import { useCloudSync } from "./lib/useCloudSync";
 
 export default function App() {
   const tree = trees[0];
@@ -77,6 +79,42 @@ export default function App() {
       })
     : [];
   const selectedSkill = tree.skills.find((s) => s.id === selectedId)!;
+
+  // Everything that is saved to a signed-in player's account.
+  const progress: SavedProgress = useMemo(
+    () => ({ done: [...done], playerLevel: playerLevelId, playerStep, practiceDays, streak: streakState }),
+    [done, playerLevelId, playerStep, practiceDays, streakState],
+  );
+  const cloud = useCloudSync({ tree, userId: auth.account?.id ?? null, progress, apply: applySaved, onMessage: showToast });
+  const accountAuth = {
+    ...auth,
+    // Send any waiting save before signing out, while the account can still be written to.
+    signOut: async () => {
+      await cloud.flush();
+      await auth.signOut();
+    },
+    // Drop any waiting save before deleting the account, so nothing is sent to an account that's gone.
+    deleteAccount: async () => {
+      cloud.discard();
+      return auth.deleteAccount();
+    },
+  };
+
+  /** Show progress loaded from the account, and keep it in the browser too. */
+  function applySaved(p: SavedProgress) {
+    setDone(new Set(p.done));
+    setPracticeDays(p.practiceDays);
+    savePracticeDays(tree.id, p.practiceDays);
+    // An account without a level never clears the level picked in this browser.
+    if (p.playerLevel) {
+      setPlayerLevelId(p.playerLevel);
+      savePlayerLevel(tree.id, p.playerLevel);
+      setPlayerStep(p.playerStep);
+      savePlayerStep(tree.id, p.playerStep);
+      updateStreak(p.streak);
+      setPickerOpen(false);
+    }
+  }
 
   function updateStreak(next: StreakState) {
     setStreakState(next);
@@ -172,7 +210,7 @@ export default function App() {
         onReset={reset}
         playerLevelName={playerRungName}
         onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
-        account={<AccountMenu auth={auth} onDeleted={() => showToast("Your account and its saved progress are deleted.")} />}
+        account={<AccountMenu auth={accountAuth} onDeleted={() => showToast("Your account and its saved progress are deleted.")} />}
       />
       {hasLevels && playerLevelId && (
         <PracticeBar
