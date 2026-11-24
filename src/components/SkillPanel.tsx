@@ -1,6 +1,7 @@
 import type { Tree } from "../types";
 import { completedDependents, skillState } from "../lib/progress";
 import { SkillVideo } from "./SkillVideo";
+import { t } from "../i18n";
 
 interface Props {
   tree: Tree;
@@ -17,8 +18,6 @@ interface Props {
   onClose?: () => void;
 }
 
-const STATUS_TEXT = { done: "Completed", available: "Ready to train", locked: "Locked" } as const;
-
 export function SkillPanel({
   tree,
   done,
@@ -34,12 +33,12 @@ export function SkillPanel({
   const state = skillState(skill, done);
   const branch = tree.branches.find((b) => b.id === skill.branch);
   const color = branch?.color ?? "#f2c14e";
-  const label = branch?.name ?? (skill.requires.length === 0 ? "Start here" : "Final skill");
+  const label = branch?.name ?? (skill.requires.length === 0 ? t.panel.startHere : t.panel.finalSkill);
   const missing = skill.requires
     .filter((r) => !done.has(r))
     .map((r) => tree.skills.find((s) => s.id === r)?.name);
   const dependents = completedDependents(tree, done, skill.id);
-  const query = encodeURIComponent(`football ${skill.name} drill tutorial`);
+  const query = encodeURIComponent(t.panel.youtubeSearch(skill.name));
 
   return (
     <aside className={`panel${onClose ? " sheet" : ""}`} aria-live="polite">
@@ -48,60 +47,60 @@ export function SkillPanel({
           {label}
         </span>
         {onClose && (
-          <button className="close" type="button" onClick={onClose} aria-label="Close skill details">
-            Close
+          <button className="close" type="button" onClick={onClose} aria-label={t.panel.closeLabel}>
+            {t.panel.close}
           </button>
         )}
       </div>
       <h2>{skill.name}</h2>
-      <span className={`status ${state}`}>{STATUS_TEXT[state]}</span>
-      {state === "locked" && <p className="hint">Finish these first: {missing.join(", ")}.</p>}
+      <span className={`status ${state}`}>{t.panel.status[state]}</span>
+      {state === "locked" && <p className="hint">{t.panel.finishFirst(missing.filter((n) => n !== undefined))}</p>}
 
       <div className="block">
-        <h3>The drill</h3>
+        <h3>{t.panel.drill}</h3>
         <p>{skill.drill}</p>
         {skill.video && <SkillVideo key={skill.id} link={skill.video} title={skill.name} />}
       </div>
       <div className="block test">
-        <h3>Pass the test</h3>
+        <h3>{t.panel.test}</h3>
         <p>{skill.test}</p>
         {skill.targets &&
           (target && playerLevelName ? (
             <p className="target">
-              <span className="target-label">{playerLevelName} target</span>
+              <span className="target-label">{t.panel.target(playerLevelName)}</span>
               <strong>{target}</strong>
               <button className="link-btn" type="button" onClick={onChangeLevel}>
-                Change level
+                {t.panel.changeLevel}
               </button>
             </p>
           ) : (
             <button className="link-btn" type="button" onClick={onChangeLevel}>
-              Pick your level to see your target
+              {t.panel.pickLevelForTarget}
             </button>
           ))}
       </div>
       <div className="block">
-        <h3>Coach's tip</h3>
+        <h3>{t.panel.tip}</h3>
         <p>{skill.tip}</p>
       </div>
       {!skill.video && (
         <a className="yt" href={`https://www.youtube.com/results?search_query=${query}`} target="_blank" rel="noopener">
-          Watch tutorials on YouTube
+          {t.panel.watchYoutube}
         </a>
       )}
 
       <div className="panel-actions">
         {state === "available" && (
           <button className="btn primary" type="button" onClick={() => onComplete(skill.id)}>
-            I passed the test
+            {t.panel.passed}
           </button>
         )}
         {state === "done" &&
           (dependents.length ? (
-            <p className="hint">To undo this, first undo: {dependents.map((d) => d.name).join(", ")}.</p>
+            <p className="hint">{t.panel.undoFirst(dependents.map((d) => d.name))}</p>
           ) : (
             <button className="btn" type="button" onClick={() => onUndo(skill.id)}>
-              Undo
+              {t.panel.undo}
             </button>
           ))}
       </div>

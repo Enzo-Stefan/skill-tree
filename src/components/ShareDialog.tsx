@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { renderShareImage, type ShareStats } from "./shareImage";
 import { useModalFocus } from "./useModalFocus";
+import { t } from "../i18n";
 
 interface Props {
   stats: ShareStats;
@@ -26,7 +27,7 @@ export function ShareDialog({ stats, onClose }: Props) {
         setImage({ blob, url });
       })
       .catch((e: unknown) => {
-        if (active) setError(e instanceof Error ? e.message : "Couldn't make the image.");
+        if (active) setError(e instanceof Error ? e.message : t.share.imageFailed);
       });
     return () => {
       active = false;
@@ -40,10 +41,10 @@ export function ShareDialog({ stats, onClose }: Props) {
   async function share() {
     if (!file) return;
     try {
-      await navigator.share({ files: [file], title: stats.title, text: `${stats.done} of ${stats.total} skills on ${stats.title}.` });
+      await navigator.share({ files: [file], title: stats.title, text: t.share.shareText(stats.done, stats.total, stats.title) });
     } catch (e) {
       if (e instanceof DOMException && e.name === "AbortError") return;
-      setError("Sharing didn't work here. Try Download instead.");
+      setError(t.share.shareFailed);
     }
   }
 
@@ -57,9 +58,9 @@ export function ShareDialog({ stats, onClose }: Props) {
         aria-labelledby="share-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="share-title">Share my tree</h2>
+        <h2 id="share-title">{t.share.title}</h2>
         <div className="share-preview">
-          {image ? <img src={image.url} alt={`${stats.rank}: ${stats.done} of ${stats.total} skills`} /> : <span>Drawing…</span>}
+          {image ? <img src={image.url} alt={t.share.imageAlt(stats.rank, stats.done, stats.total)} /> : <span>{t.share.drawing}</span>}
         </div>
         {error && (
           <p className="dialog-error" role="alert">
@@ -69,16 +70,16 @@ export function ShareDialog({ stats, onClose }: Props) {
         <div className="dialog-actions">
           {canShareFile && (
             <button className="btn primary" type="button" onClick={() => void share()}>
-              Share
+              {t.share.share}
             </button>
           )}
           {image && (
             <a className={`btn${canShareFile ? "" : " primary"}`} href={image.url} download={FILE_NAME}>
-              Download
+              {t.share.download}
             </a>
           )}
           <button className="btn" type="button" onClick={onClose}>
-            Close
+            {t.share.close}
           </button>
         </div>
       </div>

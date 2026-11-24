@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { TreeSummary } from "../lib/activeTree";
+import { t } from "../i18n";
 
 interface Props {
   trees: TreeSummary[];
@@ -20,20 +21,20 @@ export function TreeSwitch({ trees, onSwitch }: Props) {
   }
 
   return (
-    <div className="tree-switch" role="group" aria-label="Skill tree">
-      {trees.map((t) => (
+    <div className="tree-switch" role="group" aria-label={t.treeSwitch.label}>
+      {trees.map((tr) => (
         <button
-          key={t.id}
+          key={tr.id}
           type="button"
           className="tree-switch-option"
-          aria-pressed={t.active}
-          aria-busy={switching === t.id}
-          disabled={switching !== null && switching !== t.id}
-          onClick={() => (t.active ? undefined : void pick(t.id))}
+          aria-pressed={tr.active}
+          aria-busy={switching === tr.id}
+          disabled={switching !== null && switching !== tr.id}
+          onClick={() => (tr.active ? undefined : void pick(tr.id))}
         >
-          <span className="tree-switch-name">{t.shortName}</span>
+          <span className="tree-switch-name">{tr.shortName}</span>
           <span className="tree-switch-count">
-            {t.done}/{t.total}
+            {tr.done}/{tr.total}
           </span>
         </button>
       ))}

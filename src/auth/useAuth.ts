@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { accountsConfigured, loadSupabase, mayHaveSession } from "./client";
+import { t } from "../i18n";
 
 export interface Account {
   id: string;
@@ -26,7 +27,7 @@ function toAccount(user: User): Account {
   const meta = user.user_metadata ?? {};
   return {
     id: user.id,
-    name: meta.full_name ?? meta.name ?? user.email ?? "Signed in",
+    name: meta.full_name ?? meta.name ?? user.email ?? t.account.signedInFallback,
     email: user.email ?? null,
     avatarUrl: meta.avatar_url ?? meta.picture ?? null,
   };
@@ -67,14 +68,14 @@ export function useAuth(): Auth {
   const signInWithGoogle = useCallback(async () => {
     try {
       const supabase = await loadSupabase();
-      if (!supabase) return "Accounts aren't set up yet.";
+      if (!supabase) return t.signIn.notSetUp;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo: window.location.origin },
       });
       return error ? error.message : null;
     } catch {
-      return "Couldn't load sign-in. Check your connection and try again.";
+      return t.signIn.loadFailed;
     }
   }, []);
 
@@ -86,15 +87,15 @@ export function useAuth(): Auth {
   const deleteAccount = useCallback(async () => {
     try {
       const supabase = await loadSupabase();
-      if (!supabase) return "Accounts aren't set up yet.";
+      if (!supabase) return t.signIn.notSetUp;
       // supabase/migrations/002_delete_account.sql
       const { error } = await supabase.rpc("delete_my_account");
-      if (error) return "Couldn't delete your account. Try again, or email us (see the privacy page).";
+      if (error) return t.accountDialog.deleteFailed;
       // The account no longer exists on the server, so only clear this browser's session.
       await supabase.auth.signOut({ scope: "local" });
       return null;
     } catch {
-      return "Couldn't reach the server. Check your connection and try again.";
+      return t.accountDialog.unreachable;
     }
   }, []);
 

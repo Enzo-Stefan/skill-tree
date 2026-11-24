@@ -1,5 +1,6 @@
 import { useRef, useState } from "react";
 import { useModalFocus } from "./useModalFocus";
+import { t } from "../i18n";
 
 interface Props {
   /** Starts Google sign-in. Resolves to an error message, or null when the browser is being redirected. */
@@ -33,8 +34,8 @@ export function SignInDialog({ onGoogle, onClose }: Props) {
         aria-labelledby="sign-in-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="sign-in-title">Sign in</h2>
-        <p>Sign in to keep your progress on every device. The app works without an account too.</p>
+        <h2 id="sign-in-title">{t.signIn.title}</h2>
+        <p>{t.signIn.body}</p>
         {error && (
           <p className="dialog-error" role="alert">
             {error}
@@ -42,10 +43,10 @@ export function SignInDialog({ onGoogle, onClose }: Props) {
         )}
         <div className="dialog-actions">
           <button className="btn primary" type="button" onClick={handleGoogle} disabled={busy}>
-            {busy ? "Opening Google…" : "Continue with Google"}
+            {busy ? t.signIn.opening : t.signIn.google}
           </button>
           <button className="btn" type="button" onClick={onClose}>
-            Not now
+            {t.signIn.notNow}
           </button>
         </div>
       </div>

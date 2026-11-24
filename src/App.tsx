@@ -45,6 +45,7 @@ import {
 } from "./lib/streak";
 import type { SavedProgress } from "./lib/cloud";
 import { useCloudSync } from "./lib/useCloudSync";
+import { t } from "./i18n";
 
 export default function App() {
   // The tree the player last chose (src/lib/activeTree.ts). Switching reloads the app.
@@ -104,8 +105,8 @@ export default function App() {
   };
 
   // The switch's counts come from the browser, except the open tree's, which can be a change ahead.
-  const treeChoices = treeSummaries(trees, tree).map((t) =>
-    t.active ? { ...t, done: tree.skills.filter((s) => done.has(s.id)).length } : t,
+  const treeChoices = treeSummaries(trees, tree).map((choice) =>
+    choice.active ? { ...choice, done: tree.skills.filter((s) => done.has(s.id)).length } : choice,
   );
 
   /** Send any waiting save to the account (up to 3 seconds), then reload into the other tree. */
@@ -156,7 +157,7 @@ export default function App() {
     savePlayerLevel(tree.id, next.levelId);
     setPlayerStep(next.step);
     savePlayerStep(tree.id, next.step);
-    showToast(`Showing ${rungName(tree, next)} targets.`);
+    showToast(t.app.showingTargets(rungName(tree, next) ?? ""));
   }
 
   /** From the Level picker: the same level keeps your step, any other level starts at its step 1. */
@@ -186,9 +187,9 @@ export default function App() {
     const after = levelInfo(tree.levels, next.size).current.name;
     setDone(next);
     setSheetOpen(false);
-    if (after !== before) showToast(`New rank: ${after}.`);
-    else if (unlocked.length) showToast(`${skill.name} complete. Unlocked: ${unlocked.map((s) => s.name).join(", ")}.`);
-    else showToast(`${skill.name} complete.`);
+    if (after !== before) showToast(t.app.newRank(after));
+    else if (unlocked.length) showToast(t.app.skillCompleteUnlocked(skill.name, unlocked.map((s) => s.name)));
+    else showToast(t.app.skillComplete(skill.name));
   }
 
   function undo(id: string) {
@@ -200,16 +201,16 @@ export default function App() {
   async function copy() {
     try {
       await navigator.clipboard.writeText(progressSummary(tree, done, rung));
-      showToast("Progress copied. Paste it anywhere.");
+      showToast(t.app.copied);
     } catch {
-      showToast("Copy didn't work in this browser.");
+      showToast(t.app.copyFailed);
     }
   }
 
   function reset() {
     setDone(new Set());
     setSelectedId(tree.skills[0].id);
-    showToast("Progress reset.");
+    showToast(t.app.resetDone);
   }
 
   return (
@@ -224,7 +225,7 @@ export default function App() {
         onReset={reset}
         playerLevelName={playerRungName}
         onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
-        account={<AccountMenu auth={accountAuth} onDeleted={() => showToast("Your account and its saved progress are deleted.")} />}
+        account={<AccountMenu auth={accountAuth} onDeleted={() => showToast(t.app.accountDeleted)} />}
         treeSwitch={<TreeSwitch trees={treeChoices} onSwitch={switchToTree} />}
       />
       {hasLevels && playerLevelId && (
@@ -268,7 +269,7 @@ export default function App() {
           // Skipping saves nothing, so the picker asks again next visit. Players who skip
           // (or whose browser can't save, like private windows) can still pick from the panel.
           onClose={() => setPickerOpen(false)}
-          closeLabel={playerLevelId ? "Cancel" : "Skip for now"}
+          closeLabel={playerLevelId ? t.app.cancel : t.app.skipForNow}
         />
       )}
       {testOpen && nextForTest && (

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Tree } from "../types";
 import { levelInfo } from "../lib/progress";
 import { useIncreased } from "./useIncreased";
+import { t } from "../i18n";
 
 interface Props {
   tree: Tree;
@@ -49,31 +50,31 @@ export function Header({ tree, doneCount, onCopy, onShare, onReset, playerLevelN
         <div className="progress-top">
           <span className={`level${leveledUp ? " bump" : ""}`}>{current.name}</span>
           <span className="count">
-            {doneCount} of {total} skills
+            {t.header.skillsCount(doneCount, total)}
           </span>
         </div>
         <div className="bar">
           <span style={{ width: `${(doneCount / total) * 100}%` }} />
         </div>
         <span className="next-level">
-          {next ? `${next.at - doneCount} more to reach ${next.name}` : "Every skill unlocked."}
+          {next ? t.header.moreToReach(next.at - doneCount, next.name) : t.header.allUnlocked}
         </span>
       </div>
       <div className="actions">
         {account}
         {onChangeLevel && (
           <button className="btn" type="button" onClick={onChangeLevel}>
-            Level: {playerLevelName ?? "Pick"}
+            {t.header.level(playerLevelName ?? null)}
           </button>
         )}
         <button className="btn" type="button" onClick={onShare}>
-          Share my tree
+          {t.header.share}
         </button>
         <button className="btn" type="button" onClick={onCopy}>
-          Copy my progress
+          {t.header.copy}
         </button>
         <button className={`btn${armed ? " danger" : ""}`} type="button" onClick={handleReset}>
-          {armed ? "Tap again to reset all" : "Reset"}
+          {armed ? t.header.resetConfirm : t.header.reset}
         </button>
       </div>
     </header>
