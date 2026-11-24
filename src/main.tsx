@@ -9,6 +9,7 @@ import '@fontsource/oswald/latin-ext-600.css'
 import '@fontsource/oswald/latin-700.css'
 import '@fontsource/oswald/latin-ext-700.css'
 import './index.css'
+import './nav.css'
 import App from './App.tsx'
 
 createRoot(document.getElementById('root')!).render(

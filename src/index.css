@@ -546,7 +546,6 @@ main { flex: 1; display: flex; min-height: 0; }
   .level.bump { animation: level-flash 0.9s ease-out; }
 }
 
-.account { display: flex; align-items: center; gap: 10px; }
 .account-avatar {
   width: 32px;
   height: 32px;
@@ -558,23 +557,7 @@ main { flex: 1; display: flex; min-height: 0; }
   font-weight: 700;
   flex-shrink: 0;
 }
-.account-button {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 44px;
-  min-width: 0;
-  padding: 0 6px 0 0;
-  border: 0;
-  border-radius: 22px;
-  background: none;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-.account-button:hover .account-name { text-decoration: underline; text-underline-offset: 2px; }
 .account-who { color: var(--chalk); overflow-wrap: anywhere; }
-.account-name { font-size: 0.875rem; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .dialog {
   width: min(420px, 100%);
@@ -596,9 +579,6 @@ a.btn { color: inherit; text-decoration: none; display: inline-flex; align-items
 .dialog-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .btn:disabled { opacity: 0.6; cursor: progress; }
 @media (max-width: 700px) {
-  .account { width: 100%; }
-  .account-button { flex: 1; }
-  .account-name { flex: 1; max-width: none; text-align: left; }
   .dialog-actions .btn { flex: 1; }
 }
 
