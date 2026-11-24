@@ -80,9 +80,14 @@ export default function App() {
   // The tree the player last chose (src/lib/activeTree.ts). Switching reloads the app.
   const [tree] = useState(() => activeTree(trees));
   const auth = useAuth();
-  // The sign-in screen that opens the app, until the player signs in or skips it (remembered in this browser).
+  // The sign-in screen that opens the app. Decided once per page load: a player who is signed in
+  // when the session check finishes never sees it, so signing out or an expired session later doesn't bring it up.
   const [welcomeSkipped, setWelcomeSkipped] = useState(loadWelcomeSkipped);
-  const welcomeOpen = auth.configured && !auth.loading && !auth.account && !welcomeSkipped;
+  const [welcomeHidden, setWelcomeHidden] = useState(false);
+  useEffect(() => {
+    if (!auth.loading && auth.account) setWelcomeHidden(true);
+  }, [auth.loading, auth.account]);
+  const welcomeOpen = auth.configured && !auth.loading && !auth.account && !welcomeSkipped && !welcomeHidden;
   // Weights logged on lifts (Strength tree). Saved in this browser and, when signed in, in the account.
   const lifts = useLiftLog(tree);
   // Times saved from test mode (sprints). Saved to the account too, like the lift log.
@@ -453,7 +458,9 @@ export default function App() {
         <SignInDialog
           welcome
           onGoogle={auth.signInWithGoogle}
-          onClose={() => {
+          // Tapping outside or Escape only hides it for this visit. Only the Skip button remembers it.
+          onClose={() => setWelcomeHidden(true)}
+          onSkip={() => {
             saveWelcomeSkipped();
             setWelcomeSkipped(true);
           }}

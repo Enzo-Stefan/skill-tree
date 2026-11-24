@@ -8,9 +8,11 @@ interface Props {
   onClose: () => void;
   /** The screen shown when the app opens: says what skipping costs, and the close button reads "Skip". */
   welcome?: boolean;
+  /** Welcome screen only: the Skip button. onClose (outside tap, Escape) then means "not now". */
+  onSkip?: () => void;
 }
 
-export function SignInDialog({ onGoogle, onClose, welcome = false }: Props) {
+export function SignInDialog({ onGoogle, onClose, welcome = false, onSkip }: Props) {
   const dialog = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,7 +55,7 @@ export function SignInDialog({ onGoogle, onClose, welcome = false }: Props) {
           <button className="btn primary" type="button" onClick={handleGoogle} disabled={busy}>
             {busy ? t.signIn.opening : t.signIn.google}
           </button>
-          <button className="btn" type="button" onClick={onClose}>
+          <button className="btn" type="button" onClick={welcome && onSkip ? onSkip : onClose}>
             {welcome ? t.signIn.skip : t.signIn.notNow}
           </button>
         </div>
