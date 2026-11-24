@@ -56,7 +56,12 @@ export function useCloudSync({ tree, userId, progress, apply, onMessage }: Optio
   useEffect(() => {
     if (sameProgress(progress, seen.current)) return;
     seen.current = progress;
-    if (fromAccount.current && sameProgress(progress, fromAccount.current)) return;
+    // Showing what was just loaded isn't a change, but skip it only once: a later change that
+    // happens to match it again (un-tick, then tick again) is the player's and must be marked.
+    if (fromAccount.current && sameProgress(progress, fromAccount.current)) {
+      fromAccount.current = null;
+      return;
+    }
     setUnsavedChanges(tree.id, true);
   }, [tree, progress]);
 
@@ -97,7 +102,8 @@ export function useCloudSync({ tree, userId, progress, apply, onMessage }: Optio
         if (changedMeanwhile) saver.current.save(loaded);
         // Without changes meanwhile, the account now has everything this browser has.
         else setUnsavedChanges(tree.id, false);
-        fromAccount.current = loaded;
+        // Only when showing it changes something, or the tracker would never see it and clear it.
+        fromAccount.current = sameProgress(loaded, latest.current.progress) ? null : loaded;
         latest.current.apply(loaded);
         setStatus("ready");
         if (firstHere) latest.current.onMessage("Signed in. Your progress is saved to your account.");
