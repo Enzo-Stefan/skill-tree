@@ -57,9 +57,9 @@
 }
 /* A branch's colour as set in the tree data (--c), and the shade used to draw with it.
    In daylight the bright branch colours are darkened so they stay readable on the light grass. */
-.skill, .skill-li, .branch-tab, .chip, .branch-col, .next-up { --c-ink: var(--c); }
+.skill, .skill-li, .branch-tab, .chip, .branch-col, .next-up, .branch-bar { --c-ink: var(--c); }
 @media (prefers-color-scheme: light) {
-  .skill, .skill-li, .branch-tab, .chip, .branch-col, .next-up { --c-ink: color-mix(in oklab, var(--c) 58%, #000); }
+  .skill, .skill-li, .branch-tab, .chip, .branch-col, .next-up, .branch-bar { --c-ink: color-mix(in oklab, var(--c) 58%, #000); }
 }
 * { box-sizing: border-box; }
 html, body, #root { margin: 0; height: 100%; }

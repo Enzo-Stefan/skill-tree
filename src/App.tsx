@@ -26,6 +26,7 @@ import {
   loadPlayerStep,
   loadProgress,
   newlyUnlocked,
+  nextRung,
   nextSkill,
   progressSummary,
   rungName,
@@ -423,8 +424,12 @@ export default function App() {
         {tab === "progress" && (
           <ProgressScreen
             tree={tree}
-            doneCount={done.size}
+            done={done}
             playerLevelName={playerRungName}
+            playerStep={playerStep}
+            levelTestAhead={nextRung(tree, rung) !== null}
+            practiceDays={practiceDays}
+            today={today}
             daysThisWeek={daysThisWeek(practiceDays, today)}
             streakWeeks={streak}
             liftLog={lifts.log}
