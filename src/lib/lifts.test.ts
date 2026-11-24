@@ -207,6 +207,21 @@ describe("replaying lifts twice", () => {
     const here = [squat("2026-11-20", 45), squat("2026-11-20", 45)];
     expect(replayLiftLog(weights, [], base, here)).toEqual([squat("2026-11-20", 45)]);
   });
+
+  it("doesn't remove a second copy when an undo's save already reached the account", () => {
+    const base = [squat("2026-11-20", 45), squat("2026-11-20", 45)];
+    const here = [squat("2026-11-20", 45)];
+    // The undo got through, but the page closed before the browser updated its copy of the account.
+    const account = replayLiftLog(weights, base, base, here);
+    expect(account).toEqual(here);
+    expect(replayLiftLog(weights, account, base, here)).toEqual(here);
+  });
+
+  it("still removes everything on a reset replayed twice", () => {
+    const base = [squat("2026-11-20", 45), squat("2026-11-20", 45)];
+    expect(replayLiftLog(weights, base, base, [])).toEqual([]);
+    expect(replayLiftLog(weights, [], base, [])).toEqual([]);
+  });
 });
 
 describe("weights in the reader's language", () => {

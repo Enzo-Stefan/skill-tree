@@ -18,12 +18,14 @@ export interface Results {
   remove: (result: TestResult) => void;
   /** Empties the list (Reset). */
   clear: () => void;
+  /** Shows the results loaded from the account, and keeps them in the browser too. */
+  replace: (results: TestResult[]) => void;
 }
 
 /**
  * The open tree's test results (src/lib/results.ts), like the lift log: kept in React state, saved
  * to the browser on every change, and every change starts from what is saved so two open tabs
- * can't erase each other's results. Browser only for now; the account doesn't keep them yet.
+ * can't erase each other's results. Signed-in players' results are also saved in the account.
  */
 export function useResults(tree: Tree): Results {
   const [results, setResults] = useState(() => loadResults(tree));
@@ -57,6 +59,9 @@ export function useResults(tree: Tree): Results {
     },
     clear() {
       update([]);
+    },
+    replace(next) {
+      update(next);
     },
   };
 }

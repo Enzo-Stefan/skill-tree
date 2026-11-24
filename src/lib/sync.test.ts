@@ -6,6 +6,7 @@ import type { SavedProgress } from "./cloud";
 import {
   hasUnsavedChanges,
   liftsSyncedHere,
+  resultsSyncedHere,
   loadAccountCopy,
   loadAccountProgress,
   markSyncedHere,
@@ -268,5 +269,42 @@ describe("upgrading a browser that synced before lifts were kept", () => {
     const loaded = await loadAccountProgress(client, "u1", weights, local, shouldMerge("weights", "u1"), base);
     expect(loaded.liftLog).toEqual([squat]);
     expect(upserts[0]).toMatchObject({ lift_log: [squat] });
+  });
+});
+
+describe("test results when syncing", () => {
+  beforeEach(memoryStorage);
+  const sprint = (date: string, value: number) => ({ skillId: "ft2", date, value });
+
+  it("rebases results like lifts: saved here is added, undone here is removed, other devices' stay", () => {
+    const base = { ...empty, results: [sprint("2026-11-18", 6.0), sprint("2026-11-19", 9.9)] };
+    const account = { ...base, results: [...base.results, sprint("2026-11-21", 5.8)] };
+    const local = { ...base, results: [sprint("2026-11-18", 6.0), sprint("2026-11-22", 5.7)] };
+    expect(rebaseProgress(football, account, base, local).results).toEqual([
+      sprint("2026-11-18", 6.0),
+      sprint("2026-11-21", 5.8),
+      sprint("2026-11-22", 5.7),
+    ]);
+  });
+
+  it("doesn't double a result whose save already reached the account", () => {
+    const base = { ...empty, results: [] };
+    const local = { ...empty, results: [sprint("2026-11-22", 5.7)] };
+    expect(rebaseProgress(football, local, base, local).results).toEqual([sprint("2026-11-22", 5.7)]);
+  });
+
+  it("sees a missing results list and an empty one as the same, and notices a new result", () => {
+    expect(sameProgress(empty, { ...empty, results: [] })).toBe(true);
+    expect(sameProgress({ ...empty, results: [sprint("2026-11-20", 5.7)] }, empty)).toBe(false);
+  });
+
+  it("merges once in a browser that synced before results were kept, then lets the account win", () => {
+    store.set("skill-tree:football:synced-account", "u1");
+    store.set("skill-tree:football:synced-lifts", "u1");
+    expect(resultsSyncedHere("football", "u1")).toBe(false);
+    expect(shouldMerge("football", "u1")).toBe(true);
+    markSyncedHere("football", "u1");
+    expect(resultsSyncedHere("football", "u1")).toBe(true);
+    expect(shouldMerge("football", "u1")).toBe(false);
   });
 });

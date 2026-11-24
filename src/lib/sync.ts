@@ -2,6 +2,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Tree } from "../types";
 import { cleanProgress, fetchCloudProgress, saveCloudProgress, syncOnSignIn, type SavedProgress } from "./cloud";
 import { replayLiftLog } from "./lifts";
+import { replayResults, resultKeys } from "./results";
 
 // When a signed-in player opens the app, which copy of their progress wins.
 //
@@ -18,9 +19,12 @@ import { replayLiftLog } from "./lifts";
 //   - this browser synced this account before the account kept lift logs (migration 003). The
 //     account's lift log starts empty, so letting it win would wipe the lifts saved here. One
 //     merge uploads them; after that the lifts marker is set and the account wins as usual.
+//   - the same for test results: a browser that saved results before the account kept them
+//     merges once (the results marker), so they're uploaded instead of replaced.
 
 const syncedKey = (treeId: string) => `skill-tree:${treeId}:synced-account`;
 const liftsSyncedKey = (treeId: string) => `skill-tree:${treeId}:synced-lifts`;
+const resultsSyncedKey = (treeId: string) => `skill-tree:${treeId}:synced-results`;
 const unsavedKey = (treeId: string) => `skill-tree:${treeId}:unsaved`;
 
 /** True once this account's progress has been merged into this browser for this tree. */
@@ -41,10 +45,20 @@ export function liftsSyncedHere(treeId: string, userId: string): boolean {
   }
 }
 
+/** True once this browser's test results have been merged into this account. */
+export function resultsSyncedHere(treeId: string, userId: string): boolean {
+  try {
+    return localStorage.getItem(resultsSyncedKey(treeId)) === userId;
+  } catch {
+    return false;
+  }
+}
+
 export function markSyncedHere(treeId: string, userId: string): void {
   try {
     localStorage.setItem(syncedKey(treeId), userId);
     localStorage.setItem(liftsSyncedKey(treeId), userId);
+    localStorage.setItem(resultsSyncedKey(treeId), userId);
   } catch {
     // Storage can be blocked. Then the next load merges again, which loses nothing.
   }
@@ -102,8 +116,8 @@ export function saveAccountCopy(treeId: string, userId: string, p: SavedProgress
  * Unlike mergeProgress, skills and training days removed here since `base` stay removed, so an
  * un-tick or a reset made offline sticks, while changes from other devices are kept. If the
  * level, step or streak changed here, all three come from this browser (they belong together);
- * otherwise from the account. Lift log entries work like skills: logged here is added, undone or
- * reset here is removed, and entries from other devices stay.
+ * otherwise from the account. Lift log entries and test results work like skills: added here is
+ * added, undone or reset here is removed, and entries from other devices stay.
  */
 export function rebaseProgress(tree: Tree, account: SavedProgress | null, base: SavedProgress, local: SavedProgress): SavedProgress {
   const l = cleanProgress(tree, local);
@@ -131,12 +145,18 @@ export function rebaseProgress(tree: Tree, account: SavedProgress | null, base: 
     practiceDays: replay(a.practiceDays, b.practiceDays, l.practiceDays).sort(),
     streak: rung.streak,
     liftLog: replayLiftLog(tree, a.liftLog ?? [], b.liftLog ?? [], l.liftLog ?? []),
+    results: replayResults(tree, a.results ?? [], b.results ?? [], l.results ?? []),
   };
 }
 
 /** Whether the next load should merge this browser's progress into the account. */
 export function shouldMerge(treeId: string, userId: string): boolean {
-  return !isSyncedHere(treeId, userId) || hasUnsavedChanges(treeId) || !liftsSyncedHere(treeId, userId);
+  return (
+    !isSyncedHere(treeId, userId) ||
+    hasUnsavedChanges(treeId) ||
+    !liftsSyncedHere(treeId, userId) ||
+    !resultsSyncedHere(treeId, userId)
+  );
 }
 
 /**
@@ -176,14 +196,18 @@ export async function loadAccountProgress(
   return cleaned;
 }
 
-/** Same progress, ignoring the order of finished skills, training days and lift entries. A missing lift log is an empty one. */
+/** Same progress, ignoring the order of finished skills, training days, lift entries and results. A missing list is an empty one. */
 export function sameProgress(a: SavedProgress, b: SavedProgress): boolean {
   const key = (p: SavedProgress) =>
+    // Every field listed in a fixed order, so the order fields were added to the object doesn't matter.
     JSON.stringify({
-      ...p,
+      playerLevel: p.playerLevel,
+      playerStep: p.playerStep,
+      streak: { since: p.streak.since, askedWeek: p.streak.askedWeek },
       done: [...p.done].sort(),
       practiceDays: [...p.practiceDays].sort(),
       liftLog: (p.liftLog ?? []).map((e) => `${e.skillId}|${e.date}|${e.kg}`).sort(),
+      results: resultKeys(p.results ?? []),
     });
   return key(a) === key(b);
 }
