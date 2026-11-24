@@ -132,3 +132,27 @@ describe("player levels", () => {
     expect(validateTree(broken)).toContain("ft2: target for level beginner is not a positive number");
   });
 });
+
+describe("clearPlayerLevel", () => {
+  it("forgets the level and step so the picker asks again", async () => {
+    const { clearPlayerLevel, loadPlayerLevel, loadPlayerStep, savePlayerLevel, savePlayerStep } = await import("./progress");
+    const store = new Map<string, string>();
+    const real = globalThis.localStorage;
+    globalThis.localStorage = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+    } as Storage;
+    try {
+      const level = football.playerLevels![1].id;
+      savePlayerLevel(football.id, level);
+      savePlayerStep(football.id, 3);
+      expect(loadPlayerLevel(football)).toBe(level);
+      clearPlayerLevel(football.id);
+      expect(loadPlayerLevel(football)).toBeNull();
+      expect(loadPlayerStep(football.id)).toBe(1);
+    } finally {
+      globalThis.localStorage = real;
+    }
+  });
+});

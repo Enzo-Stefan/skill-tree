@@ -17,6 +17,7 @@ import { shareStats, type ShareStats } from "./components/shareImage";
 import { AccountMenu } from "./components/AccountMenu";
 import { useAuth } from "./auth/useAuth";
 import {
+  clearPlayerLevel,
   levelInfo,
   loadPlayerLevel,
   loadPlayerStep,
@@ -43,6 +44,7 @@ import {
   weekOf,
   type StreakState,
 } from "./lib/streak";
+import { saveLiftLog } from "./lib/lifts";
 import type { SavedProgress } from "./lib/cloud";
 import { useCloudSync } from "./lib/useCloudSync";
 
@@ -206,10 +208,22 @@ export default function App() {
     }
   }
 
+  /** Clears everything for this tree: finished skills, level and step, training days, streak and logged weights. */
   function reset() {
     setDone(new Set());
+    setPlayerLevelId(null);
+    setPlayerStep(1);
+    clearPlayerLevel(tree.id);
+    setPracticeDays([]);
+    savePracticeDays(tree.id, []);
+    updateStreak({ since: null, askedWeek: null });
+    saveLiftLog(tree.id, []);
+    setTestOpen(false);
     setSelectedId(tree.skills[0].id);
-    showToast("Progress reset.");
+    setBranchId(tree.branches[0].id);
+    setSheetOpen(false);
+    setPickerOpen(hasLevels);
+    showToast("All progress for this tree is reset.");
   }
 
   return (
