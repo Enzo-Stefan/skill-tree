@@ -11,7 +11,7 @@ const CHALK_DIM = "rgba(238, 243, 234, 0.55)";
 const CHALK_FAINT = "rgba(238, 243, 234, 0.16)";
 const GOLD = "#f2c14e";
 const DISPLAY = '"Oswald", "Arial Narrow", Impact, sans-serif';
-const BODY = '"Source Sans 3", "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+const BODY = '-apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
 export interface ShareStats {
   title: string;
