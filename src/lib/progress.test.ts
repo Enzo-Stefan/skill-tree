@@ -156,3 +156,32 @@ describe("clearPlayerLevel", () => {
     }
   });
 });
+
+describe("next skill", () => {
+  it("starts with the start skill", async () => {
+    const { nextSkill } = await import("./progress");
+    expect(nextSkill(football, new Set())?.id).toBe("root");
+  });
+
+  it("then goes to the branch with the least done, first branch on a tie", async () => {
+    const { nextSkill } = await import("./progress");
+    const firsts = football.branches.map((b) => football.skills.find((s) => s.branch === b.id && s.requires.includes("root"))!.id);
+    expect(nextSkill(football, new Set(["root"]))?.branch).toBe(football.branches[0].id);
+    // Finish the first skill of every branch except Fitness: Fitness has the smallest share now.
+    const done = new Set(["root", ...firsts.slice(0, -1)]);
+    expect(nextSkill(football, done)?.branch).toBe(football.branches[football.branches.length - 1].id);
+  });
+
+  it("only suggests unlocked skills that aren't done", async () => {
+    const { nextSkill } = await import("./progress");
+    let done = new Set<string>();
+    // Follow the suggestions all the way: each one must be available, and it ends with everything done.
+    for (let i = 0; i < football.skills.length; i++) {
+      const next = nextSkill(football, done);
+      expect(next).not.toBeNull();
+      expect(skillState(next!, done)).toBe("available");
+      done = new Set(done).add(next!.id);
+    }
+    expect(nextSkill(football, done)).toBeNull();
+  });
+});
