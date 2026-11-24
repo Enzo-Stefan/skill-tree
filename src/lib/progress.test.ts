@@ -283,3 +283,36 @@ describe("test checks: in a row, and time numbers", () => {
     expect(validateTree(withCheck("dr1", { kind: "time", under: 20 }))).toContain("dr1: check under 20 isn't in the test text");
   });
 });
+
+describe("numbers in the reader's language", () => {
+  it("writes decimals the way each language does", async () => {
+    const { formatNumber, targetFor } = await import("./progress");
+    expect(formatNumber(5.8)).toBe("5.8");
+    expect(formatNumber(5.8, "es")).toBe("5,8");
+    expect(formatNumber(1500, "es")).toBe("1500");
+    expect(formatNumber(5.675, "en")).toBe("5.68");
+    const ft2 = football.skills.find((s) => s.id === "ft2")!;
+    expect(targetFor(football, ft2, { levelId: "beginner", step: 1 })).toBe("Under 5.8 seconds.");
+    // Only the number follows the locale here. The sentence comes from the tree's data, which is
+    // the English tree in this test; the app passes the Spanish tree from treesIn("es").
+    expect(targetFor(football, ft2, { levelId: "beginner", step: 1 }, "es")).toBe("Under 5,8 seconds.");
+  });
+
+  it("builds the copy text from the words it's given, English by default", async () => {
+    const { progressSummary } = await import("./progress");
+    const english = progressSummary(football, new Set(["root"]), { levelId: "beginner", step: 2 });
+    expect(english.split("\n")[0]).toBe("My hapi skill: 1/32 skills, rank Sunday League. Training at Beginner 2.");
+    const words = { headline: (title: string, d: number, total: number, rank: string) => `Mi ${title}: ${d}/${total}, ${rank}.`, training: (r: string) => ` En ${r}.` };
+    expect(progressSummary(football, new Set(["root"]), null, words).split("\n")[0]).toBe("Mi hapi skill: 1/32, Sunday League.");
+  });
+
+  it("builds the Spanish copy text from es.summary, with the level line", async () => {
+    const { progressSummary } = await import("./progress");
+    const { es } = await import("../i18n/es");
+    const { treesIn } = await import("../data");
+    const footballEs = treesIn("es")[0];
+    const text = progressSummary(footballEs, new Set(["root"]), { levelId: "beginner", step: 2 }, es.summary);
+    expect(text.split("\n")[0]).toBe("Mi hapi skill: 1/32 habilidades, rango Liga de barrio. Entreno en Principiante 2.");
+    expect(text.split("\n")[1]).toBe("Control: 0/5");
+  });
+});

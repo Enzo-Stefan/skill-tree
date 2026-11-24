@@ -177,10 +177,18 @@ export function targetValue(tree: Tree, skill: Skill, rung: Rung | null): number
   return (to < from ? Math.ceil(exact - 0.5) : Math.round(exact)) / 100;
 }
 
+/**
+ * A number the way the reader writes it: "5.8" in English, "5,8" in Spanish. Up to 2 decimals,
+ * no thousands separator (targets and weights are small, and "1.500" would read as 1.5 in English).
+ */
+export function formatNumber(n: number, locale = "en"): string {
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: 2, useGrouping: false }).format(n);
+}
+
 /** Every skill with its own target at this level and step: what a level test asks the player to do. */
-export function testTargets(tree: Tree, rung: Rung | null): { skillName: string; target: string }[] {
+export function testTargets(tree: Tree, rung: Rung | null, locale = "en"): { skillName: string; target: string }[] {
   return tree.skills.flatMap((s) => {
-    const target = targetFor(tree, s, rung);
+    const target = targetFor(tree, s, rung, locale);
     return target ? [{ skillName: s.name, target }] : [];
   });
 }
@@ -194,13 +202,24 @@ export function timeLimit(tree: Tree, skill: Skill, rung: Rung | null): number |
   return skill.check.under ?? targetValue(tree, skill, rung);
 }
 
-/** The target sentence for this skill at a level and step, e.g. "Under 5.67 seconds.", or null. */
-export function targetFor(tree: Tree, skill: Skill, rung: Rung | null): string | null {
+/** The target sentence for this skill at a level and step, e.g. "Under 5.67 seconds.", or null. The number is written for `locale`. */
+export function targetFor(tree: Tree, skill: Skill, rung: Rung | null, locale = "en"): string | null {
   const value = targetValue(tree, skill, rung);
-  return value === null || !skill.targets ? null : skill.targets.text.replace("{n}", String(value));
+  return value === null || !skill.targets ? null : skill.targets.text.replace("{n}", formatNumber(value, locale));
 }
 
-export function progressSummary(tree: Tree, done: Set<string>, rung: Rung | null = null): string {
+/** The words of the "Copy my progress" text, so it can be in the app's language. */
+export interface SummaryWords {
+  headline: (title: string, done: number, total: number, rank: string) => string;
+  training: (rung: string) => string;
+}
+
+const ENGLISH_SUMMARY: SummaryWords = {
+  headline: (title, done, total, rank) => `My ${title}: ${done}/${total} skills, rank ${rank}.`,
+  training: (rung) => ` Training at ${rung}.`,
+};
+
+export function progressSummary(tree: Tree, done: Set<string>, rung: Rung | null = null, words: SummaryWords = ENGLISH_SUMMARY): string {
   const { current } = levelInfo(tree.levels, done.size);
   const training = rungName(tree, rung);
   const lines = tree.branches.map((b) => {
@@ -208,8 +227,8 @@ export function progressSummary(tree: Tree, done: Set<string>, rung: Rung | null
     const count = skills.filter((s) => done.has(s.id)).length;
     return `${b.name}: ${count}/${skills.length}`;
   });
-  const levelText = training ? ` Training at ${training}.` : "";
-  return [`My ${tree.title}: ${done.size}/${tree.skills.length} skills, rank ${current.name}.${levelText}`, ...lines].join("\n");
+  const levelText = training ? words.training(training) : "";
+  return [`${words.headline(tree.title, done.size, tree.skills.length, current.name)}${levelText}`, ...lines].join("\n");
 }
 
 const MAX_NAME_LENGTH = 24;

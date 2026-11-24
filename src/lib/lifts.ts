@@ -1,4 +1,5 @@
 import type { Tree } from "../types";
+import { formatNumber } from "./progress";
 
 // The weights a player lifted, for skills with `logWeight` (#18).
 //
@@ -113,9 +114,9 @@ export function isNewBest(log: LiftEntry[], entry: LiftEntry): boolean {
   return best === null || entry.kg > best.kg;
 }
 
-/** "62.5 kg", without trailing zeros. */
-export function formatKg(kg: number): string {
-  return `${Number(kg.toFixed(2))} kg`;
+/** "62.5 kg" (English) or "62,5 kg" (Spanish), without trailing zeros. */
+export function formatKg(kg: number, locale = "en"): string {
+  return `${formatNumber(kg, locale)} kg`;
 }
 
 const logKey = (treeId: string) => `skill-tree:${treeId}:lift-log`;

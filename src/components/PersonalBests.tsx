@@ -1,7 +1,7 @@
 import { useId } from "react";
 import type { Tree } from "../types";
 import { bestProgression, formatKg, liftHistory, personalBest, type LiftEntry } from "../lib/lifts";
-import { t } from "../i18n";
+import { language, t } from "../i18n";
 
 interface Props {
   tree: Tree;
@@ -34,10 +34,10 @@ export function PersonalBests({ tree, log }: Props) {
               <span className="best-text">
                 <span className="best-name">{skill.name}</span>
                 <span className="best-sub">
-                  {first.kg < best.kg ? t.lifts.upFrom(formatKg(first.kg), times) : t.lifts.timesLogged(times)}
+                  {first.kg < best.kg ? t.lifts.upFrom(formatKg(first.kg, language), times) : t.lifts.timesLogged(times)}
                 </span>
               </span>
-              <span className="best-kg">{formatKg(best.kg)}</span>
+              <span className="best-kg">{formatKg(best.kg, language)}</span>
             </li>
           ))}
         </ul>
