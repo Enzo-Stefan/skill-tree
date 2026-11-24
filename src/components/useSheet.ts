@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type PointerEvent, type RefObject, type SyntheticEvent } from "react";
-import { SHEET_DRAG_SLOP, settleSheet } from "./sheetDrag";
+import { SHEET_DRAG_SLOP, releaseVelocity, settleSheet } from "./sheetDrag";
 
 interface Drag {
   pointerId: number;
@@ -63,6 +63,11 @@ export function useSheet(
     return () => observer.disconnect();
   }, [enabled, key, sheet, main]);
 
+  // A skill that comes back later starts at half height again, not at the height it was left at.
+  useEffect(() => {
+    setExpandedFor(null);
+  }, [key]);
+
   // Back at half height, the top of the sheet is what fits, so scroll back to it.
   useEffect(() => {
     if (!expanded && sheet.current) sheet.current.scrollTop = 0;
@@ -82,7 +87,8 @@ export function useSheet(
     box.style.height = "";
     box.classList.remove("dragging");
     if (cancelled) return;
-    const next = settleSheet(expanded ? "full" : "half", e.clientY - d.startY, d.velocity, d.startHeight);
+    const velocity = releaseVelocity(d.velocity, e.timeStamp - d.lastTime);
+    const next = settleSheet(expanded ? "full" : "half", e.clientY - d.startY, velocity, d.startHeight);
     if (next === "close") onClose();
     else setExpanded(next === "full");
   }
@@ -96,6 +102,11 @@ export function useSheet(
         dragged.current = false;
         if (!enabled || !sheet.current || (e.pointerType === "mouse" && e.button !== 0)) return;
         const now = e.timeStamp;
+        // A second finger replaces the drag. Undo what the first one did to the sheet, or it stays mid-drag.
+        if (drag.current?.moving) {
+          sheet.current.style.height = "";
+          sheet.current.classList.remove("dragging");
+        }
         drag.current = {
           pointerId: e.pointerId,
           startY: e.clientY,

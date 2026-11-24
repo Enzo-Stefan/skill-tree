@@ -99,6 +99,12 @@ export default function App() {
   const hasLevels = (tree.playerLevels?.length ?? 0) > 0;
   // Ask on first visit; after that, only when the player asks to change.
   const [pickerOpen, setPickerOpen] = useState(() => hasLevels && loadPlayerLevel(tree) === null);
+  // The button that opened the picker, so closing it returns focus there even if that button was hidden meanwhile.
+  const pickerOpener = useRef<HTMLElement | null>(null);
+  function openPicker() {
+    pickerOpener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setPickerOpen(true);
+  }
   const [playerStep, setPlayerStep] = useState(() => loadPlayerStep(tree.id));
   // Where the player trains: their level and the step inside it, e.g. Beginner 2.
   const rung: Rung | null = playerLevelId ? { levelId: playerLevelId, step: playerStep } : null;
@@ -269,6 +275,23 @@ export default function App() {
     return () => window.removeEventListener("popstate", onPop);
   }, [sheetShown]);
 
+  // The history entry only means something while the sheet is open. After a reload it would be an empty step
+  // that Back appears to do nothing on, so drop its mark.
+  useEffect(() => {
+    if (window.history.state?.skillSheet) window.history.replaceState({ ...window.history.state, skillSheet: false }, "");
+  }, []);
+  // Forward onto the sheet's entry (after Back closed it) opens the sheet again, so history and sheet agree.
+  useEffect(() => {
+    if (!isPhone) return;
+    const onPop = (e: PopStateEvent) => {
+      if (!e.state?.skillSheet || sheetInHistory.current) return;
+      sheetInHistory.current = true;
+      setSheetOpen(true);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [isPhone]);
+
   useEffect(() => saveProgress(tree.id, done), [tree.id, done]);
   // The toast's Undo runs after later renders (a cloud load can land in between), so it reads this.
   const doneRef = useRef(done);
@@ -396,7 +419,7 @@ export default function App() {
             tree={tree}
             doneCount={done.size}
             playerLevelName={playerRungName}
-            onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
+            onChangeLevel={hasLevels ? openPicker : undefined}
             treeSwitch={<TreeSwitch trees={treeChoices} onSwitch={switchToTree} />}
           />
           {hasLevels && playerLevelId && (
@@ -443,7 +466,7 @@ export default function App() {
                 onClose={isPhone ? () => closeSheet() : undefined}
                 playerLevelName={playerRungName}
                 target={targetFor(tree, selectedSkill, rung, language)}
-                onChangeLevel={() => setPickerOpen(true)}
+                onChangeLevel={openPicker}
                 lifts={lifts}
                 timeLimit={timeLimit(tree, selectedSkill, rung)}
                 results={results}
@@ -469,7 +492,7 @@ export default function App() {
             auth={accountAuth}
             treeName={tree.shortName ?? tree.title}
             playerLevelName={playerRungName}
-            onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
+            onChangeLevel={hasLevels ? openPicker : undefined}
             onCopy={copy}
             onReset={reset}
             onLanguage={(code) => void switchLanguage(code)}
@@ -487,6 +510,7 @@ export default function App() {
           // (or whose browser can't save, like private windows) can still pick from the panel.
           onClose={() => setPickerOpen(false)}
           closeLabel={playerLevelId ? t.app.cancel : t.app.skipForNow}
+          opener={pickerOpener.current}
         />
       )}
       {testOpen && nextForTest && (

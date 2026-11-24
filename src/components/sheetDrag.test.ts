@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { settleSheet } from "./sheetDrag";
+import { releaseVelocity, settleSheet } from "./sheetDrag";
 
 describe("settleSheet", () => {
   it("stays where it was after a short, slow drag", () => {
@@ -29,5 +29,15 @@ describe("settleSheet", () => {
 
   it("ignores a flick that ended against the drag", () => {
     expect(settleSheet("half", 20, -1, 400)).toBe("half");
+  });
+});
+
+describe("releaseVelocity", () => {
+  it("keeps the speed of a release right after moving", () => {
+    expect(releaseVelocity(0.8, 16)).toBe(0.8);
+  });
+
+  it("drops the speed when the finger paused before lifting", () => {
+    expect(releaseVelocity(0.8, 1000)).toBe(0);
   });
 });

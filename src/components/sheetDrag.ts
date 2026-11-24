@@ -30,3 +30,11 @@ export function settleSheet(from: SheetHeight, dy: number, velocity: number, she
   if (down) return "half";
   return "full";
 }
+
+/** A finger that has been still this long (ms) before release isn't flicking, whatever its last movement speed was. */
+export const SHEET_FLICK_STALE_MS = 100;
+
+/** The speed to judge a release by: the last measured speed, or 0 when the finger paused before lifting. */
+export function releaseVelocity(velocity: number, msSinceLastMove: number): number {
+  return msSinceLastMove > SHEET_FLICK_STALE_MS ? 0 : velocity;
+}
