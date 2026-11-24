@@ -14,7 +14,9 @@ import { PracticeBar } from "./components/PracticeBar";
 import { useToday } from "./components/useToday";
 import { ShareDialog } from "./components/ShareDialog";
 import { shareStats, type ShareStats } from "./components/shareImage";
-import { AccountMenu } from "./components/AccountMenu";
+import { TabBar, type Tab } from "./components/TabBar";
+import { ProgressScreen } from "./components/ProgressScreen";
+import { SettingsScreen } from "./components/SettingsScreen";
 import { useAuth } from "./auth/useAuth";
 import {
   clearPlayerLevel,
@@ -55,6 +57,8 @@ export default function App() {
   const auth = useAuth();
   const [done, setDone] = useState<Set<string>>(() => loadProgress(tree.id));
   const [selectedId, setSelectedId] = useState(tree.skills[0].id);
+  // Not in the URL: Google sign-in comes back with its tokens in the address's # part.
+  const [tab, setTab] = useState<Tab>("train");
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
   // Keep in sync with the phone media query in index.css. The height clause catches phones held sideways.
@@ -227,53 +231,85 @@ export default function App() {
     showToast(t.app.resetDone);
   }
 
+  const streak = streakWeeks(practiceDays, streakState.since);
+
   return (
     <div className="app">
-      <Header
-        tree={tree}
-        doneCount={done.size}
-        onCopy={copy}
-        onShare={() =>
-          setSharing(shareStats(tree, done, playerRungName, streakWeeks(practiceDays, streakState.since), window.location.host))
-        }
-        onReset={reset}
-        playerLevelName={playerRungName}
-        onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
-        account={<AccountMenu auth={accountAuth} onDeleted={() => showToast(t.app.accountDeleted)} />}
-        treeSwitch={<TreeSwitch trees={treeChoices} onSwitch={switchToTree} />}
+      <TabBar
+        active={tab}
+        onChange={(next) => {
+          setTab(next);
+          setSheetOpen(false);
+        }}
+        rank={levelInfo(tree.levels, done.size).current.name}
+        summary={[t.header.skillsCount(done.size, tree.skills.length), ...(playerRungName ? [playerRungName] : [])]}
       />
-      {hasLevels && playerLevelId && (
-        <PracticeBar
-          daysThisWeek={daysThisWeek(practiceDays, today)}
-          streak={streakWeeks(practiceDays, streakState.since)}
-          trainedToday={trainedToday}
-          onToggle={toggleTrainedToday}
-        />
-      )}
-      {nextUp && <LevelUpBanner onYes={() => setTestOpen(true)} onLater={askLater} />}
-      {isPhone && <BranchTabs tree={tree} done={done} activeId={branchId} onChange={setBranchId} />}
-      <main>
-        <SkillTree
-          tree={tree}
-          done={done}
-          selectedId={selectedId}
-          onSelect={select}
-          branchId={isPhone ? branchId : null}
-        />
-        {(!isPhone || sheetOpen) && (
-          <SkillPanel
+      <div className="content">
+        {tab === "train" && (
+          <>
+            <Header
+              tree={tree}
+              doneCount={done.size}
+              playerLevelName={playerRungName}
+              onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
+              treeSwitch={<TreeSwitch trees={treeChoices} onSwitch={switchToTree} />}
+            />
+            {hasLevels && playerLevelId && (
+              <PracticeBar
+                daysThisWeek={daysThisWeek(practiceDays, today)}
+                streak={streak}
+                trainedToday={trainedToday}
+                onToggle={toggleTrainedToday}
+              />
+            )}
+            {nextUp && <LevelUpBanner onYes={() => setTestOpen(true)} onLater={askLater} />}
+            {isPhone && <BranchTabs tree={tree} done={done} activeId={branchId} onChange={setBranchId} />}
+            <main>
+              <SkillTree
+                tree={tree}
+                done={done}
+                selectedId={selectedId}
+                onSelect={select}
+                branchId={isPhone ? branchId : null}
+              />
+              {(!isPhone || sheetOpen) && (
+                <SkillPanel
+                  tree={tree}
+                  done={done}
+                  skillId={selectedId}
+                  onComplete={complete}
+                  onUndo={undo}
+                  onClose={isPhone ? () => setSheetOpen(false) : undefined}
+                  playerLevelName={playerRungName}
+                  target={targetFor(tree, selectedSkill, rung)}
+                  onChangeLevel={() => setPickerOpen(true)}
+                />
+              )}
+            </main>
+          </>
+        )}
+        {tab === "progress" && (
+          <ProgressScreen
             tree={tree}
-            done={done}
-            skillId={selectedId}
-            onComplete={complete}
-            onUndo={undo}
-            onClose={isPhone ? () => setSheetOpen(false) : undefined}
+            doneCount={done.size}
             playerLevelName={playerRungName}
-            target={targetFor(tree, selectedSkill, rung)}
-            onChangeLevel={() => setPickerOpen(true)}
+            daysThisWeek={daysThisWeek(practiceDays, today)}
+            streakWeeks={streak}
+            onShare={() => setSharing(shareStats(tree, done, playerRungName, streak, window.location.host))}
           />
         )}
-      </main>
+        {tab === "settings" && (
+          <SettingsScreen
+            auth={accountAuth}
+            treeName={tree.shortName ?? tree.title}
+            playerLevelName={playerRungName}
+            onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
+            onCopy={copy}
+            onReset={reset}
+            onDeleted={() => showToast(t.app.accountDeleted)}
+          />
+        )}
+      </div>
       {pickerOpen && tree.playerLevels && (
         <LevelPicker
           levels={tree.playerLevels}
