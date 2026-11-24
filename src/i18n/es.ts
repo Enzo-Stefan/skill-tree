@@ -3,7 +3,6 @@ import type { Strings } from "./en";
 
 /**
  * Every piece of app text in Spanish: neutral Spanish with "tú", like the skill content in src/data/es/.
- * First draft: a fluent speaker should check it before players see it.
  */
 
 /** A number written the Spanish way: "5,8". */
