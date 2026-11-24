@@ -196,7 +196,14 @@ main { flex: 1; display: flex; min-height: 0; }
   background: var(--test-wash);
   border-radius: 0 8px 8px 0;
 }
-.panel-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
+.panel[hidden] { display: none; }
+.panel-main, .panel-rest { display: flex; flex-direction: column; gap: 16px; }
+.panel-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+.panel-actions .btn { min-height: 44px; }
+.panel-actions .btn.primary { flex: 1 1 12rem; }
+.panel-actions-hint { flex-basis: 100%; }
+.test-open { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; }
+.test-open .hint { margin: 0; font-size: 0.875rem; }
 .yt { color: var(--gold-text); font-weight: 600; }
 
 .video {
@@ -275,6 +282,9 @@ main { flex: 1; display: flex; min-height: 0; }
   width: max-content;
   max-width: min(560px, calc(100% - 32px));
   text-align: center;
+  /* The phone sheet's backdrop has the same z-index and comes earlier in the page, so the toast's
+     Undo stays above the dim and takes taps; the sheet (z-index 10) still covers it. */
+  z-index: 9;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 /* Only the button takes taps, so the message never blocks the skill under it. */
@@ -457,21 +467,77 @@ main { flex: 1; display: flex; min-height: 0; }
   .tree-switch-option { flex: 1; justify-content: center; min-height: 44px; }
   .actions { width: 100%; }
   .actions .btn { flex: 1; }
+  /* Two resting heights: half (ends under the test's buttons, measured in useSheet) and full. */
   .panel.sheet {
     position: fixed;
     left: 0;
     right: 0;
     bottom: 0;
-    max-height: 72%;
+    height: min(var(--sheet-half, 60%), 75%);
+    max-height: none;
     border-top: 2px solid var(--chalk-dim);
     border-radius: 16px 16px 0 0;
     box-shadow: 0 -12px 32px var(--sheet-shadow);
-    padding: 20px max(20px, env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
+    padding: 0 max(20px, env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
     z-index: 10;
+    overscroll-behavior: contain;
+    transition: height 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
+  .panel.sheet.full { height: calc(100% - 12px - env(safe-area-inset-top)); }
+  .panel.sheet.dragging { transition: none; }
+  .sheet-handle { display: flex; flex-direction: column; touch-action: none; }
+  .sheet-grabber {
+    align-self: center;
+    width: 88px;
+    height: 32px;
+    margin-bottom: 4px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    display: grid;
+    place-items: center;
+  }
+  .sheet-grabber::before {
+    content: "";
+    width: 36px;
+    height: 5px;
+    border-radius: 3px;
+    background: var(--chalk-dim);
+  }
+  .panel.sheet .close {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+  }
+  .panel.sheet .close svg { width: 20px; height: 20px; }
+  /* Dims the app behind the skill sheet; a tap on it closes the sheet. */
+  .sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9;
+    background: var(--overlay);
+    animation: backdrop-in 0.2s ease-out;
+  }
+  .sheet-more {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 44px;
+    margin: -4px 0 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-2);
+    font-size: 0.9375rem;
+  }
+  .sheet-more svg { width: 18px; height: 18px; flex-shrink: 0; }
   .toast { bottom: auto; top: calc(16px + env(safe-area-inset-top)); transform: translate(-50%, -20px); }
   .toast.show { transform: translate(-50%, 0); }
 }
+@keyframes backdrop-in { from { opacity: 0; } }
 @keyframes tile-pop { 0% { transform: scale(1); } 40% { transform: scale(1.28); } 100% { transform: scale(1); } }
 @keyframes unlock-glow {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c-ink) 70%, transparent); }
@@ -542,8 +608,6 @@ a.btn { color: inherit; text-decoration: none; display: inline-flex; align-items
 .panel h2[tabindex="-1"]:focus { outline: none; }
 
 /* Test mode: counts or times a skill's test at the pitch. Big targets for sweaty hands. */
-.test-open { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; }
-.test-open .hint { margin: 0; font-size: 0.875rem; }
 .test-overlay { z-index: 40; }
 .dialog.test-mode { width: min(460px, 100%); max-height: 100%; overflow-y: auto; gap: 16px; }
 .test-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }

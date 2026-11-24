@@ -12,9 +12,11 @@ interface Props {
   onClose: () => void;
   /** Text on the close button: "Cancel" when changing level, "Skip for now" on first visit. */
   closeLabel: string;
+  /** What had focus when the picker was asked for. The picker's own screen can hide it before this mounts. */
+  opener?: HTMLElement | null;
 }
 
-export function LevelPicker({ levels, currentId, onPick, canPick = () => true, onClose, closeLabel }: Props) {
+export function LevelPicker({ levels, currentId, onPick, canPick = () => true, onClose, closeLabel, opener: openedFrom }: Props) {
   const dialog = useRef<HTMLDivElement>(null);
   const locked = levels.some((l) => !canPick(l.id));
   const firstButton = useRef<HTMLButtonElement>(null);
@@ -25,8 +27,10 @@ export function LevelPicker({ levels, currentId, onPick, canPick = () => true, o
     onCloseRef.current = onClose;
   });
 
+  // Read once, when the picker opens.
+  const openedFromRef = useRef(openedFrom);
   useEffect(() => {
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const opener = openedFromRef.current ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null);
     firstButton.current?.focus();
     return () => opener?.focus();
   }, []);
