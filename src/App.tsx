@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { trees } from "./data";
+import { activeTree } from "./lib/activeTree";
 import { Header } from "./components/Header";
 import { SkillTree } from "./components/SkillTree";
 import { SkillPanel } from "./components/SkillPanel";
@@ -45,7 +46,8 @@ import type { SavedProgress } from "./lib/cloud";
 import { useCloudSync } from "./lib/useCloudSync";
 
 export default function App() {
-  const tree = trees[0];
+  // The tree the player last chose (src/lib/activeTree.ts). Switching reloads the app.
+  const [tree] = useState(() => activeTree(trees));
   const auth = useAuth();
   const [done, setDone] = useState<Set<string>>(() => loadProgress(tree.id));
   const [selectedId, setSelectedId] = useState(tree.skills[0].id);

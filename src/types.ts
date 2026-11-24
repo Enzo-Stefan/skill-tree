@@ -12,6 +12,11 @@ export interface Skill {
   /** Branch id, or null for the start and final skills. */
   branch: string | null;
   name: string;
+  /**
+   * A lift: when the player passes it, they enter the weight they used, and the app keeps
+   * their personal best (see src/lib/lifts.ts). Used by the weight training tree.
+   */
+  logWeight?: boolean;
   /** Ids of skills that must be done before this one unlocks. */
   requires: string[];
   /** Horizontal slot, 0 to 11 (two slots per branch). */
