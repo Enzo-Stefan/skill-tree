@@ -106,7 +106,7 @@ interface ItemProps {
   selected: boolean;
   next: boolean;
   effect?: Effect;
-  /** Second line in the phone list: Passed, Ready to train, or what it's waiting for. */
+  /** Passed, Ready to train, or what it's waiting for. Shown in the phone list, and read out everywhere. */
   sub: string;
   onSelect: (id: string) => void;
 }
@@ -119,7 +119,7 @@ function SkillItem({ skill, state, layout, color, selected, next, effect, sub, o
       className={classes.filter(Boolean).join(" ")}
       style={{ "--c": color } as CSSProperties}
       onClick={() => onSelect(skill.id)}
-      aria-label={t.tree.nodeLabel(skill.name, t.panel.status[state])}
+      aria-label={t.tree.nodeLabel(skill.name, sub, next)}
       aria-current={selected ? "true" : undefined}
     >
       <span className="skill-node" aria-hidden="true">

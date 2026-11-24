@@ -70,7 +70,7 @@ export const en = {
     /** Text inside the first and the last tile. */
     startTile: "GO",
     finalTile: "90'",
-    nodeLabel: (skill: string, state: string) => `${skill}, ${state}`,
+    nodeLabel: (skill: string, status: string, next: boolean) => `${skill}, ${status}${next ? ", next up" : ""}`,
     passed: "Passed",
     /** What a locked skill waits for. More than two (the final skill) becomes a count. */
     after: (skills: string[]) => (skills.length > 2 ? `After ${skills.length} more skills` : `After ${listAnd(skills)}`),
@@ -80,6 +80,8 @@ export const en = {
   nextUp: {
     start: "Start here. Every branch opens after it.",
     leastDone: (branch: string) => `${branch}: the branch you've done least`,
+    /** When every branch has the same number done, so none is "least". */
+    goodNextStep: (branch: string) => `A good next step in ${branch}`,
     final: "The final skill",
   },
   panel: {

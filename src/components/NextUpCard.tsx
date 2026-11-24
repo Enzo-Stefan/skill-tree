@@ -5,13 +5,23 @@ import { t } from "../i18n";
 interface Props {
   tree: Tree;
   skill: Skill;
+  done: Set<string>;
   onOpen: (skill: Skill) => void;
 }
 
 /** The suggested next skill, with why it was picked. Tapping it opens the skill. */
-export function NextUpCard({ tree, skill, onOpen }: Props) {
+export function NextUpCard({ tree, skill, done, onOpen }: Props) {
   const branch = tree.branches.find((b) => b.id === skill.branch);
-  const reason = skill.requires.length === 0 ? t.nextUp.start : branch ? t.nextUp.leastDone(branch.name) : t.nextUp.final;
+  const doneIn = (id: string) => tree.skills.filter((s) => s.branch === id && done.has(s.id)).length;
+  const allTied = new Set(tree.branches.map((b) => doneIn(b.id))).size === 1;
+  const reason =
+    skill.requires.length === 0
+      ? t.nextUp.start
+      : !branch
+        ? t.nextUp.final
+        : allTied
+          ? t.nextUp.goodNextStep(branch.name)
+          : t.nextUp.leastDone(branch.name);
   return (
     <button
       type="button"

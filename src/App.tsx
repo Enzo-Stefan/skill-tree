@@ -63,6 +63,9 @@ export default function App() {
   const [tab, setTab] = useState<Tab>("train");
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
+  // Where Train was scrolled when you left it. Some browsers reset a scroll area that gets hidden.
+  const trainRef = useRef<HTMLDivElement>(null);
+  const trainScroll = useRef<number[]>([]);
   // Keep in sync with the phone media query in index.css. The height clause catches phones held sideways.
   const isPhone = useMediaQuery("(max-width: 700px), (max-height: 500px) and (pointer: coarse)");
   const [branchId, setBranchId] = useState(tree.branches[0].id);
@@ -236,11 +239,36 @@ export default function App() {
   const streak = streakWeeks(practiceDays, streakState.since);
   const suggested = suggestNext(tree, done);
 
+  /** Train's two scroll areas: the whole tab (phones) and the tree (wider screens). */
+  function trainScrollers(): HTMLElement[] {
+    const train = trainRef.current;
+    const tree = train?.querySelector<HTMLElement>(".tree-wrap");
+    return [train, tree].filter((e): e is HTMLElement => !!e);
+  }
+
+  // Back on Train: put both scroll areas where they were.
+  useEffect(() => {
+    if (tab !== "train") return;
+    trainScrollers().forEach((e, i) => (e.scrollTop = trainScroll.current[i] ?? e.scrollTop));
+  }, [tab]);
+
+  // A new branch on a phone: if the list's start is hidden under the pinned branch tabs, scroll up to it.
+  useEffect(() => {
+    const train = trainRef.current;
+    const tabs = train?.querySelector<HTMLElement>(".branch-tabs");
+    const list = train?.querySelector<HTMLElement>("main");
+    if (!train || !tabs || !list) return;
+    const listStart = train.scrollTop + list.getBoundingClientRect().top - train.getBoundingClientRect().top;
+    const want = listStart - tabs.offsetHeight;
+    if (train.scrollTop > want) train.scrollTop = want;
+  }, [branchId]);
+
   return (
     <div className="app">
       <TabBar
         active={tab}
         onChange={(next) => {
+          if (tab === "train") trainScroll.current = trainScrollers().map((e) => e.scrollTop);
           setTab(next);
           setSheetOpen(false);
         }}
@@ -248,7 +276,7 @@ export default function App() {
         summary={[t.header.skillsCount(done.size, tree.skills.length), ...(playerRungName ? [playerRungName] : [])]}
       />
       <div className="content">
-        <div className="train" hidden={tab !== "train"}>
+        <div className="train" hidden={tab !== "train"} ref={trainRef}>
           <Header
             tree={tree}
             doneCount={done.size}
@@ -269,6 +297,7 @@ export default function App() {
             <NextUpCard
               tree={tree}
               skill={suggested}
+              done={done}
               onOpen={(s) => {
                 if (s.branch) setBranchId(s.branch);
                 select(s.id);
