@@ -18,6 +18,8 @@ export interface Auth {
   /** Starts Google sign-in. Resolves to an error message, or null when the browser is being redirected. */
   signInWithGoogle: () => Promise<string | null>;
   signOut: () => Promise<void>;
+  /** Deletes the account and its saved progress for good, then signs out. Resolves to an error message, or null on success. */
+  deleteAccount: () => Promise<string | null>;
 }
 
 function toAccount(user: User): Account {
@@ -81,5 +83,20 @@ export function useAuth(): Auth {
     await supabase?.auth.signOut();
   }, []);
 
-  return { configured: accountsConfigured, account, loading, signInWithGoogle, signOut };
+  const deleteAccount = useCallback(async () => {
+    try {
+      const supabase = await loadSupabase();
+      if (!supabase) return "Accounts aren't set up yet.";
+      // supabase/migrations/002_delete_account.sql
+      const { error } = await supabase.rpc("delete_my_account");
+      if (error) return "Couldn't delete your account. Try again, or email us (see the privacy page).";
+      // The account no longer exists on the server, so only clear this browser's session.
+      await supabase.auth.signOut({ scope: "local" });
+      return null;
+    } catch {
+      return "Couldn't reach the server. Check your connection and try again.";
+    }
+  }, []);
+
+  return { configured: accountsConfigured, account, loading, signInWithGoogle, signOut, deleteAccount };
 }
