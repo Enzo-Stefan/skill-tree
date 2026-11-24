@@ -3,6 +3,8 @@ import { en } from "./en";
 import { es } from "./es";
 import { phoneLanguage } from "./index";
 
+const BOTH = ["en", "es"] as const;
+
 /** Every leaf of a language file, as [path, value] pairs. */
 function leaves(node: object, path = ""): [string, unknown][] {
   return Object.entries(node).flatMap(([key, value]) =>
@@ -11,7 +13,7 @@ function leaves(node: object, path = ""): [string, unknown][] {
 }
 
 /** Text that is the same word in both languages, so it isn't a missed translation. */
-const SAME_IN_BOTH = new Set(["tabs.brand", "tree.finalTile"]);
+const SAME_IN_BOTH = new Set(["tabs.brand", "tree.finalTile", "testMode.add"]);
 
 describe("Spanish language file", () => {
   it("has every piece of text English has, and nothing empty", () => {
@@ -59,13 +61,20 @@ describe("Spanish language file", () => {
 
 describe("phone language", () => {
   it("picks the first language the app has", () => {
-    expect(phoneLanguage(["es-MX", "en-US"])).toBe("es");
-    expect(phoneLanguage(["fr-FR", "es-ES", "en"])).toBe("es");
-    expect(phoneLanguage(["en-GB", "es"])).toBe("en");
+    expect(phoneLanguage(["es-MX", "en-US"], BOTH)).toBe("es");
+    expect(phoneLanguage(["fr-FR", "es-ES", "en"], BOTH)).toBe("es");
+    expect(phoneLanguage(["en-GB", "es"], BOTH)).toBe("en");
   });
 
   it("falls back to English", () => {
-    expect(phoneLanguage(["fr-FR", "de"])).toBe("en");
-    expect(phoneLanguage([])).toBe("en");
+    expect(phoneLanguage(["fr-FR", "de"], BOTH)).toBe("en");
+    expect(phoneLanguage([], BOTH)).toBe("en");
+  });
+});
+
+describe("Spanish waits for a fluent check", () => {
+  it("isn't picked from the phone yet, only from Settings", () => {
+    expect(phoneLanguage(["es-MX", "en-US"])).toBe("en");
+    expect(phoneLanguage(["es"])).toBe("en");
   });
 });
