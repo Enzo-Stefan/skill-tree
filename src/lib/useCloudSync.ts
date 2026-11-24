@@ -1,8 +1,18 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { loadSupabase } from "../auth/client";
 import type { Tree } from "../types";
-import { createCloudSaver, mergeProgress, type SavedProgress } from "./cloud";
-import { isSyncedHere, loadAccountProgress, markSyncedHere, sameProgress, setUnsavedChanges, shouldMerge } from "./sync";
+import { createCloudSaver, type SavedProgress } from "./cloud";
+import {
+  isSyncedHere,
+  loadAccountCopy,
+  loadAccountProgress,
+  markSyncedHere,
+  rebaseProgress,
+  sameProgress,
+  saveAccountCopy,
+  setUnsavedChanges,
+  shouldMerge,
+} from "./sync";
 
 export type SyncStatus = "off" | "loading" | "ready" | "error";
 
@@ -71,16 +81,20 @@ export function useCloudSync({ tree, userId, progress, apply, onMessage }: Optio
     const snapshot = latest.current.progress;
     const firstHere = !isSyncedHere(tree.id, userId);
     const merge = shouldMerge(tree.id, userId);
+    const base = loadAccountCopy(tree.id, userId);
     loadSupabase()
       .then(async (client) => {
         if (!client) throw new Error("Accounts aren't set up.");
-        let loaded = await loadAccountProgress(client, userId, tree, snapshot, merge);
+        const fromCloud = await loadAccountProgress(client, userId, tree, snapshot, merge, base);
         // If this load was abandoned, any change made meanwhile is still marked unsaved, so the
-        // next load merges it.
+        // next load merges it. The account copy isn't updated then: it must be one this browser
+        // applied, or the next merge would read the difference as changes made here.
         if (!active) return;
-        // The player may have ticked something while this was loading. Keep it.
+        saveAccountCopy(tree.id, userId, fromCloud);
+        // The player may have changed something while this was loading. Apply only those
+        // changes, so skills un-ticked on another device don't come back with them.
         const changedMeanwhile = !sameProgress(latest.current.progress, snapshot);
-        if (changedMeanwhile) loaded = mergeProgress(tree, latest.current.progress, loaded);
+        const loaded = changedMeanwhile ? rebaseProgress(tree, fromCloud, snapshot, latest.current.progress) : fromCloud;
         markSyncedHere(tree.id, userId);
         saver.current = createCloudSaver(
           client,
@@ -88,10 +102,15 @@ export function useCloudSync({ tree, userId, progress, apply, onMessage }: Optio
           tree.id,
           (detail) => {
             console.warn(detail);
-            latest.current.onMessage("Couldn't save to your account. Your progress is still saved on this device.");
+            // A save sent after this sync ended (the session closed elsewhere) needs no message.
+            if (active) latest.current.onMessage("Couldn't save to your account. Your progress is still saved on this device.");
           },
           800,
-          () => setUnsavedChanges(tree.id, false),
+          (saved, upToDate) => {
+            // After this sync ended, another account may own the stored copy.
+            if (active) saveAccountCopy(tree.id, userId, saved);
+            if (upToDate) setUnsavedChanges(tree.id, false);
+          },
         );
         lastSynced.current = loaded;
         if (changedMeanwhile) saver.current.save(loaded);
