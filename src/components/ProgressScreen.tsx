@@ -24,11 +24,13 @@ interface Props {
   /** The tree's lift log, for the personal bests. */
   liftLog: LiftEntry[];
   onShare: () => void;
+  /** Opens the level picker; only for trees that have levels. */
+  onPickLevel?: () => void;
 }
 
 /** Rank, your level and streak, training this week, each branch, personal bests on lifts, and the share picture. */
 export function ProgressScreen(props: Props) {
-  const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, streakWeeks, liftLog, onShare } = props;
+  const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, streakWeeks, liftLog, onShare, onPickLevel } = props;
   const daysLeft = Math.max(0, PRACTICE_DAYS_PER_WEEK - daysThisWeek);
 
   return (
@@ -51,6 +53,18 @@ export function ProgressScreen(props: Props) {
         </h2>
         <RankProgress tree={tree} doneCount={done.size} />
       </section>
+
+      {!playerLevelName && onPickLevel && (
+        <section className="card" aria-labelledby="progress-level">
+          <h2 className="card-label" id="progress-level">
+            {t.progressScreen.yourLevel}
+          </h2>
+          <p className="card-note">{t.progressScreen.noLevel}</p>
+          <button className="btn" type="button" onClick={onPickLevel}>
+            {t.progressScreen.pickLevel}
+          </button>
+        </section>
+      )}
 
       {playerLevelName && (
         <section className="card" aria-labelledby="progress-level">
@@ -76,8 +90,8 @@ export function ProgressScreen(props: Props) {
         </section>
       )}
 
-      {playerLevelName && (
-        <section className="card" aria-labelledby="progress-week">
+      {/* Everyone gets this week and the streak; with a level, the streak also shows in the level card. */}
+      <section className="card" aria-labelledby="progress-week">
           <div className="card-row">
             <h2 className="card-label" id="progress-week">
               {t.progressScreen.thisWeek}
@@ -86,8 +100,12 @@ export function ProgressScreen(props: Props) {
           </div>
           <WeekDots days={practiceDays} today={today} />
           <p className="card-note">{daysLeft > 0 ? t.progressScreen.daysLeft(daysLeft) : t.progressScreen.weekCounts}</p>
+          {!playerLevelName && (
+            <p className="card-note">
+              {t.progressScreen.streak}: <strong>{t.practice.weeks(streakWeeks)}</strong>
+            </p>
+          )}
         </section>
-      )}
 
       <section className="card" aria-labelledby="progress-branches">
         <h2 className="card-label" id="progress-branches">

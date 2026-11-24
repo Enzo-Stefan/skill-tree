@@ -60,6 +60,8 @@ export const en = {
     thisWeek: "This week",
     streak: "Streak",
     yourLevel: "Your level",
+    noLevel: "Pick your level to see your targets and train toward the level test.",
+    pickLevel: "Pick your level",
     step: (step: number, total: number) => `Step ${step} of ${total}`,
     /** "Streak: <2 of 4 weeks> toward the level test" */
     weeksOf: (weeks: number, goal: number) => `${weeks} of ${goal} weeks`,

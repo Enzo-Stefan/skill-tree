@@ -434,6 +434,7 @@ export default function App() {
             streakWeeks={streak}
             liftLog={lifts.log}
             onShare={() => setSharing(shareStats(tree, done, playerRungName, streak, window.location.host))}
+            onPickLevel={hasLevels ? () => setPickerOpen(true) : undefined}
           />
         )}
         {tab === "settings" && (

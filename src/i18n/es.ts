@@ -62,6 +62,8 @@ export const es: Strings = {
     thisWeek: "Esta semana",
     streak: "Racha",
     yourLevel: "Tu nivel",
+    noLevel: "Elige tu nivel para ver tus objetivos y entrenar para la prueba de nivel.",
+    pickLevel: "Elegir mi nivel",
     step: (step: number, total: number) => `Paso ${step} de ${total}`,
     weeksOf: (weeks: number, goal: number) => `${weeks} de ${goal} semanas`,
     towardTest: "hacia la prueba de nivel",
