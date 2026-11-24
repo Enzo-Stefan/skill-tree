@@ -166,3 +166,53 @@ describe("test targets", () => {
     expect(testTargets(football, null)).toEqual([]);
   });
 });
+
+describe("next skill", () => {
+  it("starts with the start skill", async () => {
+    const { nextSkill } = await import("./progress");
+    expect(nextSkill(football, new Set())?.id).toBe("root");
+  });
+
+  it("then goes to the branch with the least done, first branch on a tie", async () => {
+    const { nextSkill } = await import("./progress");
+    const firsts = football.branches.map((b) => football.skills.find((s) => s.branch === b.id && s.requires.includes("root"))!.id);
+    expect(nextSkill(football, new Set(["root"]))?.branch).toBe(football.branches[0].id);
+    // Finish the first skill of every branch except Fitness: Fitness has the smallest share now.
+    const done = new Set(["root", ...firsts.slice(0, -1)]);
+    expect(nextSkill(football, done)?.branch).toBe(football.branches[football.branches.length - 1].id);
+  });
+
+  it("only suggests unlocked skills that aren't done", async () => {
+    const { nextSkill } = await import("./progress");
+    let done = new Set<string>();
+    // Follow the suggestions all the way: each one must be available, and it ends with everything done.
+    for (let i = 0; i < football.skills.length; i++) {
+      const next = nextSkill(football, done);
+      expect(next).not.toBeNull();
+      expect(skillState(next!, done)).toBe("available");
+      done = new Set(done).add(next!.id);
+    }
+    expect(nextSkill(football, done)).toBeNull();
+  });
+});
+
+describe("loadProgress", () => {
+  it("drops skill ids the tree no longer has, so the count can't pass the total", async () => {
+    const { loadProgress } = await import("./progress");
+    const store = new Map<string, string>();
+    const real = globalThis.localStorage;
+    globalThis.localStorage = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+    } as Storage;
+    try {
+      store.set(`skill-tree:${football.id}`, JSON.stringify(["root", "renamed-skill", 42, "bc1"]));
+      expect([...loadProgress(football)]).toEqual(["root", "bc1"]);
+      store.set(`skill-tree:${football.id}`, JSON.stringify({ not: "a list" }));
+      expect(loadProgress(football).size).toBe(0);
+    } finally {
+      globalThis.localStorage = real;
+    }
+  });
+});

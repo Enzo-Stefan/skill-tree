@@ -30,11 +30,41 @@ export function completedDependents(tree: Tree, done: Set<string>, skillId: stri
   return tree.skills.filter((s) => s.requires.includes(skillId) && done.has(s.id));
 }
 
+/**
+ * The skill to suggest training next (the "Next up" card), or null when everything is done.
+ *
+ * Picks from the skills that are unlocked but not finished. It prefers the branch where the
+ * player has finished the smallest share of skills, so the tree grows evenly. Inside a branch it
+ * takes the skill nearest the top. Ties go to the branch listed first in the tree. Skills outside
+ * any branch (the start and the final skill) come first whenever they're unlocked, because they
+ * are the only way forward at the start and the end.
+ */
+export function nextSkill(tree: Tree, done: Set<string>): Skill | null {
+  const open = tree.skills.filter((s) => skillState(s, done) === "available");
+  if (open.length === 0) return null;
+  const shared = open.find((s) => s.branch === null);
+  if (shared) return shared;
+  const share = (branchId: string) => {
+    const skills = tree.skills.filter((s) => s.branch === branchId);
+    return skills.filter((s) => done.has(s.id)).length / skills.length;
+  };
+  const order = (branchId: string | null) => tree.branches.findIndex((b) => b.id === branchId);
+  return [...open].sort(
+    (a, b) => share(a.branch!) - share(b.branch!) || order(a.branch) - order(b.branch) || a.row - b.row || a.x - b.x,
+  )[0];
+}
+
 const storageKey = (treeId: string) => `skill-tree:${treeId}`;
 
-export function loadProgress(treeId: string): Set<string> {
+/**
+ * The finished skills saved in this browser for a tree. Ids the tree no longer has (a renamed or
+ * removed skill) are dropped, so they can't count toward the total or the rank ("33 of 32").
+ */
+export function loadProgress(tree: Tree): Set<string> {
   try {
-    return new Set(JSON.parse(localStorage.getItem(storageKey(treeId)) ?? "[]"));
+    const raw: unknown = JSON.parse(localStorage.getItem(storageKey(tree.id)) ?? "[]");
+    const ids = new Set(tree.skills.map((s) => s.id));
+    return new Set(Array.isArray(raw) ? raw.filter((id): id is string => typeof id === "string" && ids.has(id)) : []);
   } catch {
     return new Set();
   }

@@ -1,0 +1,126 @@
+/* The skill tree (Train tab). Wide screens: a column per branch between the start and the final
+   skill. Phones: one branch as a list, and the whole Train tab scrolls as one page. */
+.tree-wrap { flex: 1; min-width: 0; overflow: auto; padding: 20px 24px 32px; }
+.tree { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+.tree-end { display: flex; justify-content: center; }
+.branch-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr)); gap: 10px; }
+.branch-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 6px 8px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--chalk) 4%, transparent);
+}
+.branch-col h3 {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  text-align: center;
+}
+.branch-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--c-ink); }
+.branch-col h3 .branch-dot { margin-right: 6px; vertical-align: 0.1em; }
+.branch-count { margin: 0 0 8px; font-size: 0.8125rem; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.branch-col ol, .skill-list { list-style: none; margin: 0; padding: 0; width: 100%; }
+
+.skill-li { position: relative; display: flex; flex-direction: column; align-items: center; }
+/* The rail between skills in a branch: coloured once the skill above it is done. */
+.branch-col .skill-li + .skill-li::before { content: ""; width: 2px; height: 10px; background: var(--line-faint); }
+.branch-col .skill-li.done + .skill-li::before { background: var(--c-ink); }
+
+.skill {
+  position: relative;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--chalk);
+}
+.skill:hover { background: var(--chalk-faint); }
+.skill.selected { border-color: var(--chalk); background: var(--chalk-faint); }
+.skill-node {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 2.5px solid var(--c-ink);
+  background: var(--panel);
+  font-family: var(--font-display);
+  font-size: 0.875rem;
+  transition: box-shadow 0.15s ease;
+}
+.skill-node svg { width: 20px; height: 20px; }
+.skill-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--c-ink); }
+.skill.available .skill-node { box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-ink) 22%, transparent); }
+.skill.done .skill-node { background: var(--c-ink); color: var(--on-branch); }
+.skill.locked .skill-node { border: 1.5px dashed var(--chalk-dim); color: var(--text-2); }
+.skill.locked .skill-name { color: var(--text-2); }
+.skill.big .skill-node { width: 56px; height: 56px; font-size: 1.125rem; }
+.skill-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.skill-name { font-size: 0.875rem; font-weight: 600; line-height: 1.25; text-wrap: balance; overflow-wrap: anywhere; }
+.skill-sub { font-size: 0.875rem; color: var(--text-2); }
+.skill-badge {
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--gold);
+  color: var(--on-gold);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* In a branch column: circle above the name. */
+.skill.card { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 4px; text-align: center; }
+.tree-end .skill.card { width: auto; min-width: 10rem; padding: 8px 16px; }
+
+/* In the phone list: circle, then name and status. */
+.skill-list { padding: 8px max(16px, env(safe-area-inset-right)) 24px max(16px, env(safe-area-inset-left)); }
+.skill-list .skill-li + .skill-li { margin-top: 6px; }
+.skill-list .skill-li + .skill-li::before {
+  content: "";
+  position: absolute;
+  left: 31px;
+  top: -14px;
+  width: 2px;
+  height: 22px;
+  background: var(--line-faint);
+}
+.skill-list .skill-li.done + .skill-li::before { background: var(--c-ink); }
+.skill.row { width: 100%; display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 8px; text-align: left; }
+.skill.row .skill-node { width: 44px; height: 44px; }
+.skill.row.big .skill-node { width: 52px; height: 52px; }
+.skill.row .skill-text { flex: 1; }
+.skill.row .skill-name { font-size: 1.0625rem; }
+
+/* The suggested skill, above the tree. */
+.next-up {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 14px max(24px, env(safe-area-inset-right)) 0 max(24px, env(safe-area-inset-left));
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid var(--chalk-faint);
+  background: var(--panel);
+  color: var(--chalk);
+  text-align: left;
+}
+.next-up:hover { border-color: var(--chalk-dim); }
+.next-up .branch-dot { width: 12px; height: 12px; }
+.next-up-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.next-up-label { font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2); }
+.next-up-name { font-size: 1.125rem; font-weight: 600; }
+.next-up-reason { font-size: 0.875rem; color: var(--text-2); }
+
+/* Keep in sync with the phone media query in App.tsx. */
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+  .train { overflow-y: auto; }
+  .train > * { flex-shrink: 0; }
+  .train main { flex: none; }
+  .train .tree-wrap { overflow: visible; padding: 0; }
+  .train .branch-tabs { position: sticky; top: 0; z-index: 2; }
+  .next-up { margin: 12px max(16px, env(safe-area-inset-right)) 4px max(16px, env(safe-area-inset-left)); }
+}
