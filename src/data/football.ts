@@ -5,7 +5,8 @@ import type { Tree } from "../types";
 
 export const football: Tree = {
   "id": "football",
-  "title": "Football Skill Tree",
+  "title": "hapi skill",
+  "shortName": "Football",
   "tagline": "Tap a skill, pass its test, unlock the next one.",
   "branches": [
     {
@@ -48,6 +49,7 @@ export const football: Tree = {
       "x": 5.5,
       "row": 0,
       "drill": "Have a friend roll the ball to you from 10 metres, or pass it against a wall. Stop it with the inside of your foot so it stays close.",
+      "video": "https://www.youtube.com/watch?v=Z5_-hV5oc1s",
       "test": "Stop 10 rolled passes in a row. Each one must stay within one step of you.",
       "tip": "Pull your foot back a little as the ball arrives. A soft foot kills the ball. A stiff foot bounces it away."
     },
@@ -61,6 +63,7 @@ export const football: Tree = {
       "x": 0.5,
       "row": 1,
       "drill": "Drop the ball onto your strong foot and keep it up with your laces. Start by letting it bounce once between touches if you need to.",
+      "video": "https://www.youtube.com/watch?v=bH3vhjIGgpQ",
       "test": "20 juggles in a row, feet only, no bounces.",
       "tip": "Keep your ankle locked and toes slightly up. Small touches to waist height are easier than big ones."
     },
@@ -74,6 +77,7 @@ export const football: Tree = {
       "x": 0,
       "row": 2,
       "drill": "A partner throws the ball to you from 10 metres. Control it with your thigh, chest or foot and get it to the ground.",
+      "video": "https://www.youtube.com/watch?v=l9f9Lo29sAQ",
       "test": "Control 8 of 10 throws so the ball drops within one step of you.",
       "tip": "Relax the body part the ball hits, like catching an egg."
     },
@@ -87,6 +91,7 @@ export const football: Tree = {
       "x": 1,
       "row": 2,
       "drill": "Juggle while switching feet every touch. Then add thighs and head.",
+      "video": "https://www.youtube.com/watch?v=4C4lyuaquKI",
       "test": "50 juggles in a row, using both feet at least 15 times each.",
       "tip": "Count out loud. It keeps your rhythm steady."
     },
@@ -100,6 +105,7 @@ export const football: Tree = {
       "x": 0,
       "row": 3,
       "drill": "Place a cone behind you as a fake defender. Receive a pass and use your first touch to move the ball away from the cone into space.",
+      "video": "https://www.youtube.com/watch?v=PpukTlNw6GM",
       "test": "8 of 10 first touches go at least 2 metres into space, away from the cone.",
       "tip": "Check your shoulder before the ball arrives so you know where the space is."
     },
@@ -114,6 +120,7 @@ export const football: Tree = {
       "x": 0.5,
       "row": 4,
       "drill": "Stand with your back to a teammate. Keep the ball under your sole while they try to win it.",
+      "video": "https://www.youtube.com/watch?v=BfxjIFJoU7M",
       "test": "Keep the ball for 10 seconds in 4 of 5 rounds.",
       "tip": "Bend your knees, arm out, body between the defender and the ball."
     },
@@ -127,6 +134,7 @@ export const football: Tree = {
       "x": 2.5,
       "row": 1,
       "drill": "Mark a target zone one ball wide on a wall. Pass to it from 10 metres with your strong foot.",
+      "video": "https://www.youtube.com/watch?v=MO73sagJ2ak",
       "test": "8 of 10 passes hit the target zone from 10 metres.",
       "tip": "Plant your standing foot next to the ball, pointing at the target."
     },
@@ -140,6 +148,7 @@ export const football: Tree = {
       "x": 2,
       "row": 2,
       "drill": "Same wall drill, weak foot only. Do 50 a day for a week.",
+      "video": "https://www.youtube.com/watch?v=4DYAxGMg0jo",
       "test": "7 of 10 weak-foot passes hit the target zone from 10 metres.",
       "tip": "Slow down. Accuracy first, power later."
     },
@@ -153,6 +162,7 @@ export const football: Tree = {
       "x": 3,
       "row": 2,
       "drill": "Stand 5 metres from a wall. Pass back every rebound first time, alternating feet.",
+      "video": "https://www.youtube.com/watch?v=_9WerPtlwIk",
       "test": "40 clean one-touch passes in 60 seconds, without the ball stopping.",
       "tip": "Stay on your toes so you are ready for a bad bounce."
     },
@@ -166,6 +176,7 @@ export const football: Tree = {
       "x": 2,
       "row": 3,
       "drill": "Strike through the middle of the ball with your laces so it travels low and fast to a partner 30 metres away.",
+      "video": "https://www.youtube.com/watch?v=lDtl9gjFvj0",
       "test": "6 of 10 passes reach your partner without going above head height.",
       "tip": "Lean over the ball and land on your kicking foot after the strike."
     },
@@ -180,6 +191,7 @@ export const football: Tree = {
       "x": 2.5,
       "row": 4,
       "drill": "Hit lofted passes across the pitch to a partner standing in a 5 metre box.",
+      "video": "https://www.youtube.com/watch?v=bV_n-pw6shw",
       "test": "5 of 10 passes land in the box from 40 metres.",
       "tip": "Hit under the middle of the ball and lean back slightly."
     },
@@ -193,6 +205,7 @@ export const football: Tree = {
       "x": 4.5,
       "row": 1,
       "drill": "Set 6 cones in a line, 1 metre apart. Dribble through and back using both feet.",
+      "video": "https://www.youtube.com/watch?v=vnngDOCy9C8",
       "test": "There and back in under 15 seconds without touching a cone.",
       "tip": "Touch the ball every step. More touches means more control."
     },
@@ -206,6 +219,7 @@ export const football: Tree = {
       "x": 4,
       "row": 2,
       "drill": "Dribble in a zigzag, cutting the ball with the inside of your foot and then the outside of the same foot.",
+      "video": "https://www.youtube.com/watch?v=AlMwNGOmkwA",
       "test": "Complete the slalom using only one foot in under 18 seconds, then repeat with the other foot.",
       "tip": "Drop your hips as you cut. It makes the change of direction sharper."
     },
@@ -219,6 +233,7 @@ export const football: Tree = {
       "x": 5,
       "row": 2,
       "drill": "Run at a cone, circle your foot around the ball, then push the ball the other way.",
+      "video": "https://www.youtube.com/watch?v=y1UJrlWu7J8",
       "test": "8 of 10 step-overs at running speed, going past the cone on the correct side.",
       "tip": "Sell it with your shoulders. Defenders watch your hips, not your feet."
     },
@@ -232,6 +247,7 @@ export const football: Tree = {
       "x": 4,
       "row": 3,
       "drill": "Dribble at a cone. Fake a pass, then drag the ball behind your standing leg and turn away.",
+      "video": "https://www.youtube.com/watch?v=RbHfV-R4UAc",
       "test": "8 of 10 turns done cleanly at jogging speed with both feet.",
       "tip": "The fake pass has to look real. Swing your leg like you mean it."
     },
@@ -246,6 +262,7 @@ export const football: Tree = {
       "x": 4.5,
       "row": 4,
       "drill": "Play 1v1 against a teammate in a 10 by 15 metre box. Score by dribbling over their end line.",
+      "video": "https://www.youtube.com/watch?v=zdAQCqF0ayg",
       "test": "Win 5 of 10 one-on-ones.",
       "tip": "Attack the defender's front foot. They have to turn to stop you."
     },
@@ -259,6 +276,7 @@ export const football: Tree = {
       "x": 6.5,
       "row": 1,
       "drill": "Mark the two bottom corners of a goal. Side-foot shots into them from the penalty spot.",
+      "video": "https://www.youtube.com/watch?v=U3JmkMLaclM",
       "test": "7 of 10 shots go into a corner zone from 12 metres.",
       "tip": "Pick your corner before you shoot, then don't change your mind."
     },
@@ -272,6 +290,7 @@ export const football: Tree = {
       "x": 6,
       "row": 2,
       "drill": "Hit shots with your laces from the edge of the box, aiming for power and staying low.",
+      "video": "https://www.youtube.com/watch?v=09T73oLUsQk",
       "test": "6 of 10 shots on target from 18 metres.",
       "tip": "Head over the ball, toe pointed down, follow through towards the goal."
     },
@@ -285,6 +304,7 @@ export const football: Tree = {
       "x": 7,
       "row": 2,
       "drill": "Repeat the placed finish drill with your weak foot only.",
+      "video": "https://www.youtube.com/watch?v=G45gulmcfXE",
       "test": "6 of 10 weak-foot shots go into a corner zone from 12 metres.",
       "tip": "Most keepers expect your strong foot. A good weak foot wins games."
     },
@@ -298,6 +318,7 @@ export const football: Tree = {
       "x": 6,
       "row": 3,
       "drill": "A partner rolls the ball across from the side. Shoot first time without stopping it.",
+      "video": "https://www.youtube.com/watch?v=xXCaL8Exrn4",
       "test": "6 of 10 first-time shots on target from 12 metres.",
       "tip": "Open your body towards the goal before the ball arrives."
     },
@@ -312,6 +333,7 @@ export const football: Tree = {
       "x": 6.5,
       "row": 4,
       "drill": "A partner throws the ball up from 5 metres. Volley it at goal before it bounces.",
+      "video": "https://www.youtube.com/watch?v=QC1uKiRWYCw",
       "test": "5 of 10 volleys on target from 12 metres.",
       "tip": "Watch the ball onto your foot and keep your knee over it."
     },
@@ -325,6 +347,7 @@ export const football: Tree = {
       "x": 8.5,
       "row": 1,
       "drill": "Stand side-on, knees bent, weight on your toes. Shuffle backwards and sideways without crossing your feet.",
+      "video": "https://www.youtube.com/watch?v=N4EChliBbFc",
       "test": "Jockey backwards 10 metres and back in a zigzag without crossing your feet once.",
       "tip": "Show the attacker towards the touchline, away from goal."
     },
@@ -338,6 +361,7 @@ export const football: Tree = {
       "x": 8,
       "row": 2,
       "drill": "A teammate tries to dribble past you over a line. Your job is only to slow them down.",
+      "video": "https://www.youtube.com/watch?v=hgrStIbFls0",
       "test": "Stop the attacker crossing the line for 6 seconds, 7 of 10 times.",
       "tip": "Stay an arm's length away. Too close and they go past you."
     },
@@ -351,6 +375,7 @@ export const football: Tree = {
       "x": 9,
       "row": 2,
       "drill": "A partner throws the ball high to you. Head it up and away using your forehead. Keep it to 10 headers a session, and use a lighter ball while you learn.",
+      "video": "https://www.youtube.com/watch?v=FDVQy7TBxRc",
       "test": "Head 8 of 10 throws at least 10 metres.",
       "tip": "Eyes open, neck firm, attack the ball instead of waiting for it."
     },
@@ -364,6 +389,7 @@ export const football: Tree = {
       "x": 8,
       "row": 3,
       "drill": "Practise block tackles against a teammate dribbling at walking speed, then jogging.",
+      "video": "https://www.youtube.com/watch?v=IQQI40vTqtQ",
       "test": "Win the ball cleanly 6 of 10 times with no fouls.",
       "tip": "Tackle with the inside of your foot and put your body weight through it."
     },
@@ -378,6 +404,7 @@ export const football: Tree = {
       "x": 8.5,
       "row": 4,
       "drill": "Play 3 against 1 in a 10 by 10 metre square. You are the 1. Try to step in and cut out passes.",
+      "video": "https://www.youtube.com/watch?v=lpSfgT0Xf54",
       "test": "Intercept 5 passes in 2 minutes.",
       "tip": "Watch the passer's hips. They point where the ball is going."
     },
@@ -391,6 +418,7 @@ export const football: Tree = {
       "x": 10.5,
       "row": 1,
       "drill": "Run at an easy pace 3 times a week. Build up from 1 km.",
+      "video": "https://www.youtube.com/watch?v=sScNDZu2MWk",
       "test": "Run 3 km without stopping.",
       "tip": "If you can't talk while running, you are going too fast."
     },
@@ -404,12 +432,11 @@ export const football: Tree = {
       "x": 10,
       "row": 2,
       "drill": "Sprint 10 metres from standing, 8 times, with full rest between.",
+      "video": "https://www.youtube.com/watch?v=9FLbl9uVGXw",
       "test": "Sprint 30 metres from standing, timed by a friend, best of 3 tries.",
       "targets": {
-        "beginner": "Under 5.8 seconds.",
-        "intermediate": "Under 5.3 seconds.",
-        "advanced": "Under 4.8 seconds.",
-        "expert": "Under 4.55 seconds."
+        "text": "Under {n} seconds.",
+        "values": { "beginner": 5.8, "intermediate": 5.3, "advanced": 4.8, "expert": 4.55 }
       },
       "tip": "Drive your arms. Your legs follow your arms."
     },
@@ -423,6 +450,7 @@ export const football: Tree = {
       "x": 11,
       "row": 2,
       "drill": "Set cones in a T shape: 10 metres forward, 5 metres each side. Sprint, shuffle left, shuffle right, back.",
+      "video": "https://www.youtube.com/watch?v=_dqa4rkjzpg",
       "test": "Finish the T-test in under 11 seconds.",
       "tip": "Stay low on the turns and plant your outside foot."
     },
@@ -436,12 +464,11 @@ export const football: Tree = {
       "x": 10,
       "row": 3,
       "drill": "Sprint 40 metres, rest 30 seconds, repeat.",
+      "video": "https://www.youtube.com/watch?v=e3iXwU_xk5M",
       "test": "10 sprints of 40 metres with 30 seconds rest between, each one under your target time.",
       "targets": {
-        "beginner": "Each sprint under 7.5 seconds.",
-        "intermediate": "Each sprint under 7.0 seconds.",
-        "advanced": "Each sprint under 6.5 seconds.",
-        "expert": "Each sprint under 6.25 seconds."
+        "text": "Each sprint under {n} seconds.",
+        "values": { "beginner": 7.5, "intermediate": 7.0, "advanced": 6.5, "expert": 6.25 }
       },
       "tip": "Walk back slowly during the rest to recover faster."
     },
@@ -456,6 +483,7 @@ export const football: Tree = {
       "x": 10.5,
       "row": 4,
       "drill": "Mix a 5 km run with sprint intervals once a week.",
+      "video": "https://www.youtube.com/watch?v=-nq4VftyyYs",
       "test": "Run 5 km in under 25 minutes.",
       "tip": "Sleep and water matter as much as the training."
     },

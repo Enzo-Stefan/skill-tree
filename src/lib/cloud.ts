@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Tree } from "../types";
+import { cleanStep } from "./progress";
 
 // Saving progress to a player's account. The table and its security rules live in
 // supabase/migrations/001_progress.sql. The Supabase client itself comes from
@@ -47,7 +48,7 @@ export function cleanProgress(tree: Tree, p: SavedProgress): SavedProgress {
   return {
     done,
     playerLevel: levelOk ? p.playerLevel : null,
-    playerStep: levelOk && Number.isInteger(p.playerStep) && p.playerStep >= 1 && p.playerStep <= 4 ? p.playerStep : 1,
+    playerStep: levelOk ? cleanStep(p.playerStep) : 1,
     practiceDays,
     // A streak only means something next to a level, so it goes when the level does.
     streak: levelOk
@@ -141,6 +142,14 @@ export async function syncOnSignIn(
 /**
  * Saves progress a moment after the last change, so ticking off three skills
  * quickly sends one request instead of three. Call flush() before signing out.
+ *
+ * A failed save stays queued (unless something newer replaced it) and is sent again on the
+ * next flush(), so a dropped connection never loses the latest progress.
+ *
+ * Args:
+ *   onError: Called with the technical reason when a save fails.
+ *   onSaved: Called after each save that succeeded, with what was saved and whether nothing
+ *     newer is waiting (then the account has the latest progress).
  */
 export function createCloudSaver(
   client: SupabaseClient,
@@ -148,6 +157,7 @@ export function createCloudSaver(
   treeId: string,
   onError: (message: string) => void,
   delayMs = 800,
+  onSaved: (saved: SavedProgress, upToDate: boolean) => void = () => {},
 ) {
   let pending: SavedProgress | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -164,7 +174,10 @@ export function createCloudSaver(
       pending = null;
       try {
         await saveCloudProgress(client, userId, treeId, p);
+        onSaved(p, pending === null);
       } catch (e) {
+        // Keep it for the next try, unless a newer change already replaced it.
+        pending ??= p;
         onError(e instanceof Error ? e.message : "Couldn't save your progress.");
       }
     });
@@ -177,5 +190,11 @@ export function createCloudSaver(
     timer = setTimeout(() => void flush(), delayMs);
   }
 
-  return { save, flush };
+  /** Drop anything waiting, without saving it. For when the account is about to be deleted. */
+  function discard(): void {
+    clearTimeout(timer);
+    pending = null;
+  }
+
+  return { save, flush, discard, hasPending: () => pending !== null };
 }

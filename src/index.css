@@ -45,6 +45,34 @@ button { font: inherit; color: inherit; cursor: pointer; }
   text-wrap: balance;
 }
 .brand p { margin: 2px 0 0; color: var(--chalk-dim); font-size: 14px; }
+
+/* Football / Strength switch, above the title. */
+.tree-switch {
+  display: inline-flex;
+  margin-bottom: 8px;
+  padding: 3px;
+  gap: 3px;
+  border: 1.5px solid var(--chalk-faint);
+  border-radius: 8px;
+}
+.tree-switch-option {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: rgba(238, 243, 234, 0.75);
+  font-size: 14px;
+  font-weight: 600;
+}
+.tree-switch-option:hover:not([aria-pressed="true"]):not(:disabled) { color: var(--chalk); background: var(--chalk-faint); }
+.tree-switch-option[aria-pressed="true"] { background: var(--gold); color: var(--panel); cursor: default; }
+.tree-switch-option[aria-busy="true"] { opacity: 0.7; cursor: progress; }
+.tree-switch-option:disabled { opacity: 0.5; cursor: default; }
+.tree-switch-count { font-size: 12px; font-weight: 400; font-variant-numeric: tabular-nums; opacity: 0.8; }
 .progress { flex: 1 1 260px; display: flex; flex-direction: column; gap: 6px; min-width: 220px; }
 .progress-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-variant-numeric: tabular-nums; }
 .level { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); }
@@ -174,6 +202,64 @@ main { flex: 1; display: flex; min-height: 0; }
 }
 .panel-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 4px; }
 .yt { color: var(--gold); font-weight: 600; }
+
+.video {
+  position: relative;
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin-top: 12px;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #000;
+}
+.video iframe, .video video, .video img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  object-fit: cover;
+}
+.video video { object-fit: contain; }
+.video-poster {
+  padding: 0;
+  border: 0;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  background: var(--panel);
+  box-shadow: inset 0 0 0 2px var(--chalk-faint);
+  color: var(--chalk);
+}
+.poster-note { font-size: 14px; color: var(--chalk-dim); padding: 0 16px; text-align: center; }
+.video-offline {
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  text-align: center;
+  background: var(--chalk-faint);
+  border: 2px dashed var(--chalk-faint);
+}
+.video-offline p { margin: 0; font-size: 14px; color: var(--chalk-dim); }
+.video-offline strong { display: block; margin-bottom: 4px; font-size: 16px; color: var(--chalk); }
+.video-poster .play {
+  width: 60px;
+  height: 60px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: rgba(10, 33, 24, 0.85);
+  color: var(--gold);
+  box-shadow: 0 0 0 2px var(--gold);
+  transition: transform 0.15s ease-out;
+}
+.video-poster .play svg { width: 28px; height: 28px; margin-left: 3px; }
+.video-poster:hover .play { transform: scale(1.08); }
+@media (prefers-reduced-motion: reduce) {
+  .video-poster:hover .play { transform: none; }
+}
 .hint { font-size: 14px; color: var(--chalk-dim); margin: 0; }
 
 .toast {
@@ -356,6 +442,9 @@ main { flex: 1; display: flex; min-height: 0; }
   .header { gap: 12px; }
   .brand h1 { font-size: 22px; }
   .brand p { display: none; }
+  .brand { width: 100%; }
+  .tree-switch { display: flex; width: 100%; }
+  .tree-switch-option { flex: 1; justify-content: center; min-height: 44px; }
   .actions { width: 100%; }
   .actions .btn { flex: 1; }
   .pitch-wrap { display: flex; justify-content: center; }
@@ -413,6 +502,22 @@ main { flex: 1; display: flex; min-height: 0; }
   font-weight: 700;
   flex-shrink: 0;
 }
+.account-button {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  min-width: 0;
+  padding: 0 6px 0 0;
+  border: 0;
+  border-radius: 22px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+.account-button:hover .account-name { text-decoration: underline; text-underline-offset: 2px; }
+.account-who { color: var(--chalk); overflow-wrap: anywhere; }
 .account-name { font-size: 14px; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .dialog {
@@ -428,10 +533,15 @@ main { flex: 1; display: flex; min-height: 0; }
 .dialog h2 { font-family: var(--font-display); font-weight: 600; font-size: 28px; margin: 0; }
 .dialog p { margin: 0; color: var(--chalk-dim); }
 .dialog .dialog-error { color: #ffb3b3; }
+.dialog.share { width: min(460px, 100%); max-height: 100%; overflow-y: auto; }
+.share-preview { aspect-ratio: 1080 / 1350; border-radius: 12px; overflow: hidden; background: var(--grass-2); display: grid; place-items: center; color: var(--chalk-dim); }
+.share-preview img { width: 100%; height: 100%; display: block; }
+a.btn { color: inherit; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; }
 .dialog-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 .btn:disabled { opacity: 0.6; cursor: progress; }
 @media (max-width: 700px) {
   .account { width: 100%; }
-  .account-name { flex: 1; max-width: none; }
+  .account-button { flex: 1; }
+  .account-name { flex: 1; max-width: none; text-align: left; }
   .dialog-actions .btn { flex: 1; }
 }

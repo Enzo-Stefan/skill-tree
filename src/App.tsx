@@ -1,6 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { trees } from "./data";
+import { activeTree, switchTree, treeSummaries } from "./lib/activeTree";
 import { Header } from "./components/Header";
+import { TreeSwitch } from "./components/TreeSwitch";
 import { SkillTree } from "./components/SkillTree";
 import { SkillPanel } from "./components/SkillPanel";
 import { BranchTabs } from "./components/BranchTabs";
@@ -10,17 +12,23 @@ import { LevelUpBanner } from "./components/LevelUpBanner";
 import { LevelTestDialog } from "./components/LevelTestDialog";
 import { PracticeBar } from "./components/PracticeBar";
 import { useToday } from "./components/useToday";
+import { ShareDialog } from "./components/ShareDialog";
+import { shareStats, type ShareStats } from "./components/shareImage";
 import { AccountMenu } from "./components/AccountMenu";
 import { useAuth } from "./auth/useAuth";
 import {
   levelInfo,
   loadPlayerLevel,
+  loadPlayerStep,
   loadProgress,
   newlyUnlocked,
   progressSummary,
+  rungName,
   savePlayerLevel,
+  savePlayerStep,
   saveProgress,
   targetFor,
+  type Rung,
 } from "./lib/progress";
 import {
   canPickLevel,
@@ -35,9 +43,12 @@ import {
   weekOf,
   type StreakState,
 } from "./lib/streak";
+import type { SavedProgress } from "./lib/cloud";
+import { useCloudSync } from "./lib/useCloudSync";
 
 export default function App() {
-  const tree = trees[0];
+  // The tree the player last chose (src/lib/activeTree.ts). Switching reloads the app.
+  const [tree] = useState(() => activeTree(trees));
   const auth = useAuth();
   const [done, setDone] = useState<Set<string>>(() => loadProgress(tree.id));
   const [selectedId, setSelectedId] = useState(tree.skills[0].id);
@@ -51,21 +62,73 @@ export default function App() {
   const hasLevels = (tree.playerLevels?.length ?? 0) > 0;
   // Ask on first visit; after that, only when the player asks to change.
   const [pickerOpen, setPickerOpen] = useState(() => hasLevels && loadPlayerLevel(tree) === null);
-  const playerLevelName = tree.playerLevels?.find((l) => l.id === playerLevelId)?.name ?? null;
+  const [playerStep, setPlayerStep] = useState(() => loadPlayerStep(tree.id));
+  // Where the player trains: their level and the step inside it, e.g. Beginner 2.
+  const rung: Rung | null = playerLevelId ? { levelId: playerLevelId, step: playerStep } : null;
+  const playerRungName = rungName(tree, rung);
   const [practiceDays, setPracticeDays] = useState(() => loadPracticeDays(tree.id));
   const [streakState, setStreakState] = useState(() => loadStreakState(tree.id));
   const [testOpen, setTestOpen] = useState(false);
+  // Snapshot of the progress when Share was tapped, so the image isn't redrawn on every re-render.
+  const [sharing, setSharing] = useState<ShareStats | null>(null);
   const today = useToday();
   const trainedToday = practiceDays.includes(today);
-  const nextLevel = pickerOpen || testOpen ? null : levelUpDue(tree, playerLevelId, practiceDays, today, streakState);
-  const nextLevelForTest = levelUpDue(tree, playerLevelId, practiceDays, today, streakState);
-  const testItems = nextLevelForTest
+  const nextUp = pickerOpen || testOpen ? null : levelUpDue(tree, rung, practiceDays, today, streakState);
+  const nextForTest = levelUpDue(tree, rung, practiceDays, today, streakState);
+  const testItems = nextForTest
     ? tree.skills.flatMap((s) => {
-        const target = targetFor(s, nextLevelForTest.id);
+        const target = targetFor(tree, s, nextForTest);
         return target ? [{ skillName: s.name, target }] : [];
       })
     : [];
   const selectedSkill = tree.skills.find((s) => s.id === selectedId)!;
+
+  // Everything that is saved to a signed-in player's account.
+  const progress: SavedProgress = useMemo(
+    () => ({ done: [...done], playerLevel: playerLevelId, playerStep, practiceDays, streak: streakState }),
+    [done, playerLevelId, playerStep, practiceDays, streakState],
+  );
+  const cloud = useCloudSync({ tree, userId: auth.account?.id ?? null, progress, apply: applySaved, onMessage: showToast });
+  const accountAuth = {
+    ...auth,
+    // Send any waiting save before signing out, while the account can still be written to.
+    signOut: async () => {
+      await cloud.flush();
+      await auth.signOut();
+    },
+    // Drop any waiting save before deleting the account, so nothing is sent to an account that's gone.
+    deleteAccount: async () => {
+      cloud.discard();
+      return auth.deleteAccount();
+    },
+  };
+
+  // The switch's counts come from the browser, except the open tree's, which can be a change ahead.
+  const treeChoices = treeSummaries(trees, tree).map((t) =>
+    t.active ? { ...t, done: tree.skills.filter((s) => done.has(s.id)).length } : t,
+  );
+
+  /** Send any waiting save to the account (up to 3 seconds), then reload into the other tree. */
+  async function switchToTree(id: string) {
+    await Promise.race([cloud.flush(), new Promise((resolve) => window.setTimeout(resolve, 3000))]);
+    switchTree(trees, tree, id);
+  }
+
+  /** Show progress loaded from the account, and keep it in the browser too. */
+  function applySaved(p: SavedProgress) {
+    setDone(new Set(p.done));
+    setPracticeDays(p.practiceDays);
+    savePracticeDays(tree.id, p.practiceDays);
+    // An account without a level never clears the level picked in this browser.
+    if (p.playerLevel) {
+      setPlayerLevelId(p.playerLevel);
+      savePlayerLevel(tree.id, p.playerLevel);
+      setPlayerStep(p.playerStep);
+      savePlayerStep(tree.id, p.playerStep);
+      updateStreak(p.streak);
+      setPickerOpen(false);
+    }
+  }
 
   function updateStreak(next: StreakState) {
     setStreakState(next);
@@ -85,14 +148,21 @@ export default function App() {
     updateStreak({ ...streakState, askedWeek: weekOf(dayKey(new Date())) });
   }
 
+  function moveTo(next: Rung) {
+    // Moving to a different step starts a fresh streak. The very first pick doesn't, so that week counts.
+    const moved = rung !== null && (next.levelId !== rung.levelId || next.step !== rung.step);
+    if (moved) updateStreak({ since: weekOf(dayKey(new Date())), askedWeek: null });
+    setPlayerLevelId(next.levelId);
+    savePlayerLevel(tree.id, next.levelId);
+    setPlayerStep(next.step);
+    savePlayerStep(tree.id, next.step);
+    showToast(`Showing ${rungName(tree, next)} targets.`);
+  }
+
+  /** From the Level picker: the same level keeps your step, any other level starts at its step 1. */
   function pickLevel(id: string) {
-    // Moving to a different level starts a fresh streak. The very first pick doesn't, so that week counts.
-    if (playerLevelId !== null && id !== playerLevelId) updateStreak({ since: weekOf(dayKey(new Date())), askedWeek: null });
-    setPlayerLevelId(id);
-    savePlayerLevel(tree.id, id);
     setPickerOpen(false);
-    const name = tree.playerLevels?.find((l) => l.id === id)?.name;
-    showToast(`Showing ${name} targets.`);
+    moveTo({ levelId: id, step: id === playerLevelId ? playerStep : 1 });
   }
 
   function select(id: string) {
@@ -129,7 +199,7 @@ export default function App() {
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(progressSummary(tree, done, playerLevelId));
+      await navigator.clipboard.writeText(progressSummary(tree, done, rung));
       showToast("Progress copied. Paste it anywhere.");
     } catch {
       showToast("Copy didn't work in this browser.");
@@ -148,10 +218,14 @@ export default function App() {
         tree={tree}
         doneCount={done.size}
         onCopy={copy}
+        onShare={() =>
+          setSharing(shareStats(tree, done, playerRungName, streakWeeks(practiceDays, streakState.since), window.location.host))
+        }
         onReset={reset}
-        playerLevelName={playerLevelName}
+        playerLevelName={playerRungName}
         onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
-        account={<AccountMenu auth={auth} />}
+        account={<AccountMenu auth={accountAuth} onDeleted={() => showToast("Your account and its saved progress are deleted.")} />}
+        treeSwitch={<TreeSwitch trees={treeChoices} onSwitch={switchToTree} />}
       />
       {hasLevels && playerLevelId && (
         <PracticeBar
@@ -161,7 +235,7 @@ export default function App() {
           onToggle={toggleTrainedToday}
         />
       )}
-      {nextLevel && <LevelUpBanner onYes={() => setTestOpen(true)} onLater={askLater} />}
+      {nextUp && <LevelUpBanner onYes={() => setTestOpen(true)} onLater={askLater} />}
       {isPhone && <BranchTabs tree={tree} done={done} activeId={branchId} onChange={setBranchId} />}
       <main>
         <SkillTree
@@ -179,8 +253,8 @@ export default function App() {
             onComplete={complete}
             onUndo={undo}
             onClose={isPhone ? () => setSheetOpen(false) : undefined}
-            playerLevelName={playerLevelName}
-            target={targetFor(selectedSkill, playerLevelId)}
+            playerLevelName={playerRungName}
+            target={targetFor(tree, selectedSkill, rung)}
             onChangeLevel={() => setPickerOpen(true)}
           />
         )}
@@ -197,18 +271,19 @@ export default function App() {
           closeLabel={playerLevelId ? "Cancel" : "Skip for now"}
         />
       )}
-      {testOpen && nextLevelForTest && (
+      {testOpen && nextForTest && (
         <LevelTestDialog
-          nextName={nextLevelForTest.name}
+          nextName={rungName(tree, nextForTest) ?? ""}
           items={testItems}
           onPass={() => {
             setTestOpen(false);
-            pickLevel(nextLevelForTest.id);
+            moveTo(nextForTest);
           }}
           onNotYet={askLater}
           onDismiss={() => setTestOpen(false)}
         />
       )}
+      {sharing && <ShareDialog stats={sharing} onClose={() => setSharing(null)} />}
       <div className={`toast${toast ? " show" : ""}`} role="status">
         {toast}
       </div>
