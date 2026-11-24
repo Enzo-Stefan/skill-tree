@@ -173,16 +173,23 @@ export function mergeLiftLogs(tree: Tree, a: LiftEntry[], b: LiftEntry[]): LiftE
  * The changes made here since `from` (entries added or removed), applied on top of `onto`.
  * So an entry logged here is added to the account's log, and an entry undone or reset here is
  * taken out of it, while entries from other devices stay.
+ *
+ * Replaying can happen twice: a save can reach the account just before the page closes, before
+ * this browser notes it. So an entry added here is never counted more times than this browser
+ * has it (or the account already had it). The cost: the same lift, day and weight logged on two
+ * devices before either syncs counts once.
  */
 export function replayLiftLog(tree: Tree, onto: LiftEntry[], from: LiftEntry[], to: LiftEntry[]): LiftEntry[] {
   const out = countEntries(onto);
   const before = countEntries(from);
   const after = countEntries(to);
   for (const key of new Set([...before.keys(), ...after.keys()])) {
-    const change = (after.get(key)?.count ?? 0) - (before.get(key)?.count ?? 0);
+    const here = after.get(key)?.count ?? 0;
+    const change = here - (before.get(key)?.count ?? 0);
     if (change === 0) continue;
     const entry = (after.get(key) ?? before.get(key))!.entry;
-    const count = Math.max(0, (out.get(key)?.count ?? 0) + change);
+    const there = out.get(key)?.count ?? 0;
+    const count = change > 0 ? Math.min(there + change, Math.max(there, here)) : Math.max(0, there + change);
     if (count === 0) out.delete(key);
     else out.set(key, { entry, count });
   }

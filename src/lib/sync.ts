@@ -15,8 +15,12 @@ import { replayLiftLog } from "./lifts";
 //     If this browser kept a copy of what the account last held, only the changes made here
 //     since then are applied to the account's copy, so removals stick (rebaseProgress).
 //     Without that copy, everything from both is kept (mergeProgress).
+//   - this browser synced this account before the account kept lift logs (migration 003). The
+//     account's lift log starts empty, so letting it win would wipe the lifts saved here. One
+//     merge uploads them; after that the lifts marker is set and the account wins as usual.
 
 const syncedKey = (treeId: string) => `skill-tree:${treeId}:synced-account`;
+const liftsSyncedKey = (treeId: string) => `skill-tree:${treeId}:synced-lifts`;
 const unsavedKey = (treeId: string) => `skill-tree:${treeId}:unsaved`;
 
 /** True once this account's progress has been merged into this browser for this tree. */
@@ -28,9 +32,19 @@ export function isSyncedHere(treeId: string, userId: string): boolean {
   }
 }
 
+/** True once this browser's lift log has been merged into this account (since migration 003). */
+export function liftsSyncedHere(treeId: string, userId: string): boolean {
+  try {
+    return localStorage.getItem(liftsSyncedKey(treeId)) === userId;
+  } catch {
+    return false;
+  }
+}
+
 export function markSyncedHere(treeId: string, userId: string): void {
   try {
     localStorage.setItem(syncedKey(treeId), userId);
+    localStorage.setItem(liftsSyncedKey(treeId), userId);
   } catch {
     // Storage can be blocked. Then the next load merges again, which loses nothing.
   }
@@ -122,7 +136,7 @@ export function rebaseProgress(tree: Tree, account: SavedProgress | null, base: 
 
 /** Whether the next load should merge this browser's progress into the account. */
 export function shouldMerge(treeId: string, userId: string): boolean {
-  return !isSyncedHere(treeId, userId) || hasUnsavedChanges(treeId);
+  return !isSyncedHere(treeId, userId) || hasUnsavedChanges(treeId) || !liftsSyncedHere(treeId, userId);
 }
 
 /**

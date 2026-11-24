@@ -5,6 +5,7 @@ import { weights } from "../data/weights";
 import type { SavedProgress } from "./cloud";
 import {
   hasUnsavedChanges,
+  liftsSyncedHere,
   loadAccountCopy,
   loadAccountProgress,
   markSyncedHere,
@@ -230,5 +231,42 @@ describe("lift log when syncing", () => {
   it("sees a missing lift log and an empty one as the same, and notices a new entry", () => {
     expect(sameProgress(empty, { ...empty, liftLog: [] })).toBe(true);
     expect(sameProgress({ ...empty, liftLog: [squat("2026-11-20", 40)] }, empty)).toBe(false);
+  });
+});
+
+describe("upgrading a browser that synced before lifts were kept", () => {
+  beforeEach(memoryStorage);
+
+  it("merges once, then lets the account win again", () => {
+    // Synced with an older version: only the account marker is set.
+    store.set("skill-tree:weights:synced-account", "u1");
+    expect(liftsSyncedHere("weights", "u1")).toBe(false);
+    expect(shouldMerge("weights", "u1")).toBe(true);
+    markSyncedHere("weights", "u1");
+    expect(liftsSyncedHere("weights", "u1")).toBe(true);
+    expect(shouldMerge("weights", "u1")).toBe(false);
+  });
+
+  it("uploads the lifts saved here instead of taking the account's empty log", async () => {
+    store.set("skill-tree:weights:synced-account", "u1");
+    const squat = { skillId: "lg1", date: "2026-11-20", kg: 40 };
+    // The account copy this browser kept from before has no lift log; the account's new column is empty.
+    const base = { ...empty };
+    const row = { done: [], player_level: null, player_step: 1, practice_days: [], streak_since: null, streak_asked_week: null, lift_log: [] };
+    const upserts: unknown[] = [];
+    const query = {
+      select: () => query,
+      eq: () => query,
+      maybeSingle: async () => ({ data: row, error: null }),
+      upsert: async (value: unknown) => {
+        upserts.push(value);
+        return { error: null };
+      },
+    };
+    const client = { from: () => query } as unknown as SupabaseClient;
+    const local = { ...empty, liftLog: [squat] };
+    const loaded = await loadAccountProgress(client, "u1", weights, local, shouldMerge("weights", "u1"), base);
+    expect(loaded.liftLog).toEqual([squat]);
+    expect(upserts[0]).toMatchObject({ lift_log: [squat] });
   });
 });

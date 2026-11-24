@@ -186,3 +186,25 @@ describe("merging lift logs (account sync)", () => {
     expect(replayLiftLog(weights, account, base, base)).toEqual([squat("2026-11-18", 40)]);
   });
 });
+
+describe("replaying lifts twice", () => {
+  it("doesn't double an entry whose save already reached the account", () => {
+    const base = [squat("2026-11-18", 40)];
+    const here = [squat("2026-11-18", 40), squat("2026-11-20", 45)];
+    // The save got through, but the page closed before the browser updated its copy of the account.
+    const account = here;
+    expect(replayLiftLog(weights, account, base, here)).toEqual(here);
+  });
+
+  it("still adds a second session at the same weight logged here", () => {
+    const base = [squat("2026-11-20", 45)];
+    const here = [squat("2026-11-20", 45), squat("2026-11-20", 45)];
+    expect(replayLiftLog(weights, base, base, here)).toEqual(here);
+  });
+
+  it("doesn't bring back an entry removed on another device when one more is added here", () => {
+    const base = [squat("2026-11-20", 45)];
+    const here = [squat("2026-11-20", 45), squat("2026-11-20", 45)];
+    expect(replayLiftLog(weights, [], base, here)).toEqual([squat("2026-11-20", 45)]);
+  });
+});
