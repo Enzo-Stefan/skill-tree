@@ -240,7 +240,7 @@ export default function App() {
     showToast(t.app.resetDone);
   }
 
-  const streak = streakWeeks(practiceDays, streakState.since);
+  const streak = streakWeeks(practiceDays, streakState.since, today);
   const suggested = suggestNext(tree, done);
 
   /** Train's two scroll areas: the whole tab (phones) and the tree (wider screens). */
