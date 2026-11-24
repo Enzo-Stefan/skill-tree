@@ -87,6 +87,16 @@ export function savePlayerStep(treeId: string, step: number): void {
   }
 }
 
+/** Forgets the player's level and step for a tree, so the level picker asks again (used by Reset). */
+export function clearPlayerLevel(treeId: string): void {
+  try {
+    localStorage.removeItem(playerLevelKey(treeId));
+    localStorage.removeItem(playerStepKey(treeId));
+  } catch {
+    // Storage can be blocked. The app still forgets the level for this visit.
+  }
+}
+
 /** Steps inside each player level: Beginner 1 to 4, Intermediate 1 to 4 and so on. */
 export const STEPS_PER_LEVEL = 4;
 
