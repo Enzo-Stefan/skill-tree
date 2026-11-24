@@ -29,11 +29,12 @@ export function TestMode({ skill, check, limit, canPass, onPassed, onClose }: Pr
   const dialog = useRef<HTMLDivElement>(null);
   const restoreFocus = useRef(true);
   const [state, dispatch] = useReducer(runReducer, null, () => startRun(check, limit));
-  const [now, setNow] = useState(() => performance.now());
+  const [now, setNow] = useState(() => Date.now());
   const running = state.phase === "running";
   const busy = running && state.startedAt !== null;
+  // Escape and taps outside can't throw away a run in progress. The Close button still can, once the clock is stopped.
   const safeClose = () => {
-    if (!busy) onClose();
+    if (!(running && (busy || state.past.length > 0))) onClose();
   };
   useModalFocus(dialog, safeClose, restoreFocus);
   useWakeLock();
@@ -42,7 +43,7 @@ export function TestMode({ skill, check, limit, canPass, onPassed, onClose }: Pr
   useEffect(() => {
     if (state.startedAt === null) return;
     const id = window.setInterval(() => {
-      const at = performance.now();
+      const at = Date.now();
       setNow(at);
       dispatch({ type: "tick", now: at });
     }, TICK_MS);
@@ -63,7 +64,7 @@ export function TestMode({ skill, check, limit, canPass, onPassed, onClose }: Pr
     onPassed();
   }
 
-  const at = (action: "start" | "stop") => dispatch({ type: action, now: performance.now() });
+  const at = (action: "start" | "stop") => dispatch({ type: action, now: Date.now() });
   const sides = sideCount(check);
   const titleId = `test-${skill.id}-title`;
 
@@ -80,7 +81,7 @@ export function TestMode({ skill, check, limit, canPass, onPassed, onClose }: Pr
       >
         <div className="test-head">
           <h2 id={titleId}>{t.testMode.title(skill.name)}</h2>
-          <button className="close" type="button" onClick={safeClose} disabled={busy}>
+          <button className="close" type="button" onClick={onClose} disabled={busy}>
             {t.testMode.close}
           </button>
         </div>
@@ -209,7 +210,7 @@ function Display({ state, now }: { state: RunState; now: number }) {
   return (
     <div className="test-display">
       {runs > 1 && <span className="test-sub">{t.testMode.run(Math.max(runNumber, 1), runs)}</span>}
-      <span className="test-number test-time">{formatClock(elapsed(state, now))}</span>
+      <span className="test-number test-time">{formatClock(shownTime(state, now))}</span>
       {state.times.length > 0 && (
         <ol className="test-times" aria-label={t.testMode.times}>
           {state.times.map((time, i) => (
@@ -221,6 +222,13 @@ function Display({ state, now }: { state: RunState; now: number }) {
       )}
     </div>
   );
+}
+
+/** The big stopwatch number: the running clock, or the time just run once it stops. */
+function shownTime(state: RunState, now: number): number {
+  if (state.phase === "running") return elapsed(state, now);
+  if (state.phase === "ready") return 0;
+  return state.times[state.times.length - 1] ?? 0;
 }
 
 function goalText(check: RunnableCheck, limit: number | null): string {
