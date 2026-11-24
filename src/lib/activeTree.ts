@@ -62,8 +62,7 @@ export interface TreeSummary {
 
 export function treeSummaries(trees: Tree[], current: Tree): TreeSummary[] {
   return trees.map((tree) => {
-    const ids = new Set(tree.skills.map((s) => s.id));
-    const done = [...loadProgress(tree.id)].filter((id) => ids.has(id)).length;
+    const done = loadProgress(tree).size;
     return {
       id: tree.id,
       title: tree.title,

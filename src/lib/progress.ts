@@ -56,9 +56,15 @@ export function nextSkill(tree: Tree, done: Set<string>): Skill | null {
 
 const storageKey = (treeId: string) => `skill-tree:${treeId}`;
 
-export function loadProgress(treeId: string): Set<string> {
+/**
+ * The finished skills saved in this browser for a tree. Ids the tree no longer has (a renamed or
+ * removed skill) are dropped, so they can't count toward the total or the rank ("33 of 32").
+ */
+export function loadProgress(tree: Tree): Set<string> {
   try {
-    return new Set(JSON.parse(localStorage.getItem(storageKey(treeId)) ?? "[]"));
+    const raw: unknown = JSON.parse(localStorage.getItem(storageKey(tree.id)) ?? "[]");
+    const ids = new Set(tree.skills.map((s) => s.id));
+    return new Set(Array.isArray(raw) ? raw.filter((id): id is string => typeof id === "string" && ids.has(id)) : []);
   } catch {
     return new Set();
   }
