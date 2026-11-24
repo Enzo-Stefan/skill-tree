@@ -80,7 +80,7 @@ export default function App() {
   const auth = useAuth();
   // Weights logged on lifts (Strength tree). Saved in this browser and, when signed in, in the account.
   const lifts = useLiftLog(tree);
-  // Times saved from test mode (sprints). Only in this browser until the account keeps them.
+  // Times saved from test mode (sprints). Saved to the account too, like the lift log.
   const results = useResults(tree);
   const [done, setDone] = useState<Set<string>>(() => loadProgress(tree));
   const [selectedId, setSelectedId] = useState(tree.skills[0].id);
@@ -120,8 +120,8 @@ export default function App() {
 
   // Everything that is saved to a signed-in player's account.
   const progress: SavedProgress = useMemo(
-    () => ({ done: [...done], playerLevel: playerLevelId, playerStep, practiceDays, streak: streakState, liftLog: lifts.log }),
-    [done, playerLevelId, playerStep, practiceDays, streakState, lifts.log],
+    () => ({ done: [...done], playerLevel: playerLevelId, playerStep, practiceDays, streak: streakState, liftLog: lifts.log, results: results.results }),
+    [done, playerLevelId, playerStep, practiceDays, streakState, lifts.log, results.results],
   );
   const cloud = useCloudSync({ tree, userId: auth.account?.id ?? null, progress, apply: applySaved, onMessage: showToast });
   const accountAuth = {
@@ -159,6 +159,7 @@ export default function App() {
   function applySaved(p: SavedProgress) {
     setDone(new Set(p.done));
     lifts.replace(p.liftLog ?? []);
+    results.replace(p.results ?? []);
     setPracticeDays(p.practiceDays);
     savePracticeDays(tree.id, p.practiceDays);
     // An account without a level never clears the level picked in this browser.

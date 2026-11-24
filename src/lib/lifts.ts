@@ -1,4 +1,5 @@
 import type { Tree } from "../types";
+import { mergeCounted, replayCounted } from "./counted";
 import { formatNumber } from "./progress";
 
 // The weights a player lifted, for skills with `logWeight` (#18).
@@ -140,59 +141,19 @@ export function saveLiftLog(treeId: string, log: LiftEntry[]): void {
 /** One key per kind of entry: the same lift, day and weight logged twice counts as two of the same key. */
 const entryKey = (e: LiftEntry) => `${e.skillId}|${e.date}|${e.kg}`;
 
-function countEntries(log: LiftEntry[]): Map<string, { entry: LiftEntry; count: number }> {
-  const counts = new Map<string, { entry: LiftEntry; count: number }>();
-  for (const e of log) {
-    const key = entryKey(e);
-    const seen = counts.get(key);
-    if (seen) seen.count++;
-    else counts.set(key, { entry: e, count: 1 });
-  }
-  return counts;
-}
-
-function fromCounts(tree: Tree, counts: Map<string, { entry: LiftEntry; count: number }>): LiftEntry[] {
-  const out: LiftEntry[] = [];
-  for (const { entry, count } of counts.values()) for (let i = 0; i < count; i++) out.push(entry);
-  return cleanLiftLog(tree, out);
-}
-
 /**
  * Both logs together, for the first sign-in on a device. An entry in both counts once (the
  * same session synced earlier), so the most times an entry appears in either log is kept.
  */
 export function mergeLiftLogs(tree: Tree, a: LiftEntry[], b: LiftEntry[]): LiftEntry[] {
-  const counts = countEntries(a);
-  for (const [key, theirs] of countEntries(b)) {
-    const ours = counts.get(key);
-    if (!ours || theirs.count > ours.count) counts.set(key, theirs);
-  }
-  return fromCounts(tree, counts);
+  return cleanLiftLog(tree, mergeCounted(a, b, entryKey));
 }
 
 /**
- * The changes made here since `from` (entries added or removed), applied on top of `onto`.
- * So an entry logged here is added to the account's log, and an entry undone or reset here is
- * taken out of it, while entries from other devices stay.
- *
- * Replaying can happen twice: a save can reach the account just before the page closes, before
- * this browser notes it. So an entry added here is never counted more times than this browser
- * has it (or the account already had it). The cost: the same lift, day and weight logged on two
- * devices before either syncs counts once.
+ * The changes made here since `from` applied on top of `onto` (see replayCounted): logged here is
+ * added, undone or reset here is removed, entries from other devices stay, and a save that already
+ * reached the account isn't counted twice.
  */
 export function replayLiftLog(tree: Tree, onto: LiftEntry[], from: LiftEntry[], to: LiftEntry[]): LiftEntry[] {
-  const out = countEntries(onto);
-  const before = countEntries(from);
-  const after = countEntries(to);
-  for (const key of new Set([...before.keys(), ...after.keys()])) {
-    const here = after.get(key)?.count ?? 0;
-    const change = here - (before.get(key)?.count ?? 0);
-    if (change === 0) continue;
-    const entry = (after.get(key) ?? before.get(key))!.entry;
-    const there = out.get(key)?.count ?? 0;
-    const count = change > 0 ? Math.min(there + change, Math.max(there, here)) : Math.max(0, there + change);
-    if (count === 0) out.delete(key);
-    else out.set(key, { entry, count });
-  }
-  return fromCounts(tree, out);
+  return cleanLiftLog(tree, replayCounted(onto, from, to, entryKey));
 }

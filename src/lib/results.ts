@@ -1,5 +1,6 @@
 import type { Skill, Tree } from "../types";
 import { targetValue, type Rung } from "./progress";
+import { mergeCounted, replayCounted } from "./counted";
 
 // The number a player got when they did a skill's test (idea 6 in #17): "5.61" seconds on the
 // sprint, for example. Kept per tree in the browser, like the lift log, so the app can show
@@ -7,8 +8,8 @@ import { targetValue, type Rung } from "./progress";
 //
 // A result is in the same unit as the skill's targets, so it can be compared with them. Only
 // skills with number targets can have results for now. Other tests ("8 of 10", "20 juggles")
-// need the structured test description from idea 4 first. The account has a `results` column for
-// them (supabase/migrations/003_lift_log_and_results.sql); syncing it comes with the screen that adds results.
+// need the structured test description from idea 4 first. Signed-in players' results are also
+// saved in the account's `results` column (supabase/migrations/003_lift_log_and_results.sql).
 
 /** One time the player did a skill's test and wrote down what they got. */
 export interface TestResult {
@@ -169,4 +170,22 @@ export function saveResults(treeId: string, results: TestResult[]): void {
   } catch {
     // Storage can be blocked. The results then only last for this visit.
   }
+}
+
+/** One key per kind of result: the same skill, day and value saved twice counts as two. */
+const resultKey = (r: TestResult) => `${r.skillId}|${r.date}|${r.value}`;
+
+/** Both lists together, for the first sign-in on a device (see mergeCounted). */
+export function mergeResults(tree: Tree, a: TestResult[], b: TestResult[]): TestResult[] {
+  return cleanResults(tree, mergeCounted(a, b, resultKey));
+}
+
+/** The changes made here since `from` applied on top of `onto` (see replayCounted). */
+export function replayResults(tree: Tree, onto: TestResult[], from: TestResult[], to: TestResult[]): TestResult[] {
+  return cleanResults(tree, replayCounted(onto, from, to, resultKey));
+}
+
+/** Results in a fixed order, to compare two lists however they were sorted. */
+export function resultKeys(results: TestResult[]): string[] {
+  return results.map(resultKey).sort();
 }

@@ -10,6 +10,8 @@ import {
   isNewBestResult,
   loadResults,
   meetsTarget,
+  mergeResults,
+  replayResults,
   parseResult,
   removeResult,
   resultDirection,
@@ -144,5 +146,19 @@ describe("reaching the target", () => {
   it("can't tell without a level or a number target", () => {
     expect(meetsTarget(football, skill("ft2"), null, 5)).toBeNull();
     expect(meetsTarget(football, skill("bc1"), beginner1, 5)).toBeNull();
+  });
+});
+
+describe("merging results (account sync)", () => {
+  it("keeps results from both, and one copy of a result both already have", () => {
+    const here = [sprint("2026-11-18", 6.0), sprint("2026-11-20", 5.7)];
+    const account = [sprint("2026-11-18", 6.0), sprint("2026-11-19", 5.9)];
+    expect(mergeResults(football, here, account)).toEqual([sprint("2026-11-18", 6.0), sprint("2026-11-19", 5.9), sprint("2026-11-20", 5.7)]);
+  });
+
+  it("replays a result undone here, and keeps one saved on another device", () => {
+    const base = [sprint("2026-11-18", 6.0), sprint("2026-11-19", 9.9)];
+    const account = [...base, sprint("2026-11-21", 5.8)];
+    expect(replayResults(football, account, base, [sprint("2026-11-18", 6.0)])).toEqual([sprint("2026-11-18", 6.0), sprint("2026-11-21", 5.8)]);
   });
 });

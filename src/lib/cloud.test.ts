@@ -29,7 +29,7 @@ describe("mergeProgress (first sign-in on a device)", () => {
 
   it("uses the browser's progress when the account is new", () => {
     const local = { done: ["root"], playerLevel: "advanced", playerStep: 3, practiceDays: ["2026-11-20"], streak: { since: "2026-11-16", askedWeek: null } };
-    expect(mergeProgress(football, local, null)).toEqual({ ...local, liftLog: [] });
+    expect(mergeProgress(football, local, null)).toEqual({ ...local, liftLog: [], results: [] });
   });
 
   it("keeps the account's level and streak over the browser's", () => {
@@ -110,6 +110,7 @@ describe("loading and saving", () => {
       practiceDays: ["2026-11-20"],
       streak: { since: "2026-11-02", askedWeek: null },
       liftLog: [],
+      results: [],
     });
   });
 
@@ -258,5 +259,27 @@ describe("lift log in the account", () => {
     const merged = await syncOnSignIn(client, "u1", weights, local);
     expect(merged.liftLog).toEqual([squat("2026-11-19", 42.5), squat("2026-11-20", 45)]);
     expect(upserts[0]).toMatchObject({ lift_log: [squat("2026-11-19", 42.5), squat("2026-11-20", 45)] });
+  });
+});
+
+describe("test results in the account", () => {
+  const sprint = (date: string, value: number) => ({ skillId: "ft2", date, value });
+
+  it("reads results from the row, and none when the column is missing", async () => {
+    const withResults = await fetchCloudProgress(fakeClient({ ...savedRow, results: [sprint("2026-11-20", 5.6)] }).client, "u1", "football");
+    expect(withResults?.results).toEqual([sprint("2026-11-20", 5.6)]);
+    expect((await fetchCloudProgress(fakeClient(savedRow).client, "u1", "football"))?.results).toEqual([]);
+  });
+
+  it("drops broken results and skills that can't store results", () => {
+    const p = { ...empty, results: [sprint("2026-11-20", 5.6), sprint("2026-02-31", 5.5), { skillId: "bc1", date: "2026-11-20", value: 20 }] };
+    expect(cleanProgress(football, p).results).toEqual([sprint("2026-11-20", 5.6)]);
+  });
+
+  it("on first sign-in keeps results from both, and saves them", async () => {
+    const { client, upserts } = fakeClient({ ...savedRow, done: [], player_level: null, results: [sprint("2026-11-19", 5.9)] });
+    const merged = await syncOnSignIn(client, "u1", football, { ...empty, results: [sprint("2026-11-20", 5.7)] });
+    expect(merged.results).toEqual([sprint("2026-11-19", 5.9), sprint("2026-11-20", 5.7)]);
+    expect(upserts[0]).toMatchObject({ results: [sprint("2026-11-19", 5.9), sprint("2026-11-20", 5.7)] });
   });
 });
