@@ -231,7 +231,7 @@ export default function App() {
     showToast(t.app.resetDone);
   }
 
-  const streak = streakWeeks(practiceDays, streakState.since);
+  const streak = streakWeeks(practiceDays, streakState.since, today);
 
   return (
     <div className="app">

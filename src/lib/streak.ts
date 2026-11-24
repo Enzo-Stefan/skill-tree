@@ -5,6 +5,11 @@ import { nextRung, type Rung } from "./progress";
 export const PRACTICE_DAYS_PER_WEEK = 3;
 /** Training weeks needed before the app asks "Do you think you've improved?". */
 export const STREAK_WEEKS = 4;
+/**
+ * Only training weeks inside this many recent weeks (the current one included) count toward the
+ * streak, so 4 good weeks spread across a year don't add up to a level-up question.
+ */
+export const RECENT_WEEKS = 8;
 
 /** Dates are local calendar days written as `YYYY-MM-DD`, weeks are identified by their Monday. */
 export type DayKey = string;
@@ -41,12 +46,21 @@ export function daysThisWeek(days: DayKey[], today: DayKey): number {
   return new Set(days.filter((d) => weekOf(d) === week)).size;
 }
 
+/** The Monday of the oldest week that still counts toward the streak, RECENT_WEEKS back from `today`. */
+export function oldestCountingWeek(today: DayKey): WeekKey {
+  const date = parse(weekOf(today));
+  date.setDate(date.getDate() - 7 * (RECENT_WEEKS - 1));
+  return dayKey(date);
+}
+
 /**
- * Weeks with enough training days since the player last moved level. A missed week
- * pauses the streak: the count stays where it was and carries on when training resumes.
+ * Weeks with enough training days since the player last moved level, within the last
+ * RECENT_WEEKS weeks. A missed week pauses the streak: the count stays where it was and carries
+ * on when training resumes, but weeks older than RECENT_WEEKS drop out of it.
  * The current week counts once it has enough days.
  */
-export function streakWeeks(days: DayKey[], since: WeekKey | null = null): number {
+export function streakWeeks(days: DayKey[], since: WeekKey | null, today: DayKey): number {
+  const oldest = oldestCountingWeek(today);
   const perWeek = new Map<WeekKey, Set<DayKey>>();
   for (const d of days) {
     const week = weekOf(d);
@@ -54,7 +68,7 @@ export function streakWeeks(days: DayKey[], since: WeekKey | null = null): numbe
   }
   let streak = 0;
   for (const [week, trained] of perWeek) {
-    if (trained.size >= PRACTICE_DAYS_PER_WEEK && (since === null || week > since)) streak++;
+    if (trained.size >= PRACTICE_DAYS_PER_WEEK && week >= oldest && (since === null || week > since)) streak++;
   }
   return streak;
 }
@@ -73,7 +87,7 @@ export function levelUpDue(
   const next = nextRung(tree, rung);
   if (!next) return null;
   if (state.askedWeek === weekOf(today)) return null;
-  return streakWeeks(days, state.since) >= STREAK_WEEKS ? next : null;
+  return streakWeeks(days, state.since, today) >= STREAK_WEEKS ? next : null;
 }
 
 /**

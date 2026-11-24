@@ -10,6 +10,7 @@ const week = (monday: string, count: number): string[] =>
   });
 
 const MONDAYS = ["2026-11-02", "2026-11-09", "2026-11-16", "2026-11-23"];
+const TODAY = "2026-11-26";
 const none: StreakState = { since: null, askedWeek: null };
 
 describe("weeks", () => {
@@ -28,22 +29,42 @@ describe("weeks", () => {
 describe("streak", () => {
   it("counts weeks with 3 training days, including the current one", () => {
     const days = MONDAYS.flatMap((m) => week(m, 3));
-    expect(streakWeeks(days)).toBe(4);
+    expect(streakWeeks(days, null, TODAY)).toBe(4);
   });
 
   it("does not count the current week until it has 3 days", () => {
     const days = [...MONDAYS.slice(0, 3).flatMap((m) => week(m, 3)), ...week("2026-11-23", 2)];
-    expect(streakWeeks(days)).toBe(3);
+    expect(streakWeeks(days, null, TODAY)).toBe(3);
   });
 
   it("pauses after a missed week and carries on when training resumes", () => {
     const days = [...week(MONDAYS[0], 3), ...week(MONDAYS[1], 2), ...week(MONDAYS[2], 3), ...week(MONDAYS[3], 3)];
-    expect(streakWeeks(days)).toBe(3);
+    expect(streakWeeks(days, null, TODAY)).toBe(3);
+  });
+
+  it("counts only weeks in the last 8, the current one included", () => {
+    // Oldest counting week for 2026-11-26 is the one starting 2026-10-05.
+    const old = ["2026-08-03", "2026-09-07", "2026-09-28"].flatMap((m) => week(m, 3));
+    const recent = ["2026-10-05", "2026-11-23"].flatMap((m) => week(m, 3));
+    expect(streakWeeks([...old, ...recent], null, TODAY)).toBe(2);
+  });
+
+  it("drops a week once it is more than 8 weeks old", () => {
+    const days = MONDAYS.flatMap((m) => week(m, 3));
+    expect(streakWeeks(days, null, "2026-12-27")).toBe(4);
+    expect(streakWeeks(days, null, "2026-12-28")).toBe(3);
   });
 
   it("ignores weeks up to the one the player moved level in", () => {
     const days = MONDAYS.flatMap((m) => week(m, 3));
-    expect(streakWeeks(days, "2026-11-09")).toBe(2);
+    expect(streakWeeks(days, "2026-11-09", TODAY)).toBe(2);
+  });
+});
+
+describe("level-up question, old weeks", () => {
+  it("doesn't ask when the 4 training weeks are spread across months", () => {
+    const days = ["2026-06-01", "2026-08-03", "2026-10-05", "2026-11-23"].flatMap((m) => week(m, 3));
+    expect(levelUpDue(football, { levelId: "beginner", step: 1 }, days, "2026-11-25", none)).toBeNull();
   });
 });
 
