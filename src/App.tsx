@@ -10,17 +10,23 @@ import { LevelUpBanner } from "./components/LevelUpBanner";
 import { LevelTestDialog } from "./components/LevelTestDialog";
 import { PracticeBar } from "./components/PracticeBar";
 import { useToday } from "./components/useToday";
+import { ShareDialog } from "./components/ShareDialog";
+import { shareStats, type ShareStats } from "./components/shareImage";
 import { AccountMenu } from "./components/AccountMenu";
 import { useAuth } from "./auth/useAuth";
 import {
   levelInfo,
   loadPlayerLevel,
+  loadPlayerStep,
   loadProgress,
   newlyUnlocked,
   progressSummary,
+  rungName,
   savePlayerLevel,
+  savePlayerStep,
   saveProgress,
   targetFor,
+  type Rung,
 } from "./lib/progress";
 import {
   canPickLevel,
@@ -51,17 +57,22 @@ export default function App() {
   const hasLevels = (tree.playerLevels?.length ?? 0) > 0;
   // Ask on first visit; after that, only when the player asks to change.
   const [pickerOpen, setPickerOpen] = useState(() => hasLevels && loadPlayerLevel(tree) === null);
-  const playerLevelName = tree.playerLevels?.find((l) => l.id === playerLevelId)?.name ?? null;
+  const [playerStep, setPlayerStep] = useState(() => loadPlayerStep(tree.id));
+  // Where the player trains: their level and the step inside it, e.g. Beginner 2.
+  const rung: Rung | null = playerLevelId ? { levelId: playerLevelId, step: playerStep } : null;
+  const playerRungName = rungName(tree, rung);
   const [practiceDays, setPracticeDays] = useState(() => loadPracticeDays(tree.id));
   const [streakState, setStreakState] = useState(() => loadStreakState(tree.id));
   const [testOpen, setTestOpen] = useState(false);
+  // Snapshot of the progress when Share was tapped, so the image isn't redrawn on every re-render.
+  const [sharing, setSharing] = useState<ShareStats | null>(null);
   const today = useToday();
   const trainedToday = practiceDays.includes(today);
-  const nextLevel = pickerOpen || testOpen ? null : levelUpDue(tree, playerLevelId, practiceDays, today, streakState);
-  const nextLevelForTest = levelUpDue(tree, playerLevelId, practiceDays, today, streakState);
-  const testItems = nextLevelForTest
+  const nextUp = pickerOpen || testOpen ? null : levelUpDue(tree, rung, practiceDays, today, streakState);
+  const nextForTest = levelUpDue(tree, rung, practiceDays, today, streakState);
+  const testItems = nextForTest
     ? tree.skills.flatMap((s) => {
-        const target = targetFor(s, nextLevelForTest.id);
+        const target = targetFor(tree, s, nextForTest);
         return target ? [{ skillName: s.name, target }] : [];
       })
     : [];
@@ -85,14 +96,21 @@ export default function App() {
     updateStreak({ ...streakState, askedWeek: weekOf(dayKey(new Date())) });
   }
 
+  function moveTo(next: Rung) {
+    // Moving to a different step starts a fresh streak. The very first pick doesn't, so that week counts.
+    const moved = rung !== null && (next.levelId !== rung.levelId || next.step !== rung.step);
+    if (moved) updateStreak({ since: weekOf(dayKey(new Date())), askedWeek: null });
+    setPlayerLevelId(next.levelId);
+    savePlayerLevel(tree.id, next.levelId);
+    setPlayerStep(next.step);
+    savePlayerStep(tree.id, next.step);
+    showToast(`Showing ${rungName(tree, next)} targets.`);
+  }
+
+  /** From the Level picker: the same level keeps your step, any other level starts at its step 1. */
   function pickLevel(id: string) {
-    // Moving to a different level starts a fresh streak. The very first pick doesn't, so that week counts.
-    if (playerLevelId !== null && id !== playerLevelId) updateStreak({ since: weekOf(dayKey(new Date())), askedWeek: null });
-    setPlayerLevelId(id);
-    savePlayerLevel(tree.id, id);
     setPickerOpen(false);
-    const name = tree.playerLevels?.find((l) => l.id === id)?.name;
-    showToast(`Showing ${name} targets.`);
+    moveTo({ levelId: id, step: id === playerLevelId ? playerStep : 1 });
   }
 
   function select(id: string) {
@@ -129,7 +147,7 @@ export default function App() {
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(progressSummary(tree, done, playerLevelId));
+      await navigator.clipboard.writeText(progressSummary(tree, done, rung));
       showToast("Progress copied. Paste it anywhere.");
     } catch {
       showToast("Copy didn't work in this browser.");
@@ -148,10 +166,13 @@ export default function App() {
         tree={tree}
         doneCount={done.size}
         onCopy={copy}
+        onShare={() =>
+          setSharing(shareStats(tree, done, playerRungName, streakWeeks(practiceDays, streakState.since), window.location.host))
+        }
         onReset={reset}
-        playerLevelName={playerLevelName}
+        playerLevelName={playerRungName}
         onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
-        account={<AccountMenu auth={auth} />}
+        account={<AccountMenu auth={auth} onDeleted={() => showToast("Your account and its saved progress are deleted.")} />}
       />
       {hasLevels && playerLevelId && (
         <PracticeBar
@@ -161,7 +182,7 @@ export default function App() {
           onToggle={toggleTrainedToday}
         />
       )}
-      {nextLevel && <LevelUpBanner onYes={() => setTestOpen(true)} onLater={askLater} />}
+      {nextUp && <LevelUpBanner onYes={() => setTestOpen(true)} onLater={askLater} />}
       {isPhone && <BranchTabs tree={tree} done={done} activeId={branchId} onChange={setBranchId} />}
       <main>
         <SkillTree
@@ -179,8 +200,8 @@ export default function App() {
             onComplete={complete}
             onUndo={undo}
             onClose={isPhone ? () => setSheetOpen(false) : undefined}
-            playerLevelName={playerLevelName}
-            target={targetFor(selectedSkill, playerLevelId)}
+            playerLevelName={playerRungName}
+            target={targetFor(tree, selectedSkill, rung)}
             onChangeLevel={() => setPickerOpen(true)}
           />
         )}
@@ -197,18 +218,19 @@ export default function App() {
           closeLabel={playerLevelId ? "Cancel" : "Skip for now"}
         />
       )}
-      {testOpen && nextLevelForTest && (
+      {testOpen && nextForTest && (
         <LevelTestDialog
-          nextName={nextLevelForTest.name}
+          nextName={rungName(tree, nextForTest) ?? ""}
           items={testItems}
           onPass={() => {
             setTestOpen(false);
-            pickLevel(nextLevelForTest.id);
+            moveTo(nextForTest);
           }}
           onNotYet={askLater}
           onDismiss={() => setTestOpen(false)}
         />
       )}
+      {sharing && <ShareDialog stats={sharing} onClose={() => setSharing(null)} />}
       <div className={`toast${toast ? " show" : ""}`} role="status">
         {toast}
       </div>

@@ -5,7 +5,7 @@ import type { Tree } from "../types";
 
 export const football: Tree = {
   "id": "football",
-  "title": "Football Skill Tree",
+  "title": "hapi skill",
   "tagline": "Tap a skill, pass its test, unlock the next one.",
   "branches": [
     {
@@ -434,10 +434,8 @@ export const football: Tree = {
       "video": "https://www.youtube.com/watch?v=9FLbl9uVGXw",
       "test": "Sprint 30 metres from standing, timed by a friend, best of 3 tries.",
       "targets": {
-        "beginner": "Under 5.8 seconds.",
-        "intermediate": "Under 5.3 seconds.",
-        "advanced": "Under 4.8 seconds.",
-        "expert": "Under 4.55 seconds."
+        "text": "Under {n} seconds.",
+        "values": { "beginner": 5.8, "intermediate": 5.3, "advanced": 4.8, "expert": 4.55 }
       },
       "tip": "Drive your arms. Your legs follow your arms."
     },
@@ -468,10 +466,8 @@ export const football: Tree = {
       "video": "https://www.youtube.com/watch?v=e3iXwU_xk5M",
       "test": "10 sprints of 40 metres with 30 seconds rest between, each one under your target time.",
       "targets": {
-        "beginner": "Each sprint under 7.5 seconds.",
-        "intermediate": "Each sprint under 7.0 seconds.",
-        "advanced": "Each sprint under 6.5 seconds.",
-        "expert": "Each sprint under 6.25 seconds."
+        "text": "Each sprint under {n} seconds.",
+        "values": { "beginner": 7.5, "intermediate": 7.0, "advanced": 6.5, "expert": 6.25 }
       },
       "tip": "Walk back slowly during the rest to recover faster."
     },
