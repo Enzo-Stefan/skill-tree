@@ -21,7 +21,6 @@ import { SettingsScreen } from "./components/SettingsScreen";
 import { useAuth } from "./auth/useAuth";
 import {
   clearPlayerLevel,
-  completedDependents,
   levelInfo,
   loadPlayerLevel,
   loadPlayerStep,
@@ -53,6 +52,7 @@ import {
   type StreakState,
 } from "./lib/streak";
 import { useLiftLog } from "./components/useLiftLog";
+import { undoPass, withoutSkill } from "./components/undoPass";
 import type { SavedProgress } from "./lib/cloud";
 import { useCloudSync } from "./lib/useCloudSync";
 import { t } from "./i18n";
@@ -67,12 +67,6 @@ interface ToastAction {
 interface Toast {
   text: string;
   action?: ToastAction;
-}
-
-function withoutSkill(done: Set<string>, id: string): Set<string> {
-  const next = new Set(done);
-  next.delete(id);
-  return next;
 }
 
 export default function App() {
@@ -219,11 +213,13 @@ export default function App() {
 
   // By id, not "whatever had focus": iOS Safari doesn't focus a button on tap, and the sheet can
   // switch skills while open.
+  // If the Train view is hidden (the toast's Undo can be tapped from Progress or Settings), focus
+  // goes to the current tab's button instead of falling to the page.
   function focusSkill(id: string) {
     const buttons = trainRef.current?.querySelectorAll<HTMLElement>(`[data-skill-id="${CSS.escape(id)}"]`) ?? [];
-    Array.from(buttons)
-      .find((b) => b.offsetParent !== null)
-      ?.focus();
+    const visible = Array.from(buttons).find((b) => b.offsetParent !== null);
+    const target = visible ?? document.querySelector<HTMLElement>('.tabbar [aria-current="page"]');
+    target?.focus();
   }
 
   function closeSheet(id = selectedId) {
@@ -257,6 +253,8 @@ export default function App() {
     const after = levelInfo(tree.levels, next.size).current.name;
     setDone(next);
     markTrainedToday();
+    // On laptops the panel stays on screen, but "I passed" turns into Undo there, so focus goes
+    // to the skill in the tree, the same as on phones.
     if (sheetOpen) closeSheet(id);
     // Undo right here, for a mis-tap: the sheet has closed, so its own Undo is out of reach.
     const undoPass = { label: t.app.undo, accessibleLabel: t.app.undoPass(skill.name), run: () => undoPassed(id) };
@@ -268,11 +266,11 @@ export default function App() {
   /** Un-passes a skill, unless a skill that needs it has been passed since. Works from the latest progress, not a stale copy. */
   function undoPassed(id: string) {
     const skill = tree.skills.find((s) => s.id === id)!;
-    const blockers = completedDependents(tree, doneRef.current, id);
+    const { blockers } = undoPass(tree, doneRef.current, id);
     if (blockers.length) {
       showToast(t.panel.undoFirst(blockers.map((s) => s.name)));
     } else {
-      setDone((current) => withoutSkill(current, id));
+      setDone((current) => undoPass(tree, current, id).done);
       showToast(t.app.undone(skill.name));
     }
     // The Undo button is gone, so focus goes to the skill instead of falling to the page.
