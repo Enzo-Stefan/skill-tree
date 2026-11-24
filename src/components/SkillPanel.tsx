@@ -6,6 +6,8 @@ import { LiftLogBlock } from "./LiftLogBlock";
 import { TestMode } from "./TestMode";
 import { isRunnable } from "./testRun";
 import type { LiftLog } from "./useLiftLog";
+import type { Results } from "./useResults";
+import { bestResult, resultDirection } from "../lib/results";
 import { t } from "../i18n";
 
 interface Props {
@@ -25,6 +27,8 @@ interface Props {
   lifts?: LiftLog;
   /** The stopwatch limit in seconds for this skill's test at the player's level, or null. */
   timeLimit?: number | null;
+  /** The tree's saved test results, for "Your best time" and saving a time in test mode. */
+  results?: Results;
 }
 
 export function SkillPanel({
@@ -39,6 +43,7 @@ export function SkillPanel({
   onChangeLevel,
   lifts,
   timeLimit = null,
+  results,
 }: Props) {
   const skill = tree.skills.find((s) => s.id === skillId)!;
   const heading = useRef<HTMLHeadingElement>(null);
@@ -60,6 +65,9 @@ export function SkillPanel({
     .filter((r) => !done.has(r))
     .map((r) => tree.skills.find((s) => s.id === r)?.name);
   const dependents = completedDependents(tree, done, skill.id);
+  // Only stopwatch tests save a time from test mode for now; their targets say whether lower is better.
+  const keepsTimes = results && skill.check?.kind === "time" && resultDirection(tree, skill) !== null ? results : undefined;
+  const best = keepsTimes ? bestResult(tree, keepsTimes.results, skill.id) : null;
   const query = encodeURIComponent(t.panel.youtubeSearch(tree.id, skill.name));
 
   return (
@@ -102,6 +110,12 @@ export function SkillPanel({
               {t.panel.pickLevelForTarget}
             </button>
           ))}
+        {best && (
+          <p className="lift-best">
+            {t.testMode.bestTime} <strong>{t.testMode.seconds(best.value)}</strong>{" "}
+            <span className="lift-date">{t.lifts.on(best.date)}</span>
+          </p>
+        )}
         {isRunnable(skill.check) && state !== "locked" && (
           <div className="test-open">
             <button className="btn" type="button" onClick={() => setTestFor(skill.id)}>
@@ -124,6 +138,7 @@ export function SkillPanel({
             onComplete(skill.id);
           }}
           onClose={() => setTestFor(null)}
+          results={keepsTimes}
         />
       )}
       {skill.logWeight && lifts && state !== "locked" && <LiftLogBlock key={skill.id} skillId={skill.id} lifts={lifts} />}

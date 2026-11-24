@@ -53,6 +53,7 @@ import {
   type StreakState,
 } from "./lib/streak";
 import { useLiftLog } from "./components/useLiftLog";
+import { useResults } from "./components/useResults";
 import { undoPass, withoutSkill } from "./components/undoPass";
 import type { SavedProgress } from "./lib/cloud";
 import { useCloudSync } from "./lib/useCloudSync";
@@ -76,6 +77,8 @@ export default function App() {
   const auth = useAuth();
   // Weights logged on lifts (Strength tree). They stay in this browser, never in the account.
   const lifts = useLiftLog(tree);
+  // Times saved from test mode (sprints). Browser only too, until the account keeps them.
+  const results = useResults(tree);
   const [done, setDone] = useState<Set<string>>(() => loadProgress(tree));
   const [selectedId, setSelectedId] = useState(tree.skills[0].id);
   // Not in the URL: Google sign-in comes back with its tokens in the address's # part.
@@ -291,7 +294,7 @@ export default function App() {
     }
   }
 
-  /** Clears everything for this tree: finished skills, level and step, training days, streak and logged weights. */
+  /** Clears everything for this tree: finished skills, level and step, training days, streak, logged weights and saved times. */
   function reset() {
     setDone(new Set());
     setPlayerLevelId(null);
@@ -301,6 +304,7 @@ export default function App() {
     savePracticeDays(tree.id, []);
     updateStreak({ since: null, askedWeek: null });
     lifts.clear();
+    results.clear();
     setTestOpen(false);
     setSelectedId(tree.skills[0].id);
     setBranchId(tree.branches[0].id);
@@ -401,6 +405,7 @@ export default function App() {
                 onChangeLevel={() => setPickerOpen(true)}
                 lifts={lifts}
                 timeLimit={timeLimit(tree, selectedSkill, rung)}
+                results={results}
               />
             )}
           </main>

@@ -152,7 +152,8 @@ export const en = {
       s < 60 ? `${s} seconds` : s % 60 === 0 ? `${s / 60} minutes` : `${Math.floor(s / 60)} min ${s % 60} s`,
     bestOf: (n: number) => `Best of ${n} runs.`,
     everyRun: (n: number) => `${n} runs, every one under the time.`,
-    eachTry: (seconds: number) => `Each try lasts ${seconds} seconds.`,
+    eachTry: (seconds: number) =>
+      `Each try lasts ${seconds} seconds. Tap Start for each try, and Miss if it goes wrong. Lasting the whole time counts as a hit.`,
     /** Under the big hit count: "hits from 6 tries". */
     hitsFrom: (tries: number) => `hits from ${tries} ${tries === 1 ? "try" : "tries"}`,
     /** Under the big count: "of 20". */
@@ -164,6 +165,7 @@ export const en = {
     addLabel: "Add one",
     slip: "Missed: start from 0",
     start: "Start",
+    startTry: "Start try",
     stop: "Stop",
     giveUp: "Stop early",
     undoTap: "Undo last tap",
@@ -177,6 +179,14 @@ export const en = {
     finished: "Done. Pick your level to see if these times pass.",
     markPassed: "Mark the skill as passed",
     alreadyPassed: "You've already passed this skill.",
+    /** A saved time, e.g. "5.61 s". */
+    seconds: (value: number) => `${value} s`,
+    saveTime: (time: string) => `Save my time: ${time}`,
+    saved: (time: string) => `Saved ${time}.`,
+    newBest: (time: string) => `New best time: ${time}!`,
+    undoSave: "Undo",
+    /** In the skill sheet, above the saved best time. */
+    bestTime: "Your best time",
   },
   video: {
     offlineTitle: "Video needs internet",

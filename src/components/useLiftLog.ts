@@ -69,7 +69,8 @@ export function useLiftLog(tree: Tree): LiftLog {
   };
 }
 
-function storageWorks(): boolean {
+/** True when the browser lets the app save. */
+export function storageWorks(): boolean {
   try {
     localStorage.setItem("skill-tree:storage-check", "1");
     localStorage.removeItem("skill-tree:storage-check");

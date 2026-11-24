@@ -1,7 +1,23 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Skill } from "../types";
-import { elapsed, formatClock, needsStart, remaining, runCount, runReducer, sideCount, startRun, type Phase, type RunState, type RunnableCheck } from "./testRun";
+import {
+  canUndo,
+  elapsed,
+  formatClock,
+  needsStart,
+  remaining,
+  runCount,
+  runReducer,
+  runResult,
+  sideCount,
+  startRun,
+  timedTries,
+  type Phase,
+  type RunState,
+  type RunnableCheck,
+} from "./testRun";
+import type { Results, SavedResult } from "./useResults";
 import { useModalFocus } from "./useModalFocus";
 import { t } from "../i18n";
 
@@ -15,6 +31,8 @@ interface Props {
   /** Marks the skill as passed. The dialog is already closing and won't put focus back. */
   onPassed: () => void;
   onClose: () => void;
+  /** Where a finished stopwatch test's time can be saved. Only for skills whose results the app can keep. */
+  results?: Results;
 }
 
 /** How often the clock redraws while it runs. The time itself comes from timestamps, not from counting these. */
@@ -25,16 +43,17 @@ const TICK_MS = 100;
  * count and hold a timer at the same time. Opens over the skill sheet. A running test ignores taps
  * outside it and Escape, so a stray touch can't throw away a run.
  */
-export function TestMode({ skill, check, limit, canPass, onPassed, onClose }: Props) {
+export function TestMode({ skill, check, limit, canPass, onPassed, onClose, results }: Props) {
   const dialog = useRef<HTMLDivElement>(null);
   const restoreFocus = useRef(true);
   const [state, dispatch] = useReducer(runReducer, null, () => startRun(check, limit));
   const [now, setNow] = useState(() => Date.now());
   const running = state.phase === "running";
   const busy = running && state.startedAt !== null;
-  // Escape and taps outside can't throw away a run in progress. The Close button still can, once the clock is stopped.
+  const [saved, setSaved] = useState<SavedResult | null>(null);
+  // Escape and taps outside can't throw away anything counted or timed. The Close button still can, once the clock is stopped.
   const safeClose = () => {
-    if (!(running && (busy || state.past.length > 0))) onClose();
+    if (isUntouched(state)) onClose();
   };
   useModalFocus(dialog, safeClose, restoreFocus);
   useWakeLock();
@@ -59,12 +78,34 @@ export function TestMode({ skill, check, limit, canPass, onPassed, onClose }: Pr
     lastPhase.current = state.phase;
   }, [state.phase]);
 
+  // A short buzz when a timed try lasts the whole time, for a player shielding the ball who can't look.
+  const lastHits = useRef(state.hits);
+  useEffect(() => {
+    if (state.hits > lastHits.current && state.phase === "ready") navigator.vibrate?.(80);
+    lastHits.current = state.hits;
+  }, [state.hits, state.phase]);
+
+  const toSave = results ? runResult(state) : null;
+  function saveTime() {
+    if (toSave === null || !results) return;
+    setSaved(results.add(skill.id, toSave));
+  }
+  function undoSave() {
+    if (saved) results?.remove(saved.result);
+    setSaved(null);
+  }
+
   function markPassed() {
     restoreFocus.current = false;
     onPassed();
   }
 
   const at = (action: "start" | "stop") => dispatch({ type: action, now: Date.now() });
+  const tap = (action: "hit" | "miss" | "add") => dispatch({ type: action, now: Date.now() });
+  const restart = () => {
+    setSaved(null);
+    dispatch({ type: "restart" });
+  };
   const sides = sideCount(check);
   const titleId = `test-${skill.id}-title`;
 
@@ -95,10 +136,12 @@ export function TestMode({ skill, check, limit, canPass, onPassed, onClose }: Pr
         <div className="test-controls">
           {running && check.kind === "hits" && (
             <>
-              <button className="btn test-big hit" type="button" onClick={() => dispatch({ type: "hit" })}>
-                {t.testMode.hit}
-              </button>
-              <button className="btn test-big miss" type="button" onClick={() => dispatch({ type: "miss" })}>
+              {!timedTries(check) && (
+                <button className="btn test-big hit" type="button" onClick={() => tap("hit")}>
+                  {t.testMode.hit}
+                </button>
+              )}
+              <button className="btn test-big miss" type="button" onClick={() => tap("miss")}>
                 {t.testMode.miss}
               </button>
             </>
@@ -109,7 +152,7 @@ export function TestMode({ skill, check, limit, canPass, onPassed, onClose }: Pr
                 className="btn primary test-big"
                 type="button"
                 aria-label={t.testMode.addLabel}
-                onClick={() => dispatch({ type: "add" })}
+                onClick={() => tap("add")}
               >
                 {t.testMode.add}
               </button>
@@ -122,7 +165,7 @@ export function TestMode({ skill, check, limit, canPass, onPassed, onClose }: Pr
           )}
           {state.phase === "ready" && (
             <button className="btn primary test-big" type="button" onClick={() => at("start")}>
-              {t.testMode.start}
+              {timedTries(check) ? t.testMode.startTry : t.testMode.start}
             </button>
           )}
           {running && check.kind === "time" && (
@@ -130,7 +173,7 @@ export function TestMode({ skill, check, limit, canPass, onPassed, onClose }: Pr
               {t.testMode.stop}
             </button>
           )}
-          {running && needsStart(check) && check.kind !== "time" && (
+          {running && needsStart(check) && check.kind !== "time" && check.kind !== "hits" && (
             <button className="btn test-wide" type="button" onClick={() => at("stop")}>
               {t.testMode.giveUp}
             </button>
@@ -148,6 +191,21 @@ export function TestMode({ skill, check, limit, canPass, onPassed, onClose }: Pr
             ) : (
               <p className="hint">{t.testMode.alreadyPassed}</p>
             ))}
+          {toSave !== null && !saved && (
+            <button className="btn test-wide" type="button" onClick={saveTime}>
+              {t.testMode.saveTime(t.testMode.seconds(toSave))}
+            </button>
+          )}
+          {saved && (
+            <p className="test-saved">
+              <span role="status">
+                {saved.best ? t.testMode.newBest(t.testMode.seconds(saved.result.value)) : t.testMode.saved(t.testMode.seconds(saved.result.value))}
+              </span>{" "}
+              <button className="link-btn" type="button" onClick={undoSave}>
+                {t.testMode.undoSave}
+              </button>
+            </p>
+          )}
         </div>
 
         <p className={`test-result ${state.phase}`} role="status">
@@ -155,13 +213,13 @@ export function TestMode({ skill, check, limit, canPass, onPassed, onClose }: Pr
         </p>
 
         <div className="dialog-actions test-secondary">
-          {state.past.length > 0 && (
+          {canUndo(state) && (
             <button className="btn" type="button" onClick={() => dispatch({ type: "undo" })}>
               {t.testMode.undoTap}
             </button>
           )}
           {!isUntouched(state) && (
-            <button className="btn" type="button" onClick={() => dispatch({ type: "restart" })} disabled={busy}>
+            <button className="btn" type="button" onClick={restart} disabled={busy}>
               {t.testMode.restart}
             </button>
           )}
@@ -181,6 +239,11 @@ function Display({ state, now }: { state: RunState; now: number }) {
         <span className="test-sub">
           {t.testMode.hitsFrom(state.tries)} · {t.testMode.hitsLeft(check.attempts - state.tries)}
         </span>
+        {check.seconds !== undefined && (state.phase === "ready" || state.phase === "running") && (
+          <span className="test-clock" aria-hidden="true">
+            {formatClock(remaining(state, now) ?? 0, false)}
+          </span>
+        )}
       </div>
     );
   }
@@ -264,7 +327,7 @@ function resultText(phase: Phase): string {
 }
 
 function isUntouched(state: RunState): boolean {
-  return state.side === 0 && state.tries === 0 && state.count === 0 && state.times.length === 0 && state.startedAt === null && (state.phase === "ready" || state.phase === "running");
+  return state.past.length === 0 && state.side === 0 && state.tries === 0 && state.count === 0 && state.times.length === 0 && state.startedAt === null && (state.phase === "ready" || state.phase === "running");
 }
 
 /** Keeps the screen on while test mode is open, where the browser allows it. Asks again after the tab comes back. */
