@@ -1,8 +1,57 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { football } from "../data/football";
 import type { SavedProgress } from "./cloud";
-import { loadAccountProgress, sameProgress } from "./sync";
+import { hasUnsavedChanges, loadAccountProgress, markSyncedHere, sameProgress, setUnsavedChanges, shouldMerge } from "./sync";
+
+describe("when to merge instead of letting the account win", () => {
+  const store = new Map<string, string>();
+  beforeEach(() => {
+    store.clear();
+    globalThis.localStorage = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+    } as Storage;
+  });
+
+  it("merges the first time an account is used in this browser", () => {
+    expect(shouldMerge("football", "u1")).toBe(true);
+  });
+
+  it("lets the account win once synced, with nothing unsaved", () => {
+    markSyncedHere("football", "u1");
+    expect(shouldMerge("football", "u1")).toBe(false);
+  });
+
+  it("merges again while the browser has unsaved changes (offline, failed save, signed out)", () => {
+    markSyncedHere("football", "u1");
+    setUnsavedChanges("football", true);
+    expect(shouldMerge("football", "u1")).toBe(true);
+    setUnsavedChanges("football", false);
+    expect(shouldMerge("football", "u1")).toBe(false);
+  });
+
+  it("merges for a different account on the same browser", () => {
+    markSyncedHere("football", "u1");
+    expect(shouldMerge("football", "u2")).toBe(true);
+  });
+
+  it("keeps the flag per tree", () => {
+    setUnsavedChanges("football", true);
+    expect(hasUnsavedChanges("football")).toBe(true);
+    expect(hasUnsavedChanges("weights")).toBe(false);
+  });
+
+  it("merges to be safe when the browser's storage can't be read", () => {
+    globalThis.localStorage = {
+      getItem: () => {
+        throw new Error("blocked");
+      },
+    } as unknown as Storage;
+    expect(hasUnsavedChanges("football")).toBe(true);
+  });
+});
 
 const empty: SavedProgress = { done: [], playerLevel: null, playerStep: 1, practiceDays: [], streak: { since: null, askedWeek: null } };
 

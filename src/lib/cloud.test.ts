@@ -183,4 +183,53 @@ describe("createCloudSaver", () => {
     await saver.flush();
     expect(errors).toEqual(["Couldn't save your progress: offline"]);
   });
+
+  /** A client whose saves fail until `online` is set to true. */
+  function flakyClient() {
+    const state = { online: false, saved: [] as { done: string[] }[] };
+    const query = {
+      upsert: async (value: { done: string[] }) => {
+        if (!state.online) return { error: { message: "offline" } };
+        state.saved.push(value);
+        return { error: null };
+      },
+    };
+    return { client: { from: () => query } as unknown as SupabaseClient, state };
+  }
+
+  it("keeps a failed save and sends it on the next try", async () => {
+    const { client, state } = flakyClient();
+    let savedCalls = 0;
+    const saver = createCloudSaver(client, "u1", "football", () => {}, 800, () => savedCalls++);
+    saver.save({ ...empty, done: ["root"] });
+    await saver.flush();
+    expect(saver.hasPending()).toBe(true);
+    expect(savedCalls).toBe(0);
+    state.online = true;
+    await saver.flush();
+    expect(state.saved.map((s) => s.done)).toEqual([["root"]]);
+    expect(saver.hasPending()).toBe(false);
+    expect(savedCalls).toBe(1);
+  });
+
+  it("after a failed save, a newer change wins over the failed one", async () => {
+    const { client, state } = flakyClient();
+    const saver = createCloudSaver(client, "u1", "football", () => {});
+    saver.save({ ...empty, done: ["root"] });
+    await saver.flush();
+    saver.save({ ...empty, done: ["root", "bc1"] });
+    state.online = true;
+    await saver.flush();
+    expect(state.saved.map((s) => s.done)).toEqual([["root", "bc1"]]);
+  });
+
+  it("can drop a waiting save without sending it", async () => {
+    const { client, state } = flakyClient();
+    state.online = true;
+    const saver = createCloudSaver(client, "u1", "football", () => {});
+    saver.save({ ...empty, done: ["root"] });
+    saver.discard();
+    await saver.flush();
+    expect(state.saved).toEqual([]);
+  });
 });

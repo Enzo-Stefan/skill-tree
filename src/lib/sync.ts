@@ -4,11 +4,16 @@ import { cleanProgress, fetchCloudProgress, saveCloudProgress, syncOnSignIn, typ
 
 // When a signed-in player opens the app, which copy of their progress wins.
 //
-// The first time an account is used in a browser, the browser's progress and the account's are
-// merged, so nothing done before signing in is lost. After that the account's copy wins on every
-// load: merging again would bring back a skill that was un-ticked on another device.
+// The account's copy wins, so a skill un-ticked on another device doesn't come back, unless
+// this browser may have progress the account doesn't. Then the two are merged, so nothing is
+// lost. That's the case when:
+//   - this account has never been synced in this browser, or
+//   - the browser has unsaved changes: progress changed and no save of it has succeeded yet.
+//     That covers training offline, a save that failed, using the app signed out, and
+//     closing the app while the account was still loading.
 
 const syncedKey = (treeId: string) => `skill-tree:${treeId}:synced-account`;
+const unsavedKey = (treeId: string) => `skill-tree:${treeId}:unsaved`;
 
 /** True once this account's progress has been merged into this browser for this tree. */
 export function isSyncedHere(treeId: string, userId: string): boolean {
@@ -27,15 +32,39 @@ export function markSyncedHere(treeId: string, userId: string): void {
   }
 }
 
+/** True if progress changed in this browser and no save of it has succeeded yet. */
+export function hasUnsavedChanges(treeId: string): boolean {
+  try {
+    return localStorage.getItem(unsavedKey(treeId)) === "1";
+  } catch {
+    // Can't tell, so merge to be safe.
+    return true;
+  }
+}
+
+export function setUnsavedChanges(treeId: string, unsaved: boolean): void {
+  try {
+    if (unsaved) localStorage.setItem(unsavedKey(treeId), "1");
+    else localStorage.removeItem(unsavedKey(treeId));
+  } catch {
+    // Storage can be blocked. hasUnsavedChanges() then says true, which merges and loses nothing.
+  }
+}
+
+/** Whether the next load should merge this browser's progress into the account. */
+export function shouldMerge(treeId: string, userId: string): boolean {
+  return !isSyncedHere(treeId, userId) || hasUnsavedChanges(treeId);
+}
+
 /**
  * The progress to show for a signed-in player.
  *
  * Args:
- *   firstHere: True if this account hasn't been synced in this browser before.
+ *   merge: True if this browser may have progress the account doesn't (see shouldMerge).
  *
  * Returns:
- *   First time here: the browser and account merged, and saved to the account.
- *   After that: the account's copy. If the account has no saved row (for example it was
+ *   With merge: the browser and account merged, and saved to the account.
+ *   Without: the account's copy. If the account has no saved row (for example it was
  *   deleted), the browser's progress is saved to it instead.
  */
 export async function loadAccountProgress(
@@ -43,9 +72,9 @@ export async function loadAccountProgress(
   userId: string,
   tree: Tree,
   local: SavedProgress,
-  firstHere: boolean,
+  merge: boolean,
 ): Promise<SavedProgress> {
-  if (firstHere) return syncOnSignIn(client, userId, tree, local);
+  if (merge) return syncOnSignIn(client, userId, tree, local);
   const cloud = await fetchCloudProgress(client, userId, tree.id);
   if (cloud) return cleanProgress(tree, cloud);
   const cleaned = cleanProgress(tree, local);
