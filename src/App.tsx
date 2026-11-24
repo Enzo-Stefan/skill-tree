@@ -86,12 +86,17 @@ export default function App() {
     [done, playerLevelId, playerStep, practiceDays, streakState],
   );
   const cloud = useCloudSync({ tree, userId: auth.account?.id ?? null, progress, apply: applySaved, onMessage: showToast });
-  // Send any waiting save before signing out, while the account can still be written to.
   const accountAuth = {
     ...auth,
+    // Send any waiting save before signing out, while the account can still be written to.
     signOut: async () => {
       await cloud.flush();
       await auth.signOut();
+    },
+    // Drop any waiting save before deleting the account, so nothing is sent to an account that's gone.
+    deleteAccount: async () => {
+      cloud.discard();
+      return auth.deleteAccount();
     },
   };
 
@@ -205,7 +210,7 @@ export default function App() {
         onReset={reset}
         playerLevelName={playerRungName}
         onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
-        account={<AccountMenu auth={accountAuth} />}
+        account={<AccountMenu auth={accountAuth} onDeleted={() => showToast("Your account and its saved progress are deleted.")} />}
       />
       {hasLevels && playerLevelId && (
         <PracticeBar
