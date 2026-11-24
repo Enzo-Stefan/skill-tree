@@ -53,7 +53,13 @@ export const en = {
     changeLevel: "Change level",
     pickLevelForTarget: "Pick your level to see your target",
     tip: "Coach's tip",
-    youtubeSearch: (skill: string) => `football ${skill} drill tutorial`,
+    /** What the YouTube link searches for. Each tree gets words that find the right kind of video. */
+    youtubeSearch: (treeId: string, skill: string) =>
+      treeId === "football"
+        ? `football ${skill} drill tutorial`
+        : treeId === "weights"
+          ? `${skill} exercise form tutorial`
+          : `${skill} tutorial`,
     watchYoutube: "Watch tutorials on YouTube",
     passed: "I passed the test",
     undoFirst: (skills: string[]) => `To undo this, first undo: ${skills.join(", ")}.`,

@@ -23,6 +23,17 @@ describe("English language file", () => {
     expect(en.app.skillCompleteUnlocked("Juggling", ["Passing", "Dribbling"])).toBe(
       "Juggling complete. Unlocked: Passing, Dribbling.",
     );
+    expect(en.panel.youtubeSearch("football", "Juggling")).toBe("football Juggling drill tutorial");
     expect(en.share.imageTraining("Beginner 2", en.share.imageStreak(4))).toBe("Training at Beginner 2 · 4-week streak");
+  });
+});
+
+describe("YouTube search", () => {
+  it("doesn't call a Strength lift a football drill", () => {
+    expect(en.panel.youtubeSearch("weights", "Goblet Squat")).toBe("Goblet Squat exercise form tutorial");
+  });
+
+  it("uses plain words for a tree it doesn't know", () => {
+    expect(en.panel.youtubeSearch("swimming", "Flip Turn")).toBe("Flip Turn tutorial");
   });
 });
