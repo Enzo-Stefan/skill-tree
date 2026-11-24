@@ -115,7 +115,7 @@ export function drawShareImage(ctx: CanvasRenderingContext2D, stats: ShareStats)
 
   ctx.fillStyle = CHALK_DIM;
   ctx.font = `600 34px ${DISPLAY}`;
-  ctx.fillText(stats.title.toUpperCase(), 90, 120);
+  ctx.fillText(stats.title, 90, 120);
 
   ctx.fillStyle = GOLD;
   ctx.font = `700 112px ${DISPLAY}`;
