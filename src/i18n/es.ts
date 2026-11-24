@@ -118,6 +118,10 @@ export const es: Strings = {
     finalSkill: "Habilidad final",
     close: "Cerrar",
     closeLabel: "Cerrar los detalles de la habilidad",
+    showAll: "Mostrar toda la habilidad",
+    showLess: "Mostrar menos",
+    showMore: (hasVideo: boolean) =>
+      hasVideo ? "Ver el ejercicio, el vídeo y el consejo" : "Ver el ejercicio y el consejo",
     finishFirst: (skills: string[]) => `Termina primero: ${skills.join(", ")}.`,
     drill: "El ejercicio",
     test: "Supera la prueba",

@@ -119,6 +119,11 @@ export const en = {
     finalSkill: "Final skill",
     close: "Close",
     closeLabel: "Close skill details",
+    /** The phone sheet's grabber, for screen readers: it switches between half and full height. */
+    showAll: "Show the whole skill",
+    showLess: "Show less",
+    /** Under the test's buttons in the half-height sheet: opens the rest. */
+    showMore: (hasVideo: boolean): string => (hasVideo ?"Show the drill, video and tip" : "Show the drill and tip"),
     finishFirst: (skills: string[]) => `Finish these first: ${skills.join(", ")}.`,
     drill: "The drill",
     test: "Pass the test",

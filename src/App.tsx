@@ -241,6 +241,34 @@ export default function App() {
     focusSkill(id);
   }
 
+  // The phone's back gesture (Android) closes the sheet instead of leaving the app: an open sheet
+  // adds a history entry, and every other way of closing it takes that entry off again.
+  const sheetInHistory = useRef(false);
+  const closeSheetRef = useRef(closeSheet);
+  useEffect(() => {
+    closeSheetRef.current = closeSheet;
+  });
+  const sheetShown = isPhone && sheetOpen;
+  useEffect(() => {
+    if (!sheetShown) {
+      if (sheetInHistory.current) {
+        sheetInHistory.current = false;
+        window.history.back();
+      }
+      return;
+    }
+    if (!sheetInHistory.current) {
+      window.history.pushState({ ...window.history.state, skillSheet: true }, "");
+      sheetInHistory.current = true;
+    }
+    const onPop = () => {
+      sheetInHistory.current = false;
+      closeSheetRef.current();
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [sheetShown]);
+
   useEffect(() => saveProgress(tree.id, done), [tree.id, done]);
   // The toast's Undo runs after later renders (a cloud load can land in between), so it reads this.
   const doneRef = useRef(done);
@@ -416,6 +444,8 @@ export default function App() {
                 lifts={lifts}
                 timeLimit={timeLimit(tree, selectedSkill, rung)}
                 results={results}
+                // One sheet at a time: on phones the skill sheet steps aside while a level dialog is open.
+                hidden={isPhone && (pickerOpen || testOpen || placementId !== null)}
               />
             )}
           </main>
