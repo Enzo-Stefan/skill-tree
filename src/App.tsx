@@ -172,7 +172,7 @@ export default function App() {
         onReset={reset}
         playerLevelName={playerRungName}
         onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
-        account={<AccountMenu auth={auth} />}
+        account={<AccountMenu auth={auth} onDeleted={() => showToast("Your account and its saved progress are deleted.")} />}
       />
       {hasLevels && playerLevelId && (
         <PracticeBar
