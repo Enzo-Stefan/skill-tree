@@ -111,7 +111,7 @@ export const weights: Tree = {
       row: 1,
       drill: "Jump onto a sturdy box from two feet and land softly. Step down, don't jump down.",
       test: "5 jumps in a row onto a box at knee height, landing quietly.",
-      check: { kind: "count", needed: 5 },
+      check: { kind: "count", needed: 5, inARow: true },
       tip: "Land in the same position you take off from. Quiet landings mean good control.",
     },
     {

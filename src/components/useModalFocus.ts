@@ -6,9 +6,14 @@ const FOCUSABLE = "button:not([disabled]), a[href], input:not([disabled]), selec
 
 /**
  * For dialogs: focuses the first button on open, keeps Tab inside (links and fields included), closes on Escape,
- * and gives focus back to whatever opened the dialog.
+ * and gives focus back to whatever opened the dialog, unless `restore` is set to false before it closes
+ * (when closing moves focus somewhere else on purpose).
  */
-export function useModalFocus(dialog: RefObject<HTMLElement | null>, onClose: () => void): void {
+export function useModalFocus(
+  dialog: RefObject<HTMLElement | null>,
+  onClose: () => void,
+  restore?: RefObject<boolean>,
+): void {
   // Callers often pass a new function every render, so read it through a ref.
   const onCloseRef = useRef(onClose);
   useEffect(() => {
@@ -18,8 +23,12 @@ export function useModalFocus(dialog: RefObject<HTMLElement | null>, onClose: ()
   useEffect(() => {
     const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     dialog.current?.querySelector<HTMLElement>("button")?.focus();
-    return () => opener?.focus();
-  }, [dialog]);
+    return () => {
+      // The value at close time is the one that counts, so it's read here on purpose.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      if (restore?.current !== false) opener?.focus();
+    };
+  }, [dialog, restore]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

@@ -1,9 +1,11 @@
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { football } from "../data/football";
+import { weights } from "../data/weights";
 import type { SavedProgress } from "./cloud";
 import {
   hasUnsavedChanges,
+  liftsSyncedHere,
   loadAccountCopy,
   loadAccountProgress,
   markSyncedHere,
@@ -202,5 +204,69 @@ describe("account copy in the browser", () => {
     const p = await loadAccountProgress(client, "u1", football, local, true, accountCopy);
     expect(p.done).toEqual(["root"]);
     expect(upserts[0]).toMatchObject({ done: ["root"] });
+  });
+});
+
+describe("lift log when syncing", () => {
+  const squat = (date: string, kg: number) => ({ skillId: "lg1", date, kg });
+
+  it("rebases lift entries like skills: logged here is added, undone here is removed", () => {
+    const base = { ...empty, liftLog: [squat("2026-11-18", 40), squat("2026-11-19", 400)] };
+    const account = { ...base, liftLog: [...base.liftLog, squat("2026-11-21", 50)] };
+    const local = { ...base, liftLog: [squat("2026-11-18", 40), squat("2026-11-22", 45)] };
+    expect(rebaseProgress(weights, account, base, local).liftLog).toEqual([
+      squat("2026-11-18", 40),
+      squat("2026-11-21", 50),
+      squat("2026-11-22", 45),
+    ]);
+  });
+
+  it("treats an account copy saved before lifts were synced as having none", () => {
+    const oldBase = { ...empty };
+    const account = { ...empty, liftLog: [squat("2026-11-21", 50)] };
+    const local = { ...empty, liftLog: [squat("2026-11-22", 45)] };
+    expect(rebaseProgress(weights, account, oldBase, local).liftLog).toEqual([squat("2026-11-21", 50), squat("2026-11-22", 45)]);
+  });
+
+  it("sees a missing lift log and an empty one as the same, and notices a new entry", () => {
+    expect(sameProgress(empty, { ...empty, liftLog: [] })).toBe(true);
+    expect(sameProgress({ ...empty, liftLog: [squat("2026-11-20", 40)] }, empty)).toBe(false);
+  });
+});
+
+describe("upgrading a browser that synced before lifts were kept", () => {
+  beforeEach(memoryStorage);
+
+  it("merges once, then lets the account win again", () => {
+    // Synced with an older version: only the account marker is set.
+    store.set("skill-tree:weights:synced-account", "u1");
+    expect(liftsSyncedHere("weights", "u1")).toBe(false);
+    expect(shouldMerge("weights", "u1")).toBe(true);
+    markSyncedHere("weights", "u1");
+    expect(liftsSyncedHere("weights", "u1")).toBe(true);
+    expect(shouldMerge("weights", "u1")).toBe(false);
+  });
+
+  it("uploads the lifts saved here instead of taking the account's empty log", async () => {
+    store.set("skill-tree:weights:synced-account", "u1");
+    const squat = { skillId: "lg1", date: "2026-11-20", kg: 40 };
+    // The account copy this browser kept from before has no lift log; the account's new column is empty.
+    const base = { ...empty };
+    const row = { done: [], player_level: null, player_step: 1, practice_days: [], streak_since: null, streak_asked_week: null, lift_log: [] };
+    const upserts: unknown[] = [];
+    const query = {
+      select: () => query,
+      eq: () => query,
+      maybeSingle: async () => ({ data: row, error: null }),
+      upsert: async (value: unknown) => {
+        upserts.push(value);
+        return { error: null };
+      },
+    };
+    const client = { from: () => query } as unknown as SupabaseClient;
+    const local = { ...empty, liftLog: [squat] };
+    const loaded = await loadAccountProgress(client, "u1", weights, local, shouldMerge("weights", "u1"), base);
+    expect(loaded.liftLog).toEqual([squat]);
+    expect(upserts[0]).toMatchObject({ lift_log: [squat] });
   });
 });

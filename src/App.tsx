@@ -5,7 +5,6 @@ import { Header } from "./components/Header";
 import { TreeSwitch } from "./components/TreeSwitch";
 import { SkillTree } from "./components/SkillTree";
 import { NextUpCard } from "./components/NextUpCard";
-import { nextUp as suggestNext } from "./components/nextUp";
 import { SkillPanel } from "./components/SkillPanel";
 import { BranchTabs } from "./components/BranchTabs";
 import { useMediaQuery } from "./components/useMediaQuery";
@@ -22,12 +21,12 @@ import { SettingsScreen } from "./components/SettingsScreen";
 import { useAuth } from "./auth/useAuth";
 import {
   clearPlayerLevel,
-  completedDependents,
   levelInfo,
   loadPlayerLevel,
   loadPlayerStep,
   loadProgress,
   newlyUnlocked,
+  nextSkill,
   progressSummary,
   rungName,
   savePlayerLevel,
@@ -35,6 +34,7 @@ import {
   saveProgress,
   targetFor,
   testTargets,
+  timeLimit,
   type Rung,
 } from "./lib/progress";
 import {
@@ -53,6 +53,7 @@ import {
   type StreakState,
 } from "./lib/streak";
 import { useLiftLog } from "./components/useLiftLog";
+import { undoPass, withoutSkill } from "./components/undoPass";
 import type { SavedProgress } from "./lib/cloud";
 import { useCloudSync } from "./lib/useCloudSync";
 import { chooseLanguage, language, t, type Language } from "./i18n";
@@ -70,12 +71,6 @@ interface ToastAction {
 interface Toast {
   text: string;
   action?: ToastAction;
-}
-
-function withoutSkill(done: Set<string>, id: string): Set<string> {
-  const next = new Set(done);
-  next.delete(id);
-  return next;
 }
 
 export default function App() {
@@ -122,8 +117,8 @@ export default function App() {
 
   // Everything that is saved to a signed-in player's account.
   const progress: SavedProgress = useMemo(
-    () => ({ done: [...done], playerLevel: playerLevelId, playerStep, practiceDays, streak: streakState }),
-    [done, playerLevelId, playerStep, practiceDays, streakState],
+    () => ({ done: [...done], playerLevel: playerLevelId, playerStep, practiceDays, streak: streakState, liftLog: lifts.log }),
+    [done, playerLevelId, playerStep, practiceDays, streakState, lifts.log],
   );
   const cloud = useCloudSync({ tree, userId: auth.account?.id ?? null, progress, apply: applySaved, onMessage: showToast });
   const accountAuth = {
@@ -160,6 +155,7 @@ export default function App() {
   /** Show progress loaded from the account, and keep it in the browser too. */
   function applySaved(p: SavedProgress) {
     setDone(new Set(p.done));
+    lifts.replace(p.liftLog ?? []);
     setPracticeDays(p.practiceDays);
     savePracticeDays(tree.id, p.practiceDays);
     // An account without a level never clears the level picked in this browser.
@@ -227,11 +223,13 @@ export default function App() {
 
   // By id, not "whatever had focus": iOS Safari doesn't focus a button on tap, and the sheet can
   // switch skills while open.
+  // If the Train view is hidden (the toast's Undo can be tapped from Progress or Settings), focus
+  // goes to the current tab's button instead of falling to the page.
   function focusSkill(id: string) {
     const buttons = trainRef.current?.querySelectorAll<HTMLElement>(`[data-skill-id="${CSS.escape(id)}"]`) ?? [];
-    Array.from(buttons)
-      .find((b) => b.offsetParent !== null)
-      ?.focus();
+    const visible = Array.from(buttons).find((b) => b.offsetParent !== null);
+    const target = visible ?? document.querySelector<HTMLElement>('.tabbar [aria-current="page"]');
+    target?.focus();
   }
 
   function closeSheet(id = selectedId) {
@@ -265,6 +263,8 @@ export default function App() {
     const after = levelInfo(tree.levels, next.size).current.name;
     setDone(next);
     markTrainedToday();
+    // On laptops the panel stays on screen, but "I passed" turns into Undo there, so focus goes
+    // to the skill in the tree, the same as on phones.
     if (sheetOpen) closeSheet(id);
     // Undo right here, for a mis-tap: the sheet has closed, so its own Undo is out of reach.
     const undoPass = { label: t.app.undo, accessibleLabel: t.app.undoPass(skill.name), run: () => undoPassed(id) };
@@ -276,11 +276,11 @@ export default function App() {
   /** Un-passes a skill, unless a skill that needs it has been passed since. Works from the latest progress, not a stale copy. */
   function undoPassed(id: string) {
     const skill = tree.skills.find((s) => s.id === id)!;
-    const blockers = completedDependents(tree, doneRef.current, id);
+    const { blockers } = undoPass(tree, doneRef.current, id);
     if (blockers.length) {
       showToast(t.panel.undoFirst(blockers.map((s) => s.name)));
     } else {
-      setDone((current) => withoutSkill(current, id));
+      setDone((current) => undoPass(tree, current, id).done);
       showToast(t.app.undone(skill.name));
     }
     // The Undo button is gone, so focus goes to the skill instead of falling to the page.
@@ -319,7 +319,7 @@ export default function App() {
   }
 
   const streak = streakWeeks(practiceDays, streakState.since, today);
-  const suggested = suggestNext(tree, done);
+  const suggested = nextSkill(tree, done);
 
   /** Train's two scroll areas: the whole tab (phones) and the tree (wider screens). */
   function trainScrollers(): HTMLElement[] {
@@ -409,6 +409,7 @@ export default function App() {
                 target={targetFor(tree, selectedSkill, rung, language)}
                 onChangeLevel={() => setPickerOpen(true)}
                 lifts={lifts}
+                timeLimit={timeLimit(tree, selectedSkill, rung)}
               />
             )}
           </main>

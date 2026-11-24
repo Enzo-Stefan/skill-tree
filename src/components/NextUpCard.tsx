@@ -1,6 +1,7 @@
 import type { CSSProperties } from "react";
 import type { Skill, Tree } from "../types";
 import { t } from "../i18n";
+import { nextUpReason } from "./nextUp";
 
 interface Props {
   tree: Tree;
@@ -12,16 +13,15 @@ interface Props {
 /** The suggested next skill, with why it was picked. Tapping it opens the skill. */
 export function NextUpCard({ tree, skill, done, onOpen }: Props) {
   const branch = tree.branches.find((b) => b.id === skill.branch);
-  const doneIn = (id: string) => tree.skills.filter((s) => s.branch === id && done.has(s.id)).length;
-  const allTied = new Set(tree.branches.map((b) => doneIn(b.id))).size === 1;
+  const why = nextUpReason(tree, skill, done);
   const reason =
-    skill.requires.length === 0
+    why === "start"
       ? t.nextUp.start
-      : !branch
+      : why === "final" || !branch
         ? t.nextUp.final
-        : allTied
-          ? t.nextUp.goodNextStep(branch.name)
-          : t.nextUp.leastDone(branch.name);
+        : why === "least"
+          ? t.nextUp.leastDone(branch.name)
+          : t.nextUp.goodNextStep(branch.name);
   return (
     <button
       type="button"

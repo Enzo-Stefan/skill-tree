@@ -300,8 +300,14 @@ function checkErrors(s: Skill): string[] {
     if (v !== undefined && !(Number.isFinite(v) && v > 0)) errors.push(`${s.id}: check ${name} must be a positive number`);
   };
   // "8 of 10" must say 8 and 10. Whole words only, so 10 doesn't match inside 100.
+  const hasNumber = (v: number) => new RegExp(`(^|[^\\d.])${v}([^\\d.]|$)`).test(s.test);
   const inText = (name: string, v: number) => {
-    if (!new RegExp(`(^|[^\\d.])${v}([^\\d.]|$)`).test(s.test)) errors.push(`${s.id}: check ${name} ${v} isn't in the test text`);
+    if (!hasNumber(v)) errors.push(`${s.id}: check ${name} ${v} isn't in the test text`);
+  };
+  // Seconds may be written as minutes in the sentence: 120 matches "2 minutes".
+  const secondsInText = (name: string, v: number | undefined) => {
+    if (v === undefined || hasNumber(v) || (v % 60 === 0 && hasNumber(v / 60))) return;
+    errors.push(`${s.id}: check ${name} ${v} isn't in the test text`);
   };
   switch (c.kind) {
     case "hits":
@@ -311,11 +317,13 @@ function checkErrors(s: Skill): string[] {
       if (c.needed > c.attempts) errors.push(`${s.id}: check needs ${c.needed} hits from only ${c.attempts} attempts`);
       inText("needed", c.needed);
       inText("attempts", c.attempts);
+      secondsInText("seconds", c.seconds);
       break;
     case "count":
       positive("needed", c.needed);
       positive("seconds", c.seconds);
       inText("needed", c.needed);
+      secondsInText("seconds", c.seconds);
       break;
     case "time":
       positive("under", c.under);
@@ -323,10 +331,13 @@ function checkErrors(s: Skill): string[] {
       positive("reps", c.reps);
       if (c.under === undefined && !s.targets) errors.push(`${s.id}: timed check has no limit: give it under, or targets`);
       if (c.tries !== undefined && c.reps !== undefined) errors.push(`${s.id}: timed check can be best of tries or every one of reps, not both`);
+      secondsInText("under", c.under);
+      if (c.tries !== undefined) inText("tries", c.tries);
+      if (c.reps !== undefined) inText("reps", c.reps);
       break;
     case "hold":
       positive("seconds", c.seconds);
-      inText("seconds", c.seconds);
+      secondsInText("seconds", c.seconds);
       break;
   }
   return errors;

@@ -255,6 +255,35 @@ describe("test checks (idea 4)", () => {
   });
 });
 
+describe("test checks: in a row, and time numbers", () => {
+  const withCheck = (id: string, check: unknown) =>
+    ({ ...football, skills: football.skills.map((s) => (s.id === id ? { ...s, check } : s)) }) as typeof football;
+
+  it("marks the counts where a miss starts again", async () => {
+    const { weights } = await import("../data/weights");
+    for (const tree of [football, weights]) {
+      for (const s of tree.skills) {
+        const inARow = s.check?.kind === "count" && s.check.inARow === true;
+        // In the English trees the sentence says so; translations are checked by their own tests.
+        expect(inARow, `${tree.id}/${s.id}`).toBe(/in a row/i.test(s.test) && s.check?.kind === "count");
+      }
+    }
+  });
+
+  it("catches best-of and repeat counts that don't match the sentence", () => {
+    // ft2 says "best of 3 tries", ft4 says "10 sprints".
+    expect(validateTree(withCheck("ft2", { kind: "time", tries: 5 }))).toContain("ft2: check tries 5 isn't in the test text");
+    expect(validateTree(withCheck("ft4", { kind: "time", reps: 12 }))).toContain("ft4: check reps 12 isn't in the test text");
+  });
+
+  it("catches seconds that don't match, and accepts them written as minutes", () => {
+    // ps3 says "in 60 seconds"; df5 says "in 2 minutes"; ft5 says "under 25 minutes".
+    expect(validateTree(withCheck("ps3", { kind: "count", needed: 40, seconds: 90 }))).toContain("ps3: check seconds 90 isn't in the test text");
+    expect(validateTree(football).filter((e) => e.startsWith("df5") || e.startsWith("ft5"))).toEqual([]);
+    expect(validateTree(withCheck("dr1", { kind: "time", under: 20 }))).toContain("dr1: check under 20 isn't in the test text");
+  });
+});
+
 describe("numbers in the reader's language", () => {
   it("writes decimals the way each language does", async () => {
     const { formatNumber, targetFor } = await import("./progress");

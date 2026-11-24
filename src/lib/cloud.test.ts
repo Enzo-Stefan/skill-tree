@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { football } from "../data/football";
+import { weights } from "../data/weights";
 import {
   cleanProgress,
   createCloudSaver,
@@ -28,7 +29,7 @@ describe("mergeProgress (first sign-in on a device)", () => {
 
   it("uses the browser's progress when the account is new", () => {
     const local = { done: ["root"], playerLevel: "advanced", playerStep: 3, practiceDays: ["2026-11-20"], streak: { since: "2026-11-16", askedWeek: null } };
-    expect(mergeProgress(football, local, null)).toEqual(local);
+    expect(mergeProgress(football, local, null)).toEqual({ ...local, liftLog: [] });
   });
 
   it("keeps the account's level and streak over the browser's", () => {
@@ -108,6 +109,7 @@ describe("loading and saving", () => {
       playerStep: 3,
       practiceDays: ["2026-11-20"],
       streak: { since: "2026-11-02", askedWeek: null },
+      liftLog: [],
     });
   });
 
@@ -231,5 +233,30 @@ describe("createCloudSaver", () => {
     saver.discard();
     await saver.flush();
     expect(state.saved).toEqual([]);
+  });
+});
+
+describe("lift log in the account", () => {
+  const squat = (date: string, kg: number) => ({ skillId: "lg1", date, kg });
+
+  it("reads the lift log from the row, and an empty one when the column is missing", async () => {
+    const withLog = await fetchCloudProgress(fakeClient({ ...savedRow, lift_log: [squat("2026-11-20", 40)] }).client, "u1", "weights");
+    expect(withLog?.liftLog).toEqual([squat("2026-11-20", 40)]);
+    const without = await fetchCloudProgress(fakeClient(savedRow).client, "u1", "weights");
+    expect(without?.liftLog).toEqual([]);
+  });
+
+  it("drops broken entries and lifts the tree doesn't have", () => {
+    const p = { ...empty, liftLog: [squat("2026-11-20", 40), squat("2026-02-31", 40), { skillId: "gone", date: "2026-11-20", kg: 5 }] };
+    expect(cleanProgress(weights, p).liftLog).toEqual([squat("2026-11-20", 40)]);
+    expect(cleanProgress(weights, empty).liftLog).toEqual([]);
+  });
+
+  it("on first sign-in keeps lifts from both, and saves them", async () => {
+    const { client, upserts } = fakeClient({ ...savedRow, done: [], player_level: null, lift_log: [squat("2026-11-19", 42.5)] });
+    const local = { ...empty, liftLog: [squat("2026-11-20", 45)] };
+    const merged = await syncOnSignIn(client, "u1", weights, local);
+    expect(merged.liftLog).toEqual([squat("2026-11-19", 42.5), squat("2026-11-20", 45)]);
+    expect(upserts[0]).toMatchObject({ lift_log: [squat("2026-11-19", 42.5), squat("2026-11-20", 45)] });
   });
 });
