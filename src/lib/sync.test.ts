@@ -1,19 +1,36 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { football } from "../data/football";
 import type { SavedProgress } from "./cloud";
-import { hasUnsavedChanges, loadAccountProgress, markSyncedHere, sameProgress, setUnsavedChanges, shouldMerge } from "./sync";
+import {
+  hasUnsavedChanges,
+  loadAccountCopy,
+  loadAccountProgress,
+  markSyncedHere,
+  rebaseProgress,
+  sameProgress,
+  saveAccountCopy,
+  setUnsavedChanges,
+  shouldMerge,
+} from "./sync";
+
+const realStorage = globalThis.localStorage;
+afterAll(() => {
+  globalThis.localStorage = realStorage;
+});
+
+const store = new Map<string, string>();
+function memoryStorage() {
+  store.clear();
+  globalThis.localStorage = {
+    getItem: (k: string) => store.get(k) ?? null,
+    setItem: (k: string, v: string) => void store.set(k, v),
+    removeItem: (k: string) => void store.delete(k),
+  } as Storage;
+}
 
 describe("when to merge instead of letting the account win", () => {
-  const store = new Map<string, string>();
-  beforeEach(() => {
-    store.clear();
-    globalThis.localStorage = {
-      getItem: (k: string) => store.get(k) ?? null,
-      setItem: (k: string, v: string) => void store.set(k, v),
-      removeItem: (k: string) => void store.delete(k),
-    } as Storage;
-  });
+  beforeEach(memoryStorage);
 
   it("merges the first time an account is used in this browser", () => {
     expect(shouldMerge("football", "u1")).toBe(true);
@@ -120,5 +137,70 @@ describe("sameProgress", () => {
 
   it("notices a different step", () => {
     expect(sameProgress({ ...empty, playerStep: 2 }, { ...empty, playerStep: 3 })).toBe(false);
+  });
+});
+
+describe("rebaseProgress", () => {
+  const base: SavedProgress = { ...empty, done: ["root", "ps1", "bc1"], practiceDays: ["2026-11-16", "2026-11-17"] };
+
+  it("keeps an un-tick made here, and a tick made on another device", () => {
+    const account = { ...base, done: [...base.done, "ps2"] };
+    const local = { ...base, done: ["root", "bc1"] };
+    expect(rebaseProgress(football, account, base, local).done.sort()).toEqual(["bc1", "ps2", "root"]);
+  });
+
+  it("doesn't bring back a skill un-ticked on another device", () => {
+    const account = { ...base, done: ["root", "bc1"] };
+    const local = { ...base, done: [...base.done, "ps2"] };
+    expect(rebaseProgress(football, account, base, local).done.sort()).toEqual(["bc1", "ps2", "root"]);
+  });
+
+  it("a reset made here clears everything the account had at the time", () => {
+    const account = { ...base, done: [...base.done, "ps2"] };
+    const local = { ...base, done: [] };
+    expect(rebaseProgress(football, account, base, local).done).toEqual(["ps2"]);
+  });
+
+  it("replays training days the same way", () => {
+    const account = { ...base, practiceDays: ["2026-11-16", "2026-11-17", "2026-11-19"] };
+    const local = { ...base, practiceDays: ["2026-11-16", "2026-11-18"] };
+    expect(rebaseProgress(football, account, base, local).practiceDays).toEqual(["2026-11-16", "2026-11-18", "2026-11-19"]);
+  });
+
+  it("takes level, step and streak from here only if they changed here", () => {
+    const withLevel = { ...base, playerLevel: "beginner", playerStep: 2, streak: { since: "2026-11-09", askedWeek: null } };
+    const account = { ...withLevel, playerLevel: "intermediate", playerStep: 1 };
+    expect(rebaseProgress(football, account, withLevel, withLevel).playerLevel).toBe("intermediate");
+    const local = { ...withLevel, playerStep: 3, streak: { since: "2026-11-16", askedWeek: null } };
+    const r = rebaseProgress(football, account, withLevel, local);
+    expect([r.playerLevel, r.playerStep, r.streak.since]).toEqual(["beginner", 3, "2026-11-16"]);
+  });
+
+  it("with no account row, uses this browser's progress", () => {
+    expect(rebaseProgress(football, null, base, { ...base, done: ["root"] }).done).toEqual(["root"]);
+  });
+});
+
+describe("account copy in the browser", () => {
+  beforeEach(memoryStorage);
+
+  it("is kept per account", () => {
+    saveAccountCopy("football", "u1", { ...empty, done: ["root"] });
+    expect(loadAccountCopy("football", "u1")?.done).toEqual(["root"]);
+    expect(loadAccountCopy("football", "u2")).toBeNull();
+  });
+
+  it("ignores a broken value", () => {
+    store.set("skill-tree:football:account-copy", "{not json");
+    expect(loadAccountCopy("football", "u1")).toBeNull();
+  });
+
+  it("an offline un-tick sticks on the next load", async () => {
+    const accountCopy: SavedProgress = { ...empty, done: ["root", "ps1"] };
+    const { client, upserts } = fakeClient({ ...accountRow, done: ["root", "ps1"], player_level: null });
+    const local = { ...empty, done: ["root"] };
+    const p = await loadAccountProgress(client, "u1", football, local, true, accountCopy);
+    expect(p.done).toEqual(["root"]);
+    expect(upserts[0]).toMatchObject({ done: ["root"] });
   });
 });

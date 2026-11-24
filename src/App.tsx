@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { trees } from "./data";
+import { activeTree, switchTree, treeSummaries } from "./lib/activeTree";
 import { Header } from "./components/Header";
+import { TreeSwitch } from "./components/TreeSwitch";
 import { SkillTree } from "./components/SkillTree";
 import { SkillPanel } from "./components/SkillPanel";
 import { BranchTabs } from "./components/BranchTabs";
@@ -45,7 +47,8 @@ import type { SavedProgress } from "./lib/cloud";
 import { useCloudSync } from "./lib/useCloudSync";
 
 export default function App() {
-  const tree = trees[0];
+  // The tree the player last chose (src/lib/activeTree.ts). Switching reloads the app.
+  const [tree] = useState(() => activeTree(trees));
   const auth = useAuth();
   const [done, setDone] = useState<Set<string>>(() => loadProgress(tree.id));
   const [selectedId, setSelectedId] = useState(tree.skills[0].id);
@@ -99,6 +102,17 @@ export default function App() {
       return auth.deleteAccount();
     },
   };
+
+  // The switch's counts come from the browser, except the open tree's, which can be a change ahead.
+  const treeChoices = treeSummaries(trees, tree).map((t) =>
+    t.active ? { ...t, done: tree.skills.filter((s) => done.has(s.id)).length } : t,
+  );
+
+  /** Send any waiting save to the account (up to 3 seconds), then reload into the other tree. */
+  async function switchToTree(id: string) {
+    await Promise.race([cloud.flush(), new Promise((resolve) => window.setTimeout(resolve, 3000))]);
+    switchTree(trees, tree, id);
+  }
 
   /** Show progress loaded from the account, and keep it in the browser too. */
   function applySaved(p: SavedProgress) {
@@ -211,6 +225,7 @@ export default function App() {
         playerLevelName={playerRungName}
         onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
         account={<AccountMenu auth={accountAuth} onDeleted={() => showToast("Your account and its saved progress are deleted.")} />}
+        treeSwitch={<TreeSwitch trees={treeChoices} onSwitch={switchToTree} />}
       />
       {hasLevels && playerLevelId && (
         <PracticeBar

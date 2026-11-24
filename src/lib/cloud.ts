@@ -148,8 +148,8 @@ export async function syncOnSignIn(
  *
  * Args:
  *   onError: Called with the technical reason when a save fails.
- *   onSaved: Called when a save succeeded and nothing newer is waiting, i.e. the account
- *     now has the latest progress.
+ *   onSaved: Called after each save that succeeded, with what was saved and whether nothing
+ *     newer is waiting (then the account has the latest progress).
  */
 export function createCloudSaver(
   client: SupabaseClient,
@@ -157,7 +157,7 @@ export function createCloudSaver(
   treeId: string,
   onError: (message: string) => void,
   delayMs = 800,
-  onSaved: () => void = () => {},
+  onSaved: (saved: SavedProgress, upToDate: boolean) => void = () => {},
 ) {
   let pending: SavedProgress | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -174,7 +174,7 @@ export function createCloudSaver(
       pending = null;
       try {
         await saveCloudProgress(client, userId, treeId, p);
-        if (!pending) onSaved();
+        onSaved(p, pending === null);
       } catch (e) {
         // Keep it for the next try, unless a newer change already replaced it.
         pending ??= p;
