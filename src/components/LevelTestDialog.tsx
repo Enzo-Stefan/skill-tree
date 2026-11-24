@@ -13,11 +13,15 @@ interface Props {
   onPass: () => void;
   /** The "Not yet" button: the player says they are not ready, so the question waits until next week. */
   onNotYet: () => void;
+  /** Text under the title. Defaults to the move-up text. */
+  intro?: string;
+  /** Text on the "Not yet" button. */
+  notYetLabel?: string;
   /** Closing with Escape or a tap outside: just closes, the question can come back straight away. */
   onDismiss: () => void;
 }
 
-export function LevelTestDialog({ nextName, items, onPass, onNotYet, onDismiss }: Props) {
+export function LevelTestDialog({ nextName, items, onPass, onNotYet, onDismiss, intro, notYetLabel }: Props) {
   const dialog = useRef<HTMLDivElement>(null);
   useModalFocus(dialog, onDismiss);
 
@@ -32,7 +36,7 @@ export function LevelTestDialog({ nextName, items, onPass, onNotYet, onDismiss }
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="level-test-title">{t.levelTest.title(nextName)}</h2>
-        <p>{t.levelTest.intro(nextName)}</p>
+        <p>{intro ?? t.levelTest.intro(nextName)}</p>
         {items.length > 0 && (
           <ul className="test-list">
             {items.map((item) => (
@@ -48,7 +52,7 @@ export function LevelTestDialog({ nextName, items, onPass, onNotYet, onDismiss }
             {t.levelTest.passed}
           </button>
           <button className="btn" type="button" onClick={onNotYet}>
-            {t.levelTest.notYet}
+            {notYetLabel ?? t.levelTest.notYet}
           </button>
         </div>
       </div>

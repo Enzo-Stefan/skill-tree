@@ -33,10 +33,12 @@ import {
   savePlayerStep,
   saveProgress,
   targetFor,
+  testTargets,
   type Rung,
 } from "./lib/progress";
 import {
   canPickLevel,
+  needsPlacementTest,
   dayKey,
   daysThisWeek,
   levelUpDue,
@@ -81,18 +83,16 @@ export default function App() {
   const [practiceDays, setPracticeDays] = useState(() => loadPracticeDays(tree.id));
   const [streakState, setStreakState] = useState(() => loadStreakState(tree.id));
   const [testOpen, setTestOpen] = useState(false);
+  // A first pick above the easiest level: the level being tested, until the player passes or picks again.
+  const [placementId, setPlacementId] = useState<string | null>(null);
   // Snapshot of the progress when Share was tapped, so the image isn't redrawn on every re-render.
   const [sharing, setSharing] = useState<ShareStats | null>(null);
   const today = useToday();
   const trainedToday = practiceDays.includes(today);
-  const nextUp = pickerOpen || testOpen ? null : levelUpDue(tree, rung, practiceDays, today, streakState);
+  const nextUp = pickerOpen || testOpen || placementId ? null : levelUpDue(tree, rung, practiceDays, today, streakState);
   const nextForTest = levelUpDue(tree, rung, practiceDays, today, streakState);
-  const testItems = nextForTest
-    ? tree.skills.flatMap((s) => {
-        const target = targetFor(tree, s, nextForTest);
-        return target ? [{ skillName: s.name, target }] : [];
-      })
-    : [];
+  const testItems = testTargets(tree, nextForTest);
+  const placementRung: Rung | null = placementId ? { levelId: placementId, step: 1 } : null;
   const selectedSkill = tree.skills.find((s) => s.id === selectedId)!;
 
   // Everything that is saved to a signed-in player's account.
@@ -174,6 +174,10 @@ export default function App() {
   /** From the Level picker: the same level keeps your step, any other level starts at its step 1. */
   function pickLevel(id: string) {
     setPickerOpen(false);
+    if (needsPlacementTest(tree, playerLevelId, id)) {
+      setPlacementId(id);
+      return;
+    }
     moveTo({ levelId: id, step: id === playerLevelId ? playerStep : 1 });
   }
 
@@ -374,6 +378,27 @@ export default function App() {
           }}
           onNotYet={askLater}
           onDismiss={() => setTestOpen(false)}
+        />
+      )}
+      {placementRung && (
+        <LevelTestDialog
+          nextName={rungName(tree, placementRung) ?? ""}
+          items={testTargets(tree, placementRung)}
+          intro={t.levelTest.placementIntro(rungName(tree, placementRung) ?? "")}
+          notYetLabel={t.levelTest.pickAnother}
+          onPass={() => {
+            setPlacementId(null);
+            moveTo(placementRung);
+          }}
+          // Not passed yet: back to the picker, where the easiest level is always open.
+          onNotYet={() => {
+            setPlacementId(null);
+            setPickerOpen(true);
+          }}
+          onDismiss={() => {
+            setPlacementId(null);
+            setPickerOpen(true);
+          }}
         />
       )}
       {sharing && <ShareDialog stats={sharing} onClose={() => setSharing(null)} />}

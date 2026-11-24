@@ -177,6 +177,14 @@ export function targetValue(tree: Tree, skill: Skill, rung: Rung | null): number
   return (to < from ? Math.ceil(exact - 0.5) : Math.round(exact)) / 100;
 }
 
+/** Every skill with its own target at this level and step: what a level test asks the player to do. */
+export function testTargets(tree: Tree, rung: Rung | null): { skillName: string; target: string }[] {
+  return tree.skills.flatMap((s) => {
+    const target = targetFor(tree, s, rung);
+    return target ? [{ skillName: s.name, target }] : [];
+  });
+}
+
 /** The target sentence for this skill at a level and step, e.g. "Under 5.67 seconds.", or null. */
 export function targetFor(tree: Tree, skill: Skill, rung: Rung | null): string | null {
   const value = targetValue(tree, skill, rung);
