@@ -5,7 +5,7 @@ import type { Tree } from "../types";
 
 export const football: Tree = {
   "id": "football",
-  "title": "Football Skill Tree",
+  "title": "hapi skill",
   "tagline": "Tap a skill, pass its test, unlock the next one.",
   "branches": [
     {
