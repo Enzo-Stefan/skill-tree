@@ -64,6 +64,23 @@ describe("the lift log", () => {
     const log = [squat("2026-11-10", 25), squat("2026-11-20", 300)];
     expect(removeLiftEntry(log, log[1])).toEqual([squat("2026-11-10", 25)]);
   });
+
+  it("undo works with the entry just added, not only one taken from the log", () => {
+    const typo = squat("2026-11-20", 300);
+    const log = addLiftEntry(weights, [squat("2026-11-10", 25)], typo);
+    expect(log).toHaveLength(2);
+    expect(removeLiftEntry(log, typo)).toEqual([squat("2026-11-10", 25)]);
+  });
+
+  it("removes only the last one when the same entry was logged twice", () => {
+    const log = [squat("2026-11-20", 30), squat("2026-11-20", 30)];
+    expect(removeLiftEntry(log, squat("2026-11-20", 30))).toHaveLength(1);
+  });
+
+  it("leaves the log alone when the entry isn't in it", () => {
+    const log = [squat("2026-11-20", 30)];
+    expect(removeLiftEntry(log, squat("2026-11-21", 30))).toBe(log);
+  });
 });
 
 describe("personal bests", () => {

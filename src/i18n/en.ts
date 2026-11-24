@@ -12,7 +12,7 @@ export const en = {
     skillComplete: (skill: string) => `${skill} complete.`,
     copied: "Progress copied. Paste it anywhere.",
     copyFailed: "Copy didn't work in this browser.",
-    resetDone: "Progress reset.",
+    resetDone: "All progress for this tree is reset.",
     accountDeleted: "Your account and its saved progress are deleted.",
     cancel: "Cancel",
     skipForNow: "Skip for now",
