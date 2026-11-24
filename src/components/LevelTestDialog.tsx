@@ -1,5 +1,6 @@
 import { useRef } from "react";
 import { useModalFocus } from "./useModalFocus";
+import { t } from "../i18n";
 
 export interface TestItem {
   skillName: string;
@@ -30,8 +31,8 @@ export function LevelTestDialog({ nextName, items, onPass, onNotYet, onDismiss }
         aria-labelledby="level-test-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="level-test-title">{nextName} test</h2>
-        <p>Do these at the {nextName} targets. Pass them all and you move up to {nextName}.</p>
+        <h2 id="level-test-title">{t.levelTest.title(nextName)}</h2>
+        <p>{t.levelTest.intro(nextName)}</p>
         {items.length > 0 && (
           <ul className="test-list">
             {items.map((item) => (
@@ -44,10 +45,10 @@ export function LevelTestDialog({ nextName, items, onPass, onNotYet, onDismiss }
         )}
         <div className="test-actions">
           <button className="btn primary" type="button" onClick={onPass}>
-            I passed
+            {t.levelTest.passed}
           </button>
           <button className="btn" type="button" onClick={onNotYet}>
-            Not yet
+            {t.levelTest.notYet}
           </button>
         </div>
       </div>

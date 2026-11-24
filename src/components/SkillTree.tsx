@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Skill, SkillState, Tree } from "../types";
 import { skillState } from "../lib/progress";
+import { t } from "../i18n";
 
 const SLOT = 104;
 const ROW = 140;
@@ -94,7 +95,7 @@ export function SkillTree({ tree, done, selectedId, onSelect, branchId = null }:
               className={`node ${state}${s.big ? " big" : ""}${s.id === selectedId ? " selected" : ""}${effects.get(s.id) ? ` fx-${effects.get(s.id)}` : ""}`}
               style={{ left: p.x, top: p.y, width: slot - 8, "--c": colorOf(s) } as CSSProperties}
               onClick={() => onSelect(s.id)}
-              aria-label={`${s.name}, ${state}`}
+              aria-label={t.tree.nodeLabel(s.name, t.panel.status[state])}
             >
               <span className="tile">
                 {state === "done" ? <CheckIcon /> : state === "locked" ? <LockIcon /> : tileLabel(s)}
@@ -116,8 +117,8 @@ function textScale(): number {
 
 /** Text inside an open (available) tile: GO for the start, 90' for the final, else the tier number. */
 function tileLabel(s: Skill): string {
-  if (s.big) return "90'";
-  if (s.requires.length === 0) return "GO";
+  if (s.big) return t.tree.finalTile;
+  if (s.requires.length === 0) return t.tree.startTile;
   return String(s.row);
 }
 

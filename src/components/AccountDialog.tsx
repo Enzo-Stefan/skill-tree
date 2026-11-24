@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { Account } from "../auth/useAuth";
 import { useModalFocus } from "./useModalFocus";
+import { t } from "../i18n";
 
 interface Props {
   account: Account;
@@ -45,17 +46,15 @@ export function AccountDialog({ account, onDelete, onClose }: Props) {
         aria-labelledby="account-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="account-title">{confirming ? "Delete your account?" : "Your account"}</h2>
+        <h2 id="account-title">{confirming ? t.accountDialog.confirmTitle : t.accountDialog.title}</h2>
         {confirming ? (
           <>
-            <p>
-              This deletes your account and the progress saved in it, on every device. It can't be undone.
-            </p>
-            <p>Progress saved in this browser stays here. Use Reset if you want to clear it too.</p>
+            <p>{t.accountDialog.confirmBody}</p>
+            <p>{t.accountDialog.browserStays}</p>
           </>
         ) : (
           <p>
-            Signed in with Google as <strong className="account-who">{account.email ?? account.name}</strong>.
+            {t.accountDialog.signedInAs} <strong className="account-who">{account.email ?? account.name}</strong>.
           </p>
         )}
         {error && (
@@ -67,19 +66,19 @@ export function AccountDialog({ account, onDelete, onClose }: Props) {
           {confirming ? (
             <>
               <button className="btn danger" type="button" onClick={() => void handleDelete()} disabled={busy}>
-                {busy ? "Deleting…" : "Delete for good"}
+                {busy ? t.accountDialog.deleting : t.accountDialog.deleteForGood}
               </button>
               <button ref={cancel} className="btn" type="button" onClick={() => setConfirming(false)} disabled={busy}>
-                Cancel
+                {t.accountDialog.cancel}
               </button>
             </>
           ) : (
             <>
               <button className="btn danger" type="button" onClick={() => setConfirming(true)}>
-                Delete account
+                {t.accountDialog.delete}
               </button>
               <button className="btn" type="button" onClick={onClose}>
-                Close
+                {t.accountDialog.close}
               </button>
             </>
           )}
