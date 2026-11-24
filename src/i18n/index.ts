@@ -16,11 +16,18 @@ function isLanguage(code: string): code is Language {
   return code in STRINGS;
 }
 
-/** The first of the phone's languages the app has, e.g. "es-MX" gives "es". English if none. */
-export function phoneLanguage(preferred: readonly string[]): Language {
+/**
+ * Languages the app picks on its own from the phone's setting. A language goes here once a fluent
+ * speaker has checked it. Until then it only shows when picked in Settings, so nobody gets an
+ * unchecked draft without asking for it. Spanish is waiting for that check (#19).
+ */
+export const PHONE_LANGUAGES: readonly Language[] = ["en"];
+
+/** The first of the phone's languages the app picks on its own, e.g. "es-MX" gives "es" once Spanish is allowed. English if none. */
+export function phoneLanguage(preferred: readonly string[], allowed: readonly Language[] = PHONE_LANGUAGES): Language {
   for (const tag of preferred) {
     const code = tag.toLowerCase().split("-")[0];
-    if (isLanguage(code)) return code;
+    if (isLanguage(code) && allowed.includes(code)) return code;
   }
   return "en";
 }
