@@ -27,9 +27,18 @@ export default defineConfig({
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         // og-image.png is only for link previews; no need to store it on phones.
-        globIgnores: ['og-image.png'],
+        // The Supabase library is only for signed-in players, so it downloads when someone signs in, not for everyone.
+        globIgnores: ['og-image.png', 'assets/supabase-*.js'],
         // Fonts ship with the app (#22), so the woff2 pattern above stores them for offline use.
       },
     }),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // A fixed name lets the offline store above skip this file.
+        manualChunks: (id) => (id.includes('node_modules/@supabase/') ? 'supabase' : undefined),
+      },
+    },
+  },
 })
