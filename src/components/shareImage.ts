@@ -1,5 +1,6 @@
 import type { Tree } from "../types";
 import { levelInfo } from "../lib/progress";
+import { t } from "../i18n";
 
 export const SHARE_WIDTH = 1080;
 export const SHARE_HEIGHT = 1350;
@@ -11,7 +12,7 @@ const CHALK_DIM = "rgba(238, 243, 234, 0.55)";
 const CHALK_FAINT = "rgba(238, 243, 234, 0.16)";
 const GOLD = "#f2c14e";
 const DISPLAY = '"Oswald", "Arial Narrow", Impact, sans-serif';
-const BODY = '"Source Sans 3", "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+const BODY = '-apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
 export interface ShareStats {
   title: string;
@@ -123,13 +124,13 @@ export function drawShareImage(ctx: CanvasRenderingContext2D, stats: ShareStats)
 
   ctx.fillStyle = CHALK;
   ctx.font = `600 44px ${BODY}`;
-  ctx.fillText(`${stats.done} of ${stats.total} skills`, 90, 310);
+  ctx.fillText(t.share.imageSkills(stats.done, stats.total), 90, 310);
 
   if (stats.levelName) {
-    const streak = stats.streak ? ` · ${stats.streak}-week streak` : "";
+    const streak = stats.streak ? t.share.imageStreak(stats.streak) : "";
     ctx.fillStyle = CHALK_DIM;
     ctx.font = `400 36px ${BODY}`;
-    ctx.fillText(`Training at ${stats.levelName}${streak}`, 90, 362);
+    ctx.fillText(t.share.imageTraining(stats.levelName, streak), 90, 362);
   }
 
   drawMiniTree(ctx, stats, 450, 330);
@@ -170,9 +171,9 @@ export async function renderShareImage(stats: ShareStats): Promise<Blob> {
   canvas.width = SHARE_WIDTH;
   canvas.height = SHARE_HEIGHT;
   const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("This browser can't draw images.");
+  if (!ctx) throw new Error(t.share.cantDraw);
   drawShareImage(ctx, stats);
   return new Promise((resolve, reject) =>
-    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("Couldn't make the image."))), "image/png"),
+    canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error(t.share.imageFailed))), "image/png"),
   );
 }

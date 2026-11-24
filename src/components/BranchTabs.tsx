@@ -1,5 +1,6 @@
 import type { CSSProperties } from "react";
 import type { Tree } from "../types";
+import { t } from "../i18n";
 
 interface Props {
   tree: Tree;
@@ -10,7 +11,7 @@ interface Props {
 
 export function BranchTabs({ tree, done, activeId, onChange }: Props) {
   return (
-    <nav className="branch-tabs" aria-label="Branches">
+    <nav className="branch-tabs" aria-label={t.branchTabs.label}>
       {tree.branches.map((b) => {
         const skills = tree.skills.filter((s) => s.branch === b.id);
         const count = skills.filter((s) => done.has(s.id)).length;

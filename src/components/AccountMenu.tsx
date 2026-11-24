@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Auth } from "../auth/useAuth";
 import { AccountDialog } from "./AccountDialog";
 import { SignInDialog } from "./SignInDialog";
+import { t } from "../i18n";
 
 interface Props {
   auth: Auth;
@@ -24,7 +25,7 @@ export function AccountMenu({ auth, onDeleted }: Props) {
           className="account-button"
           type="button"
           onClick={() => setAccountOpen(true)}
-          aria-label={`Account: ${account.name}`}
+          aria-label={t.account.buttonLabel(account.name)}
           title={account.email ?? undefined}
         >
           {account.avatarUrl ? (
@@ -37,7 +38,7 @@ export function AccountMenu({ auth, onDeleted }: Props) {
           <span className="account-name">{account.name}</span>
         </button>
         <button className="btn" type="button" onClick={() => void auth.signOut()}>
-          Sign out
+          {t.account.signOut}
         </button>
         {accountOpen && (
           <AccountDialog
@@ -60,7 +61,7 @@ export function AccountMenu({ auth, onDeleted }: Props) {
   return (
     <>
       <button className="btn" type="button" onClick={() => setOpen(true)}>
-        Sign in
+        {t.account.signIn}
       </button>
       {open && <SignInDialog onGoogle={auth.signInWithGoogle} onClose={() => setOpen(false)} />}
     </>
