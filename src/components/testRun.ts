@@ -44,7 +44,8 @@ export type RunAction =
   | { type: "start"; now: number }
   | { type: "hit" }
   | { type: "miss" }
-  | { type: "add" }
+  /** `now`: when the tap happened, so a tap after a countdown ran out doesn't count. */
+  | { type: "add"; now?: number }
   /** Counts "in a row": a miss starts the count again. */
   | { type: "slip" }
   | { type: "stop"; now: number }
@@ -159,6 +160,8 @@ export function runReducer(state: RunState, action: RunAction): RunState {
 
     case "add": {
       if (check.kind !== "count" || state.phase !== "running") return state;
+      // A tap can land after the countdown ran out but before the next tick noticed: time's up, it doesn't count.
+      if (action.now !== undefined && remaining(state, action.now) === 0) return { ...state, phase: "failed", startedAt: null, past: [] };
       const next = { ...core(state), count: state.count + 1 };
       return withPast(state, next.count >= check.needed ? sidePassed({ ...state, ...next }) : next);
     }

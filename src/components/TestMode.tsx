@@ -109,7 +109,7 @@ export function TestMode({ skill, check, limit, canPass, onPassed, onClose }: Pr
                 className="btn primary test-big"
                 type="button"
                 aria-label={t.testMode.addLabel}
-                onClick={() => dispatch({ type: "add" })}
+                onClick={() => dispatch({ type: "add", now: Date.now() })}
               >
                 {t.testMode.add}
               </button>
