@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Tree } from "../types";
 import { cleanProgress, fetchCloudProgress, saveCloudProgress, syncOnSignIn, type SavedProgress } from "./cloud";
+import { replayLiftLog } from "./lifts";
 
 // When a signed-in player opens the app, which copy of their progress wins.
 //
@@ -87,7 +88,8 @@ export function saveAccountCopy(treeId: string, userId: string, p: SavedProgress
  * Unlike mergeProgress, skills and training days removed here since `base` stay removed, so an
  * un-tick or a reset made offline sticks, while changes from other devices are kept. If the
  * level, step or streak changed here, all three come from this browser (they belong together);
- * otherwise from the account.
+ * otherwise from the account. Lift log entries work like skills: logged here is added, undone or
+ * reset here is removed, and entries from other devices stay.
  */
 export function rebaseProgress(tree: Tree, account: SavedProgress | null, base: SavedProgress, local: SavedProgress): SavedProgress {
   const l = cleanProgress(tree, local);
@@ -114,6 +116,7 @@ export function rebaseProgress(tree: Tree, account: SavedProgress | null, base: 
     playerStep: rung.playerStep,
     practiceDays: replay(a.practiceDays, b.practiceDays, l.practiceDays).sort(),
     streak: rung.streak,
+    liftLog: replayLiftLog(tree, a.liftLog ?? [], b.liftLog ?? [], l.liftLog ?? []),
   };
 }
 
@@ -159,9 +162,14 @@ export async function loadAccountProgress(
   return cleaned;
 }
 
-/** Same progress, ignoring the order of finished skills and training days. */
+/** Same progress, ignoring the order of finished skills, training days and lift entries. A missing lift log is an empty one. */
 export function sameProgress(a: SavedProgress, b: SavedProgress): boolean {
   const key = (p: SavedProgress) =>
-    JSON.stringify({ ...p, done: [...p.done].sort(), practiceDays: [...p.practiceDays].sort() });
+    JSON.stringify({
+      ...p,
+      done: [...p.done].sort(),
+      practiceDays: [...p.practiceDays].sort(),
+      liftLog: (p.liftLog ?? []).map((e) => `${e.skillId}|${e.date}|${e.kg}`).sort(),
+    });
   return key(a) === key(b);
 }

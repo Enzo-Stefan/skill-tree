@@ -118,8 +118,8 @@ export default function App() {
 
   // Everything that is saved to a signed-in player's account.
   const progress: SavedProgress = useMemo(
-    () => ({ done: [...done], playerLevel: playerLevelId, playerStep, practiceDays, streak: streakState }),
-    [done, playerLevelId, playerStep, practiceDays, streakState],
+    () => ({ done: [...done], playerLevel: playerLevelId, playerStep, practiceDays, streak: streakState, liftLog: lifts.log }),
+    [done, playerLevelId, playerStep, practiceDays, streakState, lifts.log],
   );
   const cloud = useCloudSync({ tree, userId: auth.account?.id ?? null, progress, apply: applySaved, onMessage: showToast });
   const accountAuth = {
@@ -150,6 +150,7 @@ export default function App() {
   /** Show progress loaded from the account, and keep it in the browser too. */
   function applySaved(p: SavedProgress) {
     setDone(new Set(p.done));
+    lifts.replace(p.liftLog ?? []);
     setPracticeDays(p.practiceDays);
     savePracticeDays(tree.id, p.practiceDays);
     // An account without a level never clears the level picked in this browser.

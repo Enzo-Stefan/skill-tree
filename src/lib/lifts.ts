@@ -4,8 +4,8 @@ import type { Tree } from "../types";
 //
 // Each time a player passes a lift (or trains it again) they enter the weight they used.
 // The app keeps every entry, so it can show their personal best and how it went up over time.
-// Weights are stored in kilograms. Entries live in the browser for now; saving them to the
-// account is a follow-up (a `lift_log` column next to the rest of the progress).
+// Weights are stored in kilograms. Entries are kept in the browser and, for signed-in players,
+// in the account's `lift_log` column (supabase/migrations/003_lift_log_and_results.sql).
 
 /** One time a lift was done. */
 export interface LiftEntry {
@@ -134,4 +134,57 @@ export function saveLiftLog(treeId: string, log: LiftEntry[]): void {
   } catch {
     // Storage can be blocked. The log then only lasts for this visit.
   }
+}
+
+/** One key per kind of entry: the same lift, day and weight logged twice counts as two of the same key. */
+const entryKey = (e: LiftEntry) => `${e.skillId}|${e.date}|${e.kg}`;
+
+function countEntries(log: LiftEntry[]): Map<string, { entry: LiftEntry; count: number }> {
+  const counts = new Map<string, { entry: LiftEntry; count: number }>();
+  for (const e of log) {
+    const key = entryKey(e);
+    const seen = counts.get(key);
+    if (seen) seen.count++;
+    else counts.set(key, { entry: e, count: 1 });
+  }
+  return counts;
+}
+
+function fromCounts(tree: Tree, counts: Map<string, { entry: LiftEntry; count: number }>): LiftEntry[] {
+  const out: LiftEntry[] = [];
+  for (const { entry, count } of counts.values()) for (let i = 0; i < count; i++) out.push(entry);
+  return cleanLiftLog(tree, out);
+}
+
+/**
+ * Both logs together, for the first sign-in on a device. An entry in both counts once (the
+ * same session synced earlier), so the most times an entry appears in either log is kept.
+ */
+export function mergeLiftLogs(tree: Tree, a: LiftEntry[], b: LiftEntry[]): LiftEntry[] {
+  const counts = countEntries(a);
+  for (const [key, theirs] of countEntries(b)) {
+    const ours = counts.get(key);
+    if (!ours || theirs.count > ours.count) counts.set(key, theirs);
+  }
+  return fromCounts(tree, counts);
+}
+
+/**
+ * The changes made here since `from` (entries added or removed), applied on top of `onto`.
+ * So an entry logged here is added to the account's log, and an entry undone or reset here is
+ * taken out of it, while entries from other devices stay.
+ */
+export function replayLiftLog(tree: Tree, onto: LiftEntry[], from: LiftEntry[], to: LiftEntry[]): LiftEntry[] {
+  const out = countEntries(onto);
+  const before = countEntries(from);
+  const after = countEntries(to);
+  for (const key of new Set([...before.keys(), ...after.keys()])) {
+    const change = (after.get(key)?.count ?? 0) - (before.get(key)?.count ?? 0);
+    if (change === 0) continue;
+    const entry = (after.get(key) ?? before.get(key))!.entry;
+    const count = Math.max(0, (out.get(key)?.count ?? 0) + change);
+    if (count === 0) out.delete(key);
+    else out.set(key, { entry, count });
+  }
+  return fromCounts(tree, out);
 }

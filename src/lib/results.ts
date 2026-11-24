@@ -7,8 +7,8 @@ import { targetValue, type Rung } from "./progress";
 //
 // A result is in the same unit as the skill's targets, so it can be compared with them. Only
 // skills with number targets can have results for now. Other tests ("8 of 10", "20 juggles")
-// need the structured test description from idea 4 first. Saving results to the account is a
-// follow-up, in the same migration as the lift log, so the table changes once.
+// need the structured test description from idea 4 first. The account has a `results` column for
+// them (supabase/migrations/003_lift_log_and_results.sql); syncing it comes with the screen that adds results.
 
 /** One time the player did a skill's test and wrote down what they got. */
 export interface TestResult {
