@@ -238,3 +238,19 @@ describe("formatClock", () => {
     expect(formatClock(90, false)).toBe("1:30");
   });
 });
+
+describe("a tap after the countdown ran out", () => {
+  const check: RunnableCheck = { kind: "count", needed: 40, seconds: 60 };
+  const tapsAt = (times: number[]): RunAction[] => times.map((now) => ({ type: "add", now }));
+
+  it("doesn't count, even before the next tick, so a late 40th tap can't pass", () => {
+    const s = play(check, [{ type: "start", now: 0 }, ...tapsAt(Array.from({ length: 39 }, (_, i) => i * 1000)), { type: "add", now: 60_050 }]);
+    expect(s.phase).toBe("failed");
+    expect(s.count).toBe(39);
+  });
+
+  it("still counts a 40th tap just inside the time", () => {
+    const s = play(check, [{ type: "start", now: 0 }, ...tapsAt(Array.from({ length: 40 }, (_, i) => i * 1000 + 59_000 - 39_000))]);
+    expect(s.phase).toBe("passed");
+  });
+});
