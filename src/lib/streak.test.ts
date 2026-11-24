@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { football } from "../data/football";
-import { canPickLevel, daysThisWeek, levelUpDue, needsPlacementTest, streakWeeks, weekOf, type StreakState } from "./streak";
+import { addTrainingDay, canPickLevel, daysThisWeek, levelUpDue, needsPlacementTest, streakWeeks, weekOf, type StreakState } from "./streak";
 
 // 2026-11-23 is a Monday.
 const week = (monday: string, count: number): string[] =>
@@ -135,5 +135,16 @@ describe("placement test", () => {
   it("isn't needed when the tree has no targets to test", () => {
     const noTargets = { ...football, skills: football.skills.map((s) => ({ ...s, targets: undefined })) };
     expect(needsPlacementTest(noTargets, null, "expert")).toBe(false);
+  });
+});
+
+describe("passing a test counts as training", () => {
+  it("adds today once, in date order", () => {
+    expect(addTrainingDay(["2026-11-20", "2026-11-23"], "2026-11-22")).toEqual(["2026-11-20", "2026-11-22", "2026-11-23"]);
+  });
+
+  it("changes nothing when today is already ticked", () => {
+    const days = ["2026-11-24"];
+    expect(addTrainingDay(days, "2026-11-24")).toBe(days);
   });
 });
