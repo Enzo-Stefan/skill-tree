@@ -55,7 +55,8 @@ Each of you works mostly in your own folders, so you rarely edit the same file. 
 
 1. Copy `src/data/football.ts` to a new file and change the content.
 2. Add it to the list in `src/data/index.ts`.
-3. Run `npm test`. It catches duplicate ids and skills that point to missing skills.
+3. Give every skill a `check` saying how its test is counted or timed (see `TestCheck` in `src/types.ts`).
+4. Run `npm test`. It catches duplicate ids, skills that point to missing skills, and checks whose numbers don't match the test.
 
 ## Accounts (Google sign-in)
 
