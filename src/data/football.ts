@@ -51,7 +51,7 @@ export const football: Tree = {
       "drill": "Have a friend roll the ball to you from 10 metres, or pass it against a wall. Stop it with the inside of your foot so it stays close.",
       "video": "https://www.youtube.com/watch?v=Z5_-hV5oc1s",
       "test": "Stop 10 rolled passes in a row. Each one must stay within one step of you.",
-      "check": { "kind": "count", "needed": 10 },
+      "check": { "kind": "count", "needed": 10, "inARow": true },
       "tip": "Pull your foot back a little as the ball arrives. A soft foot kills the ball. A stiff foot bounces it away."
     },
     {
@@ -66,7 +66,7 @@ export const football: Tree = {
       "drill": "Drop the ball onto your strong foot and keep it up with your laces. Start by letting it bounce once between touches if you need to.",
       "video": "https://www.youtube.com/watch?v=bH3vhjIGgpQ",
       "test": "20 juggles in a row, feet only, no bounces.",
-      "check": { "kind": "count", "needed": 20 },
+      "check": { "kind": "count", "needed": 20, "inARow": true },
       "tip": "Keep your ankle locked and toes slightly up. Small touches to waist height are easier than big ones."
     },
     {
@@ -96,7 +96,7 @@ export const football: Tree = {
       "drill": "Juggle while switching feet every touch. Then add thighs and head.",
       "video": "https://www.youtube.com/watch?v=4C4lyuaquKI",
       "test": "50 juggles in a row, using both feet at least 15 times each.",
-      "check": { "kind": "count", "needed": 50 },
+      "check": { "kind": "count", "needed": 50, "inARow": true },
       "tip": "Count out loud. It keeps your rhythm steady."
     },
     {
