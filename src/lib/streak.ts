@@ -40,6 +40,14 @@ export function weekOf(day: DayKey): WeekKey {
   return dayKey(date);
 }
 
+/**
+ * The training days with `day` added, for passing a test (#46): passing counts as training.
+ * Only ever adds. Returns the same list if the day is already there, so nothing is saved twice.
+ */
+export function addTrainingDay(days: DayKey[], day: DayKey): DayKey[] {
+  return days.includes(day) ? days : [...days, day].sort();
+}
+
 /** Days the player trained in the week containing `today`. */
 export function daysThisWeek(days: DayKey[], today: DayKey): number {
   const week = weekOf(today);
