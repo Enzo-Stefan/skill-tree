@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import type { Tree } from "../types";
 import { RankProgress } from "./Header";
 import { PRACTICE_DAYS_PER_WEEK, STREAK_WEEKS, type DayKey } from "../lib/streak";
@@ -34,6 +34,17 @@ interface Props {
 export function ProgressScreen(props: Props) {
   const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, weekCanCount, streakWeeks, liftLog, onShare, onPickLevel } = props;
   const daysLeft = Math.max(0, PRACTICE_DAYS_PER_WEEK - daysThisWeek);
+
+  // Picking a level here removes the Pick your level button, so the picker can't hand focus back
+  // to it. When focus was lost that way, put it on the level card's heading instead.
+  const levelHeading = useRef<HTMLHeadingElement>(null);
+  const hadLevel = useRef(playerLevelName !== null);
+  useEffect(() => {
+    const had = hadLevel.current;
+    hadLevel.current = playerLevelName !== null;
+    const focusLost = !document.activeElement || document.activeElement === document.body;
+    if (!had && playerLevelName && focusLost) levelHeading.current?.focus();
+  }, [playerLevelName]);
 
   return (
     <div className="screen">
@@ -71,7 +82,7 @@ export function ProgressScreen(props: Props) {
       {playerLevelName && (
         <section className="card" aria-labelledby="progress-level">
           <div className="card-row">
-            <h2 className="card-label" id="progress-level">
+            <h2 className="card-label" id="progress-level" ref={levelHeading} tabIndex={-1}>
               {t.progressScreen.yourLevel}
             </h2>
             <span className="card-aside">{t.progressScreen.step(playerStep, STEPS_PER_LEVEL)}</span>
