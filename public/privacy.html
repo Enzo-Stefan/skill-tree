@@ -8,6 +8,13 @@
     body { font-family: system-ui, sans-serif; max-width: 42rem; margin: 0 auto; padding: 2rem 1.25rem; line-height: 1.6; color: #e8e8e8; background: #111; }
     h1 { font-size: 1.6rem; } h2 { font-size: 1.15rem; margin-top: 2rem; }
     a { color: #7fd17f; }
+    :root { color-scheme: dark; }
+    /* Light, like the app when the phone is in light mode. The link green is darker so it still reads on the light background. */
+    @media (prefers-color-scheme: light) {
+      :root { color-scheme: light; }
+      body { color: #10261c; background: #eef2ea; }
+      a { color: #1f7a4a; }
+    }
   </style>
 </head>
 <body>
