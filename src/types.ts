@@ -49,8 +49,9 @@ export interface Skill {
  *
  * - `hits`: `needed` of `attempts` go right, e.g. "8 of 10 passes hit the zone". Hit and Miss buttons.
  *   `seconds` is how long each attempt lasts when it's timed ("keep the ball for 10 seconds").
- * - `count`: reach `needed` in a row or in total, e.g. "20 juggles", "12 reps". With `seconds`,
- *   inside that time: "40 passes in 60 seconds" counts down from 60.
+ * - `count`: reach `needed`, e.g. "20 juggles", "12 reps". With `inARow`, a miss starts the count
+ *   again ("20 juggles in a row"). With `seconds`, inside that time: "40 passes in 60 seconds"
+ *   counts down from 60.
  * - `time`: a stopwatch. Finish `under` seconds; without `under`, the level target is the limit.
  *   `tries`: the best of that many counts ("best of 3"). `reps`: every one of that many must be under.
  * - `hold`: hold a position for `seconds`, e.g. a plank. A countdown.
@@ -60,7 +61,7 @@ export interface Skill {
  */
 export type TestCheck =
   | { kind: "hits"; needed: number; attempts: number; seconds?: number; perSide?: boolean }
-  | { kind: "count"; needed: number; seconds?: number; perSide?: boolean }
+  | { kind: "count"; needed: number; inARow?: boolean; seconds?: number; perSide?: boolean }
   | { kind: "time"; under?: number; tries?: number; reps?: number; perSide?: boolean }
   | { kind: "hold"; seconds: number; perSide?: boolean }
   | { kind: "done" };
