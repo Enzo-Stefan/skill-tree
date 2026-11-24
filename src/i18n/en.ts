@@ -71,6 +71,9 @@ export const en = {
     progress: "Progress",
     reset: "Reset everything",
     resetSub: (tree: string) => `Clears all your ${tree} progress`,
+    language: "Language",
+    /** The choice that follows the phone or browser language. */
+    phoneLanguage: "Same as your phone",
     about: "About",
     privacy: "Privacy policy",
     privacySub: "What we save and how to delete it",
