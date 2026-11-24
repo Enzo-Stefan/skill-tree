@@ -9,9 +9,11 @@ import {
   liftHistory,
   loadLiftLog,
   MAX_ENTRIES,
+  mergeLiftLogs,
   parseKg,
   personalBest,
   removeLiftEntry,
+  replayLiftLog,
   saveLiftLog,
   type LiftEntry,
 } from "./lifts";
@@ -149,5 +151,60 @@ describe("the weight training tree", () => {
     expect(lifts).not.toContain("cr1");
     expect(lifts).not.toContain("pw1");
     expect(lifts).not.toContain("root");
+  });
+});
+
+describe("merging lift logs (account sync)", () => {
+  it("keeps entries from both, and one copy of an entry both already have", () => {
+    const here = [squat("2026-11-18", 40), squat("2026-11-20", 45)];
+    const account = [squat("2026-11-18", 40), squat("2026-11-19", 42.5)];
+    expect(mergeLiftLogs(weights, here, account)).toEqual([squat("2026-11-18", 40), squat("2026-11-19", 42.5), squat("2026-11-20", 45)]);
+  });
+
+  it("keeps two sessions at the same weight on the same day if one side has both", () => {
+    const here = [squat("2026-11-20", 40), squat("2026-11-20", 40)];
+    expect(mergeLiftLogs(weights, here, [squat("2026-11-20", 40)])).toEqual(here);
+  });
+
+  it("replays entries logged here onto the account, keeping other devices' entries", () => {
+    const base = [squat("2026-11-18", 40)];
+    const account = [squat("2026-11-18", 40), squat("2026-11-19", 42.5)];
+    const here = [squat("2026-11-18", 40), squat("2026-11-20", 45)];
+    expect(replayLiftLog(weights, account, base, here)).toEqual([squat("2026-11-18", 40), squat("2026-11-19", 42.5), squat("2026-11-20", 45)]);
+  });
+
+  it("an entry undone here, or a reset, stays gone", () => {
+    const base = [squat("2026-11-18", 40), squat("2026-11-20", 450)];
+    const account = [...base, squat("2026-11-21", 50)];
+    expect(replayLiftLog(weights, account, base, [squat("2026-11-18", 40)])).toEqual([squat("2026-11-18", 40), squat("2026-11-21", 50)]);
+    expect(replayLiftLog(weights, account, base, [])).toEqual([squat("2026-11-21", 50)]);
+  });
+
+  it("doesn't bring back an entry undone on another device", () => {
+    const base = [squat("2026-11-18", 40), squat("2026-11-20", 450)];
+    const account = [squat("2026-11-18", 40)];
+    expect(replayLiftLog(weights, account, base, base)).toEqual([squat("2026-11-18", 40)]);
+  });
+});
+
+describe("replaying lifts twice", () => {
+  it("doesn't double an entry whose save already reached the account", () => {
+    const base = [squat("2026-11-18", 40)];
+    const here = [squat("2026-11-18", 40), squat("2026-11-20", 45)];
+    // The save got through, but the page closed before the browser updated its copy of the account.
+    const account = here;
+    expect(replayLiftLog(weights, account, base, here)).toEqual(here);
+  });
+
+  it("still adds a second session at the same weight logged here", () => {
+    const base = [squat("2026-11-20", 45)];
+    const here = [squat("2026-11-20", 45), squat("2026-11-20", 45)];
+    expect(replayLiftLog(weights, base, base, here)).toEqual(here);
+  });
+
+  it("doesn't bring back an entry removed on another device when one more is added here", () => {
+    const base = [squat("2026-11-20", 45)];
+    const here = [squat("2026-11-20", 45), squat("2026-11-20", 45)];
+    expect(replayLiftLog(weights, [], base, here)).toEqual([squat("2026-11-20", 45)]);
   });
 });

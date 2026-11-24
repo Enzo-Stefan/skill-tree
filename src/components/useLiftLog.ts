@@ -17,6 +17,8 @@ export interface LiftLog {
   remove: (entry: LiftEntry) => void;
   /** Empties the log (Reset). */
   clear: () => void;
+  /** Shows the log loaded from the account, and keeps it in the browser too. */
+  replace: (log: LiftEntry[]) => void;
 }
 
 /**
@@ -60,6 +62,9 @@ export function useLiftLog(tree: Tree): LiftLog {
     },
     clear() {
       update(() => []);
+    },
+    replace(next) {
+      update(() => next);
     },
   };
 }

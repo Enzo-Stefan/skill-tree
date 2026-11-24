@@ -9,7 +9,9 @@ Signing in with Google syncs progress across devices. Plan: issue #5.
    Name it `skill-tree`, pick the region closest to your players, save the database password somewhere safe.
 2. **Create the table.** In the project: **SQL Editor → New query**, paste all of
    `migrations/001_progress.sql`, click **Run**. Running it twice is safe.
-   Then do the same with `migrations/002_delete_account.sql`, which lets players delete their own account in the app.
+   Then do the same with `migrations/002_delete_account.sql`, which lets players delete their own account in the app,
+   and `migrations/003_lift_log_and_results.sql`, which saves the lift log and test results to the account.
+   Run 003 before the app version that uses it goes live, or loading and saving progress fails.
 3. **Google sign-in.**
    - In Google Cloud Console, create an OAuth client (type: Web application).
      Authorised redirect URI: the callback URL Supabase shows under
@@ -32,7 +34,7 @@ Never put the `service_role` key anywhere in this app. It bypasses all security 
 ## What's stored
 
 One row per player per tree in `public.progress`: finished skill ids, chosen player level,
-training check-in days and the streak state. Row-level security means a signed-in player can only read and
+training check-in days, the streak state, the lift log and test results (the last two since 003). Row-level security means a signed-in player can only read and
 write their own rows, and signed-out visitors can read nothing. Deleting a user deletes their rows.
 
 Players delete their own account from the app (tap their name, then **Delete account**). That calls
