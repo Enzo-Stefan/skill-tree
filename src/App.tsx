@@ -22,6 +22,7 @@ import { SettingsScreen } from "./components/SettingsScreen";
 import { useAuth } from "./auth/useAuth";
 import {
   clearPlayerLevel,
+  completedDependents,
   levelInfo,
   loadPlayerLevel,
   loadPlayerStep,
@@ -53,6 +54,24 @@ import type { SavedProgress } from "./lib/cloud";
 import { useCloudSync } from "./lib/useCloudSync";
 import { t } from "./i18n";
 
+interface ToastAction {
+  label: string;
+  /** What a screen reader says, when the visible label alone is unclear ("Undo" what?). */
+  accessibleLabel?: string;
+  run: () => void;
+}
+
+interface Toast {
+  text: string;
+  action?: ToastAction;
+}
+
+function withoutSkill(done: Set<string>, id: string): Set<string> {
+  const next = new Set(done);
+  next.delete(id);
+  return next;
+}
+
 export default function App() {
   // The tree the player last chose (src/lib/activeTree.ts). Switching reloads the app.
   const [tree] = useState(() => activeTree(trees));
@@ -63,7 +82,7 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(tree.skills[0].id);
   // Not in the URL: Google sign-in comes back with its tokens in the address's # part.
   const [tab, setTab] = useState<Tab>("train");
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<Toast | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
   // Where Train was scrolled when you left it. Some browsers reset a scroll area that gets hidden.
   const trainRef = useRef<HTMLDivElement>(null);
@@ -186,10 +205,11 @@ export default function App() {
 
   useEffect(() => saveProgress(tree.id, done), [tree.id, done]);
 
-  function showToast(msg: string) {
-    setToast(msg);
+  /** A short message. With an action (Undo), it stays longer so there's time to tap it. */
+  function showToast(text: string, action?: ToastAction) {
+    setToast({ text, action });
     window.clearTimeout(toastTimer.current);
-    toastTimer.current = window.setTimeout(() => setToast(null), 2800);
+    toastTimer.current = window.setTimeout(() => setToast(null), action ? 6000 : 2800);
   }
 
   function complete(id: string) {
@@ -200,15 +220,22 @@ export default function App() {
     const after = levelInfo(tree.levels, next.size).current.name;
     setDone(next);
     setSheetOpen(false);
-    if (after !== before) showToast(t.app.newRank(after));
-    else if (unlocked.length) showToast(t.app.skillCompleteUnlocked(skill.name, unlocked.map((s) => s.name)));
-    else showToast(t.app.skillComplete(skill.name));
+    // Undo right here, for a mis-tap: the sheet has closed, so its own Undo is out of reach.
+    const undoPass = { label: t.app.undo, accessibleLabel: t.app.undoPass(skill.name), run: () => undoPassed(id) };
+    if (after !== before) showToast(t.app.newRank(after), undoPass);
+    else if (unlocked.length) showToast(t.app.skillCompleteUnlocked(skill.name, unlocked.map((s) => s.name)), undoPass);
+    else showToast(t.app.skillComplete(skill.name), undoPass);
+  }
+
+  /** Un-passes a skill, unless a skill that needs it has been passed since. Works from the latest progress, not a stale copy. */
+  function undoPassed(id: string) {
+    const skill = tree.skills.find((s) => s.id === id)!;
+    setDone((current) => (completedDependents(tree, current, id).length ? current : withoutSkill(current, id)));
+    showToast(t.app.undone(skill.name));
   }
 
   function undo(id: string) {
-    const next = new Set(done);
-    next.delete(id);
-    setDone(next);
+    setDone((current) => withoutSkill(current, id));
   }
 
   async function copy() {
@@ -381,8 +408,22 @@ export default function App() {
         />
       )}
       {sharing && <ShareDialog stats={sharing} onClose={() => setSharing(null)} />}
-      <div className={`toast${toast ? " show" : ""}`} role="status">
-        {toast}
+      <div className={`toast${toast ? " show" : ""}${toast?.action ? " has-action" : ""}`} role="status">
+        {toast?.text}
+        {toast?.action && (
+          <button
+            className="toast-action"
+            type="button"
+            aria-label={toast.action.accessibleLabel}
+            onClick={() => {
+              const action = toast.action!;
+              setToast(null);
+              action.run();
+            }}
+          >
+            {toast.action.label}
+          </button>
+        )}
       </div>
     </div>
   );
