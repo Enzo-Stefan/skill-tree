@@ -142,6 +142,14 @@ export async function syncOnSignIn(
 /**
  * Saves progress a moment after the last change, so ticking off three skills
  * quickly sends one request instead of three. Call flush() before signing out.
+ *
+ * A failed save stays queued (unless something newer replaced it) and is sent again on the
+ * next flush(), so a dropped connection never loses the latest progress.
+ *
+ * Args:
+ *   onError: Called with the technical reason when a save fails.
+ *   onSaved: Called when a save succeeded and nothing newer is waiting, i.e. the account
+ *     now has the latest progress.
  */
 export function createCloudSaver(
   client: SupabaseClient,
@@ -149,6 +157,7 @@ export function createCloudSaver(
   treeId: string,
   onError: (message: string) => void,
   delayMs = 800,
+  onSaved: () => void = () => {},
 ) {
   let pending: SavedProgress | null = null;
   let timer: ReturnType<typeof setTimeout> | undefined;
@@ -165,7 +174,10 @@ export function createCloudSaver(
       pending = null;
       try {
         await saveCloudProgress(client, userId, treeId, p);
+        if (!pending) onSaved();
       } catch (e) {
+        // Keep it for the next try, unless a newer change already replaced it.
+        pending ??= p;
         onError(e instanceof Error ? e.message : "Couldn't save your progress.");
       }
     });
@@ -178,5 +190,11 @@ export function createCloudSaver(
     timer = setTimeout(() => void flush(), delayMs);
   }
 
-  return { save, flush };
+  /** Drop anything waiting, without saving it. For when the account is about to be deleted. */
+  function discard(): void {
+    clearTimeout(timer);
+    pending = null;
+  }
+
+  return { save, flush, discard, hasPending: () => pending !== null };
 }
