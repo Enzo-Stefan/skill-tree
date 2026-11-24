@@ -31,6 +31,8 @@ export interface Skill {
    */
   video?: string;
   test: string;
+  /** How the test is checked at the pitch, so the app can count or time it (idea 4 in #17). */
+  check?: TestCheck;
   tip: string;
   /**
    * Per-level targets for this skill's test. When set, the player sees only the target
@@ -40,6 +42,28 @@ export interface Skill {
   /** Draw as a large round node (used for the final skill). */
   big?: boolean;
 }
+
+/**
+ * How a skill's test is checked, for a test mode with counters and timers. The numbers mirror the
+ * test sentence, and validateTree checks they appear in it.
+ *
+ * - `hits`: `needed` of `attempts` go right, e.g. "8 of 10 passes hit the zone". Hit and Miss buttons.
+ *   `seconds` is how long each attempt lasts when it's timed ("keep the ball for 10 seconds").
+ * - `count`: reach `needed` in a row or in total, e.g. "20 juggles", "12 reps". With `seconds`,
+ *   inside that time: "40 passes in 60 seconds" counts down from 60.
+ * - `time`: a stopwatch. Finish `under` seconds; without `under`, the level target is the limit.
+ *   `tries`: the best of that many counts ("best of 3"). `reps`: every one of that many must be under.
+ * - `hold`: hold a position for `seconds`, e.g. a plank. A countdown.
+ * - `done`: no counter or timer, the player just says they did it ("Run 3 km", "play a full match").
+ *
+ * `perSide`: do it on each side or leg, so the test runs twice.
+ */
+export type TestCheck =
+  | { kind: "hits"; needed: number; attempts: number; seconds?: number; perSide?: boolean }
+  | { kind: "count"; needed: number; seconds?: number; perSide?: boolean }
+  | { kind: "time"; under?: number; tries?: number; reps?: number; perSide?: boolean }
+  | { kind: "hold"; seconds: number; perSide?: boolean }
+  | { kind: "done" };
 
 /**
  * A skill's test targets as numbers, so the steps inside each level can be worked out.

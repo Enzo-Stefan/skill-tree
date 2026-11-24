@@ -46,6 +46,7 @@ import {
   loadPracticeDays,
   loadStreakState,
   savePracticeDays,
+  addTrainingDay,
   saveStreakState,
   streakWeeks,
   weekOf,
@@ -185,6 +186,14 @@ export default function App() {
     savePracticeDays(tree.id, next);
   }
 
+  /** Passing a test counts as training today (#46). Only adds the day: undoing a pass leaves it. */
+  function markTrainedToday() {
+    const next = addTrainingDay(practiceDays, dayKey(new Date()));
+    if (next === practiceDays) return;
+    setPracticeDays(next);
+    savePracticeDays(tree.id, next);
+  }
+
   function askLater() {
     setTestOpen(false);
     updateStreak({ ...streakState, askedWeek: weekOf(dayKey(new Date())) });
@@ -255,6 +264,7 @@ export default function App() {
     const before = levelInfo(tree.levels, done.size).current.name;
     const after = levelInfo(tree.levels, next.size).current.name;
     setDone(next);
+    markTrainedToday();
     if (sheetOpen) closeSheet(id);
     // Undo right here, for a mis-tap: the sheet has closed, so its own Undo is out of reach.
     const undoPass = { label: t.app.undo, accessibleLabel: t.app.undoPass(skill.name), run: () => undoPassed(id) };
@@ -446,6 +456,7 @@ export default function App() {
           onPass={() => {
             setTestOpen(false);
             moveTo(nextForTest);
+            markTrainedToday();
           }}
           onNotYet={askLater}
           onDismiss={() => setTestOpen(false)}
@@ -460,6 +471,7 @@ export default function App() {
           onPass={() => {
             setPlacementId(null);
             moveTo(placementRung);
+            markTrainedToday();
           }}
           // Not passed yet: back to the picker, where the easiest level is always open.
           onNotYet={() => {
