@@ -81,6 +81,11 @@ export function streakWeeks(days: DayKey[], since: WeekKey | null, today: DayKey
   return streak;
 }
 
+/** Whether the week containing `today` can count toward the streak: not the week the player changed step. */
+export function weekCanCount(since: WeekKey | null, today: DayKey): boolean {
+  return since === null || weekOf(today) > since;
+}
+
 /**
  * The step to ask about moving up to (the next step, or step 1 of the next level), or null.
  * Asks at most once a week and never past the top step.

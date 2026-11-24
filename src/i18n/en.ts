@@ -69,6 +69,7 @@ export const en = {
     daysOf: (done: number, goal: number) => `${done} of ${goal} days`,
     daysLeft: (n: number) => `${n} more ${n === 1 ? "day" : "days"} this week to count it toward your streak.`,
     weekCounts: "This week counts toward your streak.",
+    weekAfterMove: "You changed level this week, so your streak starts again next week.",
     /** For screen readers, one per day: "Monday: trained (today)". */
     dayLabel: (day: string, trained: boolean, today: boolean) =>
       `${day}: ${trained ? "trained" : "not trained"}${today ? " (today)" : ""}`,

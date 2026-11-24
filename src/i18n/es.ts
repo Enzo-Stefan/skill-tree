@@ -71,6 +71,7 @@ export const es: Strings = {
     daysLeft: (n: number) =>
       n === 1 ? "Falta 1 día esta semana para que cuente en tu racha." : `Faltan ${n} días esta semana para que cuente en tu racha.`,
     weekCounts: "Esta semana cuenta para tu racha.",
+    weekAfterMove: "Cambiaste de nivel esta semana, así que tu racha empieza de nuevo la semana que viene.",
     dayLabel: (day: string, trained: boolean, today: boolean) =>
       `${day}: ${trained ? "entrenado" : "sin entrenar"}${today ? " (hoy)" : ""}`,
     branches: "Ramas",

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { football } from "../data/football";
-import { addTrainingDay, canPickLevel, daysThisWeek, levelUpDue, needsPlacementTest, streakWeeks, weekOf, type StreakState } from "./streak";
+import { addTrainingDay, canPickLevel, daysThisWeek, levelUpDue, needsPlacementTest, streakWeeks, weekCanCount, weekOf, type StreakState } from "./streak";
 
 // 2026-11-23 is a Monday.
 const week = (monday: string, count: number): string[] =>
@@ -146,5 +146,17 @@ describe("passing a test counts as training", () => {
   it("changes nothing when today is already ticked", () => {
     const days = ["2026-11-24"];
     expect(addTrainingDay(days, "2026-11-24")).toBe(days);
+  });
+});
+
+describe("whether this week can count", () => {
+  it("counts when the player never changed step", () => {
+    expect(weekCanCount(null, "2026-11-24")).toBe(true);
+  });
+  it("doesn't count in the week the player changed step", () => {
+    expect(weekCanCount(weekOf("2026-11-23"), "2026-11-26")).toBe(false);
+  });
+  it("counts again from the next week", () => {
+    expect(weekCanCount(weekOf("2026-11-23"), "2026-11-30")).toBe(true);
   });
 });

@@ -50,6 +50,7 @@ import {
   addTrainingDay,
   saveStreakState,
   streakWeeks,
+  weekCanCount,
   weekOf,
   type StreakState,
 } from "./lib/streak";
@@ -431,6 +432,7 @@ export default function App() {
             practiceDays={practiceDays}
             today={today}
             daysThisWeek={daysThisWeek(practiceDays, today)}
+            weekCanCount={weekCanCount(streakState.since, today)}
             streakWeeks={streak}
             liftLog={lifts.log}
             onShare={() => setSharing(shareStats(tree, done, playerRungName, streak, window.location.host))}

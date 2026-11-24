@@ -20,6 +20,8 @@ interface Props {
   practiceDays: DayKey[];
   today: DayKey;
   daysThisWeek: number;
+  /** False in the week the player changed step: that week can't count toward the streak. */
+  weekCanCount: boolean;
   streakWeeks: number;
   /** The tree's lift log, for the personal bests. */
   liftLog: LiftEntry[];
@@ -30,7 +32,7 @@ interface Props {
 
 /** Rank, your level and streak, training this week, each branch, personal bests on lifts, and the share picture. */
 export function ProgressScreen(props: Props) {
-  const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, streakWeeks, liftLog, onShare, onPickLevel } = props;
+  const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, weekCanCount, streakWeeks, liftLog, onShare, onPickLevel } = props;
   const daysLeft = Math.max(0, PRACTICE_DAYS_PER_WEEK - daysThisWeek);
 
   return (
@@ -99,7 +101,11 @@ export function ProgressScreen(props: Props) {
             <strong className="card-aside strong">{t.progressScreen.daysOf(daysThisWeek, PRACTICE_DAYS_PER_WEEK)}</strong>
           </div>
           <WeekDots days={practiceDays} today={today} />
-          <p className="card-note">{daysLeft > 0 ? t.progressScreen.daysLeft(daysLeft) : t.progressScreen.weekCounts}</p>
+          <p className="card-note">{!weekCanCount
+              ? t.progressScreen.weekAfterMove
+              : daysLeft > 0
+                ? t.progressScreen.daysLeft(daysLeft)
+                : t.progressScreen.weekCounts}</p>
           {!playerLevelName && (
             <p className="card-note">
               {t.progressScreen.streak}: <strong>{t.practice.weeks(streakWeeks)}</strong>
