@@ -116,7 +116,7 @@ export default function App() {
   const trainedToday = practiceDays.includes(today);
   const nextUp = pickerOpen || testOpen || placementId ? null : levelUpDue(tree, rung, practiceDays, today, streakState);
   const nextForTest = levelUpDue(tree, rung, practiceDays, today, streakState);
-  const testItems = testTargets(tree, nextForTest);
+  const testItems = testTargets(tree, nextForTest, language);
   const placementRung: Rung | null = placementId ? { levelId: placementId, step: 1 } : null;
   const selectedSkill = tree.skills.find((s) => s.id === selectedId)!;
 
@@ -293,7 +293,7 @@ export default function App() {
 
   async function copy() {
     try {
-      await navigator.clipboard.writeText(progressSummary(tree, done, rung));
+      await navigator.clipboard.writeText(progressSummary(tree, done, rung, t.summary));
       showToast(t.app.copied);
     } catch {
       showToast(t.app.copyFailed);
@@ -406,7 +406,7 @@ export default function App() {
                 onUndo={undo}
                 onClose={isPhone ? () => closeSheet() : undefined}
                 playerLevelName={playerRungName}
-                target={targetFor(tree, selectedSkill, rung)}
+                target={targetFor(tree, selectedSkill, rung, language)}
                 onChangeLevel={() => setPickerOpen(true)}
                 lifts={lifts}
               />
@@ -465,7 +465,7 @@ export default function App() {
       {placementRung && (
         <LevelTestDialog
           nextName={rungName(tree, placementRung) ?? ""}
-          items={testTargets(tree, placementRung)}
+          items={testTargets(tree, placementRung, language)}
           intro={t.levelTest.placementIntro(rungName(tree, placementRung) ?? "")}
           notYetLabel={t.levelTest.pickAnother}
           onPass={() => {

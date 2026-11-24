@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { loadSupabase } from "../auth/client";
 import type { Tree } from "../types";
+import { t } from "../i18n";
 import { createCloudSaver, type SavedProgress } from "./cloud";
 import {
   isSyncedHere,
@@ -108,7 +109,7 @@ export function useCloudSync({ tree, userId, progress, apply, onMessage }: Optio
           (detail) => {
             console.warn(detail);
             // A save sent after this sync ended (the session closed elsewhere) needs no message.
-            if (active) latest.current.onMessage("Couldn't save to your account. Your progress is still saved on this device.");
+            if (active) latest.current.onMessage(t.sync.saveFailed);
           },
           800,
           (saved, upToDate) => {
@@ -125,14 +126,14 @@ export function useCloudSync({ tree, userId, progress, apply, onMessage }: Optio
         fromAccount.current = sameProgress(loaded, latest.current.progress) ? null : loaded;
         latest.current.apply(loaded);
         setStatus("ready");
-        if (firstHere) latest.current.onMessage("Signed in. Your progress is saved to your account.");
+        if (firstHere) latest.current.onMessage(t.sync.signedIn);
       })
       .catch((e: unknown) => {
         if (!active) return;
         setStatus("error");
         // The technical reason goes to the console. Players get a plain message.
         console.warn(e);
-        latest.current.onMessage("Couldn't reach your account. Your progress is still saved on this device.");
+        latest.current.onMessage(t.sync.loadFailed);
       });
     return () => {
       active = false;

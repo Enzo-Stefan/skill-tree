@@ -151,3 +151,11 @@ describe("the weight training tree", () => {
     expect(lifts).not.toContain("root");
   });
 });
+
+describe("weights in the reader's language", () => {
+  it("writes kg with the language's decimal mark", () => {
+    expect(formatKg(62.5)).toBe("62.5 kg");
+    expect(formatKg(62.5, "es")).toBe("62,5 kg");
+    expect(formatKg(60, "es")).toBe("60 kg");
+  });
+});

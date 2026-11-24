@@ -47,7 +47,7 @@ export const es: Strings = {
     empty: "Apunta el peso que usas cada vez que haces este ejercicio y aquí verás tu récord personal.",
     inputLabel: "Peso que usaste hoy",
     log: "Guardar",
-    invalid: "Escribe un peso de 0 a 500 kg, por ejemplo 62.5.",
+    invalid: "Escribe un peso de 0 a 500 kg, por ejemplo 62,5.",
     newBest: (kg: string) => `¡Nuevo récord personal: ${kg}!`,
     logged: (kg: string) => `Guardado: ${kg}.`,
     undo: "Deshacer",
@@ -220,5 +220,14 @@ export const es: Strings = {
     close: "Cerrar",
     deleteFailed: "No se pudo borrar tu cuenta. Vuelve a intentarlo o escríbenos (mira la página de privacidad).",
     unreachable: "No se pudo conectar con el servidor. Revisa tu conexión y vuelve a intentarlo.",
+  },
+  sync: {
+    signedIn: "Sesión iniciada. Tu progreso se guarda en tu cuenta.",
+    saveFailed: "No se pudo guardar en tu cuenta. Tu progreso sigue guardado en este dispositivo.",
+    loadFailed: "No se pudo conectar con tu cuenta. Tu progreso sigue guardado en este dispositivo.",
+  },
+  summary: {
+    headline: (title: string, done: number, total: number, rank: string) => `Mi ${title}: ${done}/${total} habilidades, rango ${rank}.`,
+    training: (rung: string) => ` Entreno en ${rung}.`,
   },
 };

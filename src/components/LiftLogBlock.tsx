@@ -1,7 +1,7 @@
 import { useId, useState, type FormEvent } from "react";
 import { formatKg, liftHistory, parseKg, personalBest, type LiftEntry } from "../lib/lifts";
 import type { LiftLog, LoggedLift } from "./useLiftLog";
-import { t } from "../i18n";
+import { language, t } from "../i18n";
 
 /** How many of the latest entries the sheet lists under the input. */
 const RECENT = 5;
@@ -44,7 +44,7 @@ export function LiftLogBlock({ skillId, lifts }: Props) {
       <h3>{t.lifts.title}</h3>
       {best ? (
         <p className="lift-best">
-          {t.lifts.best} <strong>{formatKg(best.kg)}</strong> <span className="lift-date">{t.lifts.on(best.date)}</span>
+          {t.lifts.best} <strong>{formatKg(best.kg, language)}</strong> <span className="lift-date">{t.lifts.on(best.date)}</span>
         </p>
       ) : (
         <p className="hint">{t.lifts.empty}</p>
@@ -84,7 +84,7 @@ export function LiftLogBlock({ skillId, lifts }: Props) {
 
       {last && (
         <p className="lift-saved" role="status">
-          {last.best ? t.lifts.newBest(formatKg(last.entry.kg)) : t.lifts.logged(formatKg(last.entry.kg))}{" "}
+          {last.best ? t.lifts.newBest(formatKg(last.entry.kg, language)) : t.lifts.logged(formatKg(last.entry.kg, language))}{" "}
           <button className="link-btn" type="button" onClick={() => undo(last.entry)}>
             {t.lifts.undo}
           </button>
@@ -96,7 +96,7 @@ export function LiftLogBlock({ skillId, lifts }: Props) {
           {recent.map((e, i) => (
             <li key={`${e.date}-${e.kg}-${i}`}>
               <span>{t.lifts.on(e.date)}</span>
-              <span className="lift-kg">{formatKg(e.kg)}</span>
+              <span className="lift-kg">{formatKg(e.kg, language)}</span>
             </li>
           ))}
         </ol>

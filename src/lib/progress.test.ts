@@ -254,3 +254,24 @@ describe("test checks (idea 4)", () => {
     expect(timeLimit(football, skill("bc1"), null)).toBeNull();
   });
 });
+
+describe("numbers in the reader's language", () => {
+  it("writes decimals the way each language does", async () => {
+    const { formatNumber, targetFor } = await import("./progress");
+    expect(formatNumber(5.8)).toBe("5.8");
+    expect(formatNumber(5.8, "es")).toBe("5,8");
+    expect(formatNumber(1500, "es")).toBe("1500");
+    expect(formatNumber(5.675, "en")).toBe("5.68");
+    const ft2 = football.skills.find((s) => s.id === "ft2")!;
+    expect(targetFor(football, ft2, { levelId: "beginner", step: 1 })).toBe("Under 5.8 seconds.");
+    expect(targetFor(football, ft2, { levelId: "beginner", step: 1 }, "es")).toBe("Under 5,8 seconds.");
+  });
+
+  it("builds the copy text from the words it's given, English by default", async () => {
+    const { progressSummary } = await import("./progress");
+    const english = progressSummary(football, new Set(["root"]), { levelId: "beginner", step: 2 });
+    expect(english.split("\n")[0]).toBe("My hapi skill: 1/32 skills, rank Sunday League. Training at Beginner 2.");
+    const words = { headline: (title: string, d: number, total: number, rank: string) => `Mi ${title}: ${d}/${total}, ${rank}.`, training: (r: string) => ` En ${r}.` };
+    expect(progressSummary(football, new Set(["root"]), null, words).split("\n")[0]).toBe("Mi hapi skill: 1/32, Sunday League.");
+  });
+});

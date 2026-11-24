@@ -221,6 +221,17 @@ export const en = {
     deleteFailed: "Couldn't delete your account. Try again, or email us (see the privacy page).",
     unreachable: "Couldn't reach the server. Check your connection and try again.",
   },
+  /** Account sync messages (src/lib/useCloudSync.ts). */
+  sync: {
+    signedIn: "Signed in. Your progress is saved to your account.",
+    saveFailed: "Couldn't save to your account. Your progress is still saved on this device.",
+    loadFailed: "Couldn't reach your account. Your progress is still saved on this device.",
+  },
+  /** The "Copy my progress" text (progressSummary in src/lib/progress.ts). */
+  summary: {
+    headline: (title: string, done: number, total: number, rank: string) => `My ${title}: ${done}/${total} skills, rank ${rank}.`,
+    training: (rung: string) => ` Training at ${rung}.`,
+  },
 };
 
 /** The shape every language file must have. */
