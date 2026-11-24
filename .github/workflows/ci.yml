@@ -19,24 +19,60 @@ jobs:
       - run: npm test
       - run: npm run build
 
-  # Vercel's GitHub link stopped starting builds for main (#63), so CI asks Vercel to deploy instead,
-  # and only after lint, tests and build pass. VERCEL_DEPLOY_HOOK is a deploy hook URL from Vercel
-  # (Project Settings > Git > Deploy Hooks, branch main), saved as a repository secret.
-  # A deploy hook always starts a new build. If Vercel's own Git trigger works again, each push to
-  # main builds twice; then remove this job or the hook.
+  # Vercel's GitHub link stopped starting builds for main (#63), so CI deploys instead, and only after
+  # lint, tests and build pass. A deploy hook always builds the latest main, which can be a newer
+  # commit than the one `check` validated, so this job checks out GITHUB_SHA and uploads exactly
+  # those files with the Vercel CLI. Needs repository secrets VERCEL_TOKEN, VERCEL_ORG_ID and
+  # VERCEL_PROJECT_ID (Vercel > Project Settings > General, and Account Settings > Tokens).
+  # If Vercel's own Git trigger works again, each push to main builds twice; then remove this job.
   deploy:
     needs: check
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    permissions: {}
+    permissions:
+      contents: read
+    # One deploy at a time, so an older commit can't finish after a newer one and replace it.
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    env:
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
     steps:
-      - name: Ask Vercel to deploy main
-        env:
-          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+      - name: Check Vercel secrets
+        id: config
         run: |
-          if [ -z "$HOOK" ]; then
-            echo "::warning::VERCEL_DEPLOY_HOOK isn't set, so main was not deployed. See #63."
-            exit 0
+          if [ -z "$VERCEL_TOKEN" ] || [ -z "$VERCEL_ORG_ID" ] || [ -z "$VERCEL_PROJECT_ID" ]; then
+            echo "::warning::VERCEL_TOKEN, VERCEL_ORG_ID or VERCEL_PROJECT_ID isn't set, so $GITHUB_SHA was not deployed. See #63."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
           fi
-          curl --fail --silent --show-error -X POST "$HOOK" > /dev/null
-          echo "Asked Vercel to deploy main."
+      - name: Skip if main has moved on
+        id: latest
+        if: steps.config.outputs.ready == 'true'
+        run: |
+          head=$(git ls-remote "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY" refs/heads/main | cut -f1)
+          if [ "$head" != "$GITHUB_SHA" ]; then
+            echo "::notice::main is now at $head; the run for that commit will deploy it. Skipping $GITHUB_SHA."
+            echo "current=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "current=true" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/checkout@v4
+        if: steps.latest.outputs.current == 'true'
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v4
+        if: steps.latest.outputs.current == 'true'
+        with:
+          node-version: 22
+      - name: Deploy ${{ github.sha }} to Vercel production
+        if: steps.latest.outputs.current == 'true'
+        run: |
+          npx --yes vercel@41.7.0 pull --yes --environment=production --token="$VERCEL_TOKEN"
+          npx --yes vercel@41.7.0 build --prod --token="$VERCEL_TOKEN"
+          npx --yes vercel@41.7.0 deploy --prebuilt --prod --token="$VERCEL_TOKEN" \
+            --meta githubCommitSha="$GITHUB_SHA" --meta githubCommitRef=main
+          echo "Deployed $GITHUB_SHA."
