@@ -19,6 +19,8 @@ import { TabBar, type Tab } from "./components/TabBar";
 import { ProgressScreen } from "./components/ProgressScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { useAuth } from "./auth/useAuth";
+import { SignInDialog } from "./components/SignInDialog";
+import { loadWelcomeSkipped, saveWelcomeSkipped } from "./lib/welcome";
 import {
   clearPlayerLevel,
   levelInfo,
@@ -78,6 +80,14 @@ export default function App() {
   // The tree the player last chose (src/lib/activeTree.ts). Switching reloads the app.
   const [tree] = useState(() => activeTree(trees));
   const auth = useAuth();
+  // The sign-in screen that opens the app. Decided once per page load: a player who is signed in
+  // when the session check finishes never sees it, so signing out or an expired session later doesn't bring it up.
+  const [welcomeSkipped, setWelcomeSkipped] = useState(loadWelcomeSkipped);
+  const [welcomeHidden, setWelcomeHidden] = useState(false);
+  useEffect(() => {
+    if (!auth.loading && auth.account) setWelcomeHidden(true);
+  }, [auth.loading, auth.account]);
+  const welcomeOpen = auth.configured && !auth.loading && !auth.account && !welcomeSkipped && !welcomeHidden;
   // Weights logged on lifts (Strength tree). Saved in this browser and, when signed in, in the account.
   const lifts = useLiftLog(tree);
   // Times saved from test mode (sprints). Saved to the account too, like the lift log.
@@ -444,7 +454,19 @@ export default function App() {
           />
         )}
       </div>
-      {pickerOpen && tree.playerLevels && (
+      {welcomeOpen && (
+        <SignInDialog
+          welcome
+          onGoogle={auth.signInWithGoogle}
+          // Tapping outside or Escape only hides it for this visit. Only the Skip button remembers it.
+          onClose={() => setWelcomeHidden(true)}
+          onSkip={() => {
+            saveWelcomeSkipped();
+            setWelcomeSkipped(true);
+          }}
+        />
+      )}
+      {pickerOpen && !welcomeOpen && !auth.loading && tree.playerLevels && (
         <LevelPicker
           levels={tree.playerLevels}
           currentId={playerLevelId}
