@@ -46,7 +46,7 @@ import {
   weekOf,
   type StreakState,
 } from "./lib/streak";
-import { saveLiftLog } from "./lib/lifts";
+import { addLiftEntry, formatKg, isNewBest, loadLiftLog, removeLiftEntry, saveLiftLog, type LiftEntry } from "./lib/lifts";
 import type { SavedProgress } from "./lib/cloud";
 import { useCloudSync } from "./lib/useCloudSync";
 import { t } from "./i18n";
@@ -76,6 +76,9 @@ export default function App() {
   const [practiceDays, setPracticeDays] = useState(() => loadPracticeDays(tree.id));
   const [streakState, setStreakState] = useState(() => loadStreakState(tree.id));
   const [testOpen, setTestOpen] = useState(false);
+  // Weights logged for lifts (#18), and the last one logged in this visit so a typo can be undone.
+  const [liftLog, setLiftLog] = useState(() => loadLiftLog(tree));
+  const [lastLift, setLastLift] = useState<LiftEntry | null>(null);
   // Snapshot of the progress when Share was tapped, so the image isn't redrawn on every re-render.
   const [sharing, setSharing] = useState<ShareStats | null>(null);
   const today = useToday();
@@ -198,6 +201,28 @@ export default function App() {
     else showToast(t.app.skillComplete(skill.name));
   }
 
+  function updateLiftLog(next: LiftEntry[]) {
+    setLiftLog(next);
+    saveLiftLog(tree.id, next);
+  }
+
+  /** Logs the weight for a lift. If the lift isn't passed yet, this is how it's passed. */
+  function logLift(id: string, kg: number) {
+    const skill = tree.skills.find((s) => s.id === id)!;
+    // Work the date out now: the page may have been open since yesterday.
+    const entry: LiftEntry = { skillId: id, date: dayKey(new Date()), kg };
+    const best = isNewBest(liftLog, entry);
+    updateLiftLog(addLiftEntry(tree, liftLog, entry));
+    setLastLift(entry);
+    if (!done.has(id)) complete(id);
+    else if (best) showToast(t.lifts.newBest(skill.name, formatKg(kg)));
+  }
+
+  function undoLift(entry: LiftEntry) {
+    updateLiftLog(removeLiftEntry(liftLog, entry));
+    setLastLift(null);
+  }
+
   function undo(id: string) {
     const next = new Set(done);
     next.delete(id);
@@ -222,7 +247,8 @@ export default function App() {
     setPracticeDays([]);
     savePracticeDays(tree.id, []);
     updateStreak({ since: null, askedWeek: null });
-    saveLiftLog(tree.id, []);
+    updateLiftLog([]);
+    setLastLift(null);
     setTestOpen(false);
     setSelectedId(tree.skills[0].id);
     setBranchId(tree.branches[0].id);
@@ -283,6 +309,10 @@ export default function App() {
                 playerLevelName={playerRungName}
                 target={targetFor(tree, selectedSkill, rung)}
                 onChangeLevel={() => setPickerOpen(true)}
+                liftLog={liftLog}
+                onLogLift={logLift}
+                lastLift={lastLift}
+                onUndoLift={undoLift}
               />
             )}
           </main>
@@ -294,6 +324,7 @@ export default function App() {
             playerLevelName={playerRungName}
             daysThisWeek={daysThisWeek(practiceDays, today)}
             streakWeeks={streak}
+            liftLog={liftLog}
             onShare={() => setSharing(shareStats(tree, done, playerRungName, streak, window.location.host))}
           />
         )}
