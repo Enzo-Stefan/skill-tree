@@ -70,10 +70,19 @@ export function addLiftEntry(tree: Tree, log: LiftEntry[], entry: LiftEntry): Li
   return cleanLiftLog(tree, [...log, entry]);
 }
 
-/** Removes one entry (for an "undo" right after a typo). */
+/**
+ * Removes one entry (for an "undo" right after a typo). Matches on lift, day and weight, not on
+ * the object itself, because the log stores its own copies. If the same entry was logged twice,
+ * the last one goes.
+ */
 export function removeLiftEntry(log: LiftEntry[], entry: LiftEntry): LiftEntry[] {
-  const i = log.lastIndexOf(entry);
-  return i < 0 ? log : [...log.slice(0, i), ...log.slice(i + 1)];
+  for (let i = log.length - 1; i >= 0; i--) {
+    const e = log[i];
+    if (e.skillId === entry.skillId && e.date === entry.date && e.kg === entry.kg) {
+      return [...log.slice(0, i), ...log.slice(i + 1)];
+    }
+  }
+  return log;
 }
 
 /** Every entry for one lift, oldest first. */
