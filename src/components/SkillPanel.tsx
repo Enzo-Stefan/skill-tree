@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useEffect, useRef, type CSSProperties } from "react";
 import type { Tree } from "../types";
 import { completedDependents, skillState } from "../lib/progress";
 import { SkillVideo } from "./SkillVideo";
@@ -36,6 +36,15 @@ export function SkillPanel({
   lifts,
 }: Props) {
   const skill = tree.skills.find((s) => s.id === skillId)!;
+  const heading = useRef<HTMLHeadingElement>(null);
+  const headingId = `skill-${skill.id}-title`;
+  const isSheet = Boolean(onClose);
+
+  // As a sheet (phones), move focus to the skill's name so a screen reader reads it, instead of the
+  // whole sheet. App gives focus back to the skill in the tree when the sheet closes.
+  useEffect(() => {
+    if (isSheet) heading.current?.focus({ preventScroll: true });
+  }, [isSheet, skillId]);
   const state = skillState(skill, done);
   const branch = tree.branches.find((b) => b.id === skill.branch);
   const color = branch?.color ?? "#f2c14e";
@@ -47,7 +56,7 @@ export function SkillPanel({
   const query = encodeURIComponent(t.panel.youtubeSearch(tree.id, skill.name));
 
   return (
-    <aside className={`panel${onClose ? " sheet" : ""}`} aria-live="polite">
+    <aside className={`panel${onClose ? " sheet" : ""}`} aria-labelledby={headingId}>
       <div className="panel-top">
         <span className="chip" style={{ "--c": color } as CSSProperties}>
           {label}
@@ -58,7 +67,9 @@ export function SkillPanel({
           </button>
         )}
       </div>
-      <h2>{skill.name}</h2>
+      <h2 id={headingId} ref={heading} tabIndex={-1}>
+        {skill.name}
+      </h2>
       <span className={`status ${state}`}>{t.panel.status[state]}</span>
       {state === "locked" && <p className="hint">{t.panel.finishFirst(missing.filter((n) => n !== undefined))}</p>}
 

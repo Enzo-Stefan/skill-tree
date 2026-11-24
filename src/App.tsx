@@ -22,6 +22,7 @@ import { SettingsScreen } from "./components/SettingsScreen";
 import { useAuth } from "./auth/useAuth";
 import {
   clearPlayerLevel,
+  completedDependents,
   levelInfo,
   loadPlayerLevel,
   loadPlayerStep,
@@ -55,6 +56,24 @@ import type { SavedProgress } from "./lib/cloud";
 import { useCloudSync } from "./lib/useCloudSync";
 import { t } from "./i18n";
 
+interface ToastAction {
+  label: string;
+  /** What a screen reader says, when the visible label alone is unclear ("Undo" what?). */
+  accessibleLabel?: string;
+  run: () => void;
+}
+
+interface Toast {
+  text: string;
+  action?: ToastAction;
+}
+
+function withoutSkill(done: Set<string>, id: string): Set<string> {
+  const next = new Set(done);
+  next.delete(id);
+  return next;
+}
+
 export default function App() {
   // The tree the player last chose (src/lib/activeTree.ts). Switching reloads the app.
   const [tree] = useState(() => activeTree(trees));
@@ -65,7 +84,7 @@ export default function App() {
   const [selectedId, setSelectedId] = useState(tree.skills[0].id);
   // Not in the URL: Google sign-in comes back with its tokens in the address's # part.
   const [tab, setTab] = useState<Tab>("train");
-  const [toast, setToast] = useState<string | null>(null);
+  const [toast, setToast] = useState<Toast | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
   // Where Train was scrolled when you left it. Some browsers reset a scroll area that gets hidden.
   const trainRef = useRef<HTMLDivElement>(null);
@@ -188,12 +207,36 @@ export default function App() {
     setSheetOpen(true);
   }
 
-  useEffect(() => saveProgress(tree.id, done), [tree.id, done]);
+  // By id, not "whatever had focus": iOS Safari doesn't focus a button on tap, and the sheet can
+  // switch skills while open.
+  function focusSkill(id: string) {
+    const buttons = trainRef.current?.querySelectorAll<HTMLElement>(`[data-skill-id="${CSS.escape(id)}"]`) ?? [];
+    Array.from(buttons)
+      .find((b) => b.offsetParent !== null)
+      ?.focus();
+  }
 
-  function showToast(msg: string) {
-    setToast(msg);
+  function closeSheet(id = selectedId) {
+    setSheetOpen(false);
+    focusSkill(id);
+  }
+
+  useEffect(() => saveProgress(tree.id, done), [tree.id, done]);
+  // The toast's Undo runs after later renders (a cloud load can land in between), so it reads this.
+  const doneRef = useRef(done);
+  useEffect(() => {
+    doneRef.current = done;
+  }, [done]);
+
+  /** A short message. With an action (Undo), it stays longer so there's time to tap it. */
+  function showToast(text: string, action?: ToastAction) {
+    setToast({ text, action });
+    hideToastIn(action ? 6000 : 2800);
+  }
+
+  function hideToastIn(ms: number) {
     window.clearTimeout(toastTimer.current);
-    toastTimer.current = window.setTimeout(() => setToast(null), 2800);
+    toastTimer.current = window.setTimeout(() => setToast(null), ms);
   }
 
   function complete(id: string) {
@@ -203,16 +246,30 @@ export default function App() {
     const before = levelInfo(tree.levels, done.size).current.name;
     const after = levelInfo(tree.levels, next.size).current.name;
     setDone(next);
-    setSheetOpen(false);
-    if (after !== before) showToast(t.app.newRank(after));
-    else if (unlocked.length) showToast(t.app.skillCompleteUnlocked(skill.name, unlocked.map((s) => s.name)));
-    else showToast(t.app.skillComplete(skill.name));
+    if (sheetOpen) closeSheet(id);
+    // Undo right here, for a mis-tap: the sheet has closed, so its own Undo is out of reach.
+    const undoPass = { label: t.app.undo, accessibleLabel: t.app.undoPass(skill.name), run: () => undoPassed(id) };
+    if (after !== before) showToast(t.app.newRank(after), undoPass);
+    else if (unlocked.length) showToast(t.app.skillCompleteUnlocked(skill.name, unlocked.map((s) => s.name)), undoPass);
+    else showToast(t.app.skillComplete(skill.name), undoPass);
+  }
+
+  /** Un-passes a skill, unless a skill that needs it has been passed since. Works from the latest progress, not a stale copy. */
+  function undoPassed(id: string) {
+    const skill = tree.skills.find((s) => s.id === id)!;
+    const blockers = completedDependents(tree, doneRef.current, id);
+    if (blockers.length) {
+      showToast(t.panel.undoFirst(blockers.map((s) => s.name)));
+    } else {
+      setDone((current) => withoutSkill(current, id));
+      showToast(t.app.undone(skill.name));
+    }
+    // The Undo button is gone, so focus goes to the skill instead of falling to the page.
+    focusSkill(id);
   }
 
   function undo(id: string) {
-    const next = new Set(done);
-    next.delete(id);
-    setDone(next);
+    setDone((current) => withoutSkill(current, id));
   }
 
   async function copy() {
@@ -328,7 +385,7 @@ export default function App() {
                 skillId={selectedId}
                 onComplete={complete}
                 onUndo={undo}
-                onClose={isPhone ? () => setSheetOpen(false) : undefined}
+                onClose={isPhone ? () => closeSheet() : undefined}
                 playerLevelName={playerRungName}
                 target={targetFor(tree, selectedSkill, rung)}
                 onChangeLevel={() => setPickerOpen(true)}
@@ -406,8 +463,25 @@ export default function App() {
         />
       )}
       {sharing && <ShareDialog stats={sharing} onClose={() => setSharing(null)} />}
-      <div className={`toast${toast ? " show" : ""}`} role="status">
-        {toast}
+      <div className={`toast${toast ? " show" : ""}${toast?.action ? " has-action" : ""}`} role="status">
+        {toast?.text}
+        {toast?.action && (
+          <button
+            className="toast-action"
+            type="button"
+            aria-label={toast.action.accessibleLabel}
+            // Not removed while it has keyboard focus; the countdown restarts when focus leaves.
+            onFocus={() => window.clearTimeout(toastTimer.current)}
+            onBlur={() => hideToastIn(2800)}
+            onClick={() => {
+              const action = toast.action!;
+              setToast(null);
+              action.run();
+            }}
+          >
+            {toast.action.label}
+          </button>
+        )}
       </div>
     </div>
   );

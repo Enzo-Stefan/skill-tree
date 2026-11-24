@@ -270,10 +270,24 @@ main { flex: 1; display: flex; min-height: 0; }
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.2s, transform 0.2s;
-  max-width: calc(100% - 32px);
+  /* Fixed at left 50%, a box only gets half the screen unless told its own width. */
+  width: max-content;
+  max-width: min(560px, calc(100% - 32px));
   text-align: center;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
+/* Only the button takes taps, so the message never blocks the skill under it. */
+.toast.show.has-action { display: flex; align-items: center; gap: 4px 14px; flex-wrap: wrap; justify-content: center; }
+.toast-action {
+  pointer-events: auto;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1.5px solid currentColor;
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font-weight: 700;
+}
 
 @media (max-width: 860px) {
   main { flex-direction: column; }
@@ -523,3 +537,5 @@ a.btn { color: inherit; text-decoration: none; display: inline-flex; align-items
 .privacy-link { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .privacy-link:hover { color: var(--chalk); }
 .dialog-note { font-size: 0.875rem; }
+/* The skill's name gets focus when the sheet opens (for screen readers); no focus ring on a heading. */
+.panel h2[tabindex="-1"]:focus { outline: none; }
