@@ -1,4 +1,5 @@
-import type { PlayerLevel, Tree } from "../types";
+import type { Tree } from "../types";
+import { nextRung, type Rung } from "./progress";
 
 /** A week counts toward the streak when the player trained on at least this many different days. */
 export const PRACTICE_DAYS_PER_WEEK = 3;
@@ -58,19 +59,21 @@ export function streakWeeks(days: DayKey[], since: WeekKey | null = null): numbe
   return streak;
 }
 
-/** The player level to ask about moving up to, or null. Asks at most once a week and never past the top. */
+/**
+ * The step to ask about moving up to (the next step, or step 1 of the next level), or null.
+ * Asks at most once a week and never past the top step.
+ */
 export function levelUpDue(
   tree: Tree,
-  levelId: string | null,
+  rung: Rung | null,
   days: DayKey[],
   today: DayKey,
   state: StreakState,
-): PlayerLevel | null {
-  const levels = tree.playerLevels ?? [];
-  const index = levels.findIndex((l) => l.id === levelId);
-  if (index < 0 || index === levels.length - 1) return null;
+): Rung | null {
+  const next = nextRung(tree, rung);
+  if (!next) return null;
   if (state.askedWeek === weekOf(today)) return null;
-  return streakWeeks(days, state.since) >= STREAK_WEEKS ? levels[index + 1] : null;
+  return streakWeeks(days, state.since) >= STREAK_WEEKS ? next : null;
 }
 
 /**

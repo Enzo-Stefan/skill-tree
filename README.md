@@ -1,4 +1,4 @@
-# Skill Tree
+# hapi skill
 
 Learn a hobby the way you level up in a game. Each skill has a drill, a clear test and a tip. Pass the test, unlock the next skill.
 
