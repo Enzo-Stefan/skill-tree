@@ -59,6 +59,7 @@ export const en = {
     share: "Share my tree",
     copy: "Copy my progress",
     resetConfirm: "Tap again to reset all",
+    privacy: "Privacy",
   },
   treeSwitch: {
     label: "Skill tree",
@@ -97,7 +98,13 @@ export const en = {
     changeLevel: "Change level",
     pickLevelForTarget: "Pick your level to see your target",
     tip: "Coach's tip",
-    youtubeSearch: (skill: string) => `football ${skill} drill tutorial`,
+    /** What the YouTube link searches for. Each tree gets words that find the right kind of video. */
+    youtubeSearch: (treeId: string, skill: string) =>
+      treeId === "football"
+        ? `football ${skill} drill tutorial`
+        : treeId === "weights"
+          ? `${skill} exercise form tutorial`
+          : `${skill} tutorial`,
     watchYoutube: "Watch tutorials on YouTube",
     passed: "I passed the test",
     undoFirst: (skills: string[]) => `To undo this, first undo: ${skills.join(", ")}.`,
@@ -174,7 +181,7 @@ export const en = {
     title: "Your account",
     confirmTitle: "Delete your account?",
     confirmBody: "This deletes your account and the progress saved in it, on every device. It can't be undone.",
-    browserStays: "Progress saved in this browser stays here. Use Reset if you want to clear it too.",
+    browserStays: "Progress saved in this browser stays here. To clear it too, use Reset everything in Settings on each tree.",
     signedInAs: "Signed in with Google as",
     deleting: "Deleting…",
     deleteForGood: "Delete for good",

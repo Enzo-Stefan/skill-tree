@@ -21,7 +21,10 @@ export function Header({ tree, doneCount, playerLevelName, onChangeLevel, treeSw
       <div className="brand">
         {treeSwitch}
         <h1>{t.app.train}</h1>
-        <p>{tree.tagline}</p>
+        {/* Google checks that the home screen links to the privacy policy before it approves sign-in. */}
+        <p>
+          {tree.tagline} <a className="privacy-link" href="/privacy.html">{t.header.privacy}</a>
+        </p>
       </div>
       <div className="progress">
         <RankProgress tree={tree} doneCount={doneCount} />
