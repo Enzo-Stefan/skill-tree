@@ -41,12 +41,7 @@ export function SkillPanel({
   const isSheet = Boolean(onClose);
 
   // As a sheet (phones), move focus to the skill's name so a screen reader reads it, instead of the
-  // whole sheet. When the sheet closes, focus goes back to whatever opened it.
-  useEffect(() => {
-    if (!isSheet) return;
-    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    return () => opener?.focus();
-  }, [isSheet]);
+  // whole sheet. App gives focus back to the skill in the tree when the sheet closes.
   useEffect(() => {
     if (isSheet) heading.current?.focus({ preventScroll: true });
   }, [isSheet, skillId]);

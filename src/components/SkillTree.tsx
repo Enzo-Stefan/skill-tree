@@ -119,6 +119,7 @@ function SkillItem({ skill, state, layout, color, selected, next, effect, sub, o
       className={classes.filter(Boolean).join(" ")}
       style={{ "--c": color } as CSSProperties}
       onClick={() => onSelect(skill.id)}
+      data-skill-id={skill.id}
       aria-label={t.tree.nodeLabel(skill.name, sub, next)}
       aria-current={selected ? "true" : undefined}
     >

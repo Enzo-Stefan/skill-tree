@@ -203,13 +203,36 @@ export default function App() {
     setSheetOpen(true);
   }
 
+  // By id, not "whatever had focus": iOS Safari doesn't focus a button on tap, and the sheet can
+  // switch skills while open.
+  function focusSkill(id: string) {
+    const buttons = trainRef.current?.querySelectorAll<HTMLElement>(`[data-skill-id="${CSS.escape(id)}"]`) ?? [];
+    Array.from(buttons)
+      .find((b) => b.offsetParent !== null)
+      ?.focus();
+  }
+
+  function closeSheet(id = selectedId) {
+    setSheetOpen(false);
+    focusSkill(id);
+  }
+
   useEffect(() => saveProgress(tree.id, done), [tree.id, done]);
+  // The toast's Undo runs after later renders (a cloud load can land in between), so it reads this.
+  const doneRef = useRef(done);
+  useEffect(() => {
+    doneRef.current = done;
+  }, [done]);
 
   /** A short message. With an action (Undo), it stays longer so there's time to tap it. */
   function showToast(text: string, action?: ToastAction) {
     setToast({ text, action });
+    hideToastIn(action ? 6000 : 2800);
+  }
+
+  function hideToastIn(ms: number) {
     window.clearTimeout(toastTimer.current);
-    toastTimer.current = window.setTimeout(() => setToast(null), action ? 6000 : 2800);
+    toastTimer.current = window.setTimeout(() => setToast(null), ms);
   }
 
   function complete(id: string) {
@@ -219,7 +242,7 @@ export default function App() {
     const before = levelInfo(tree.levels, done.size).current.name;
     const after = levelInfo(tree.levels, next.size).current.name;
     setDone(next);
-    setSheetOpen(false);
+    if (sheetOpen) closeSheet(id);
     // Undo right here, for a mis-tap: the sheet has closed, so its own Undo is out of reach.
     const undoPass = { label: t.app.undo, accessibleLabel: t.app.undoPass(skill.name), run: () => undoPassed(id) };
     if (after !== before) showToast(t.app.newRank(after), undoPass);
@@ -230,8 +253,15 @@ export default function App() {
   /** Un-passes a skill, unless a skill that needs it has been passed since. Works from the latest progress, not a stale copy. */
   function undoPassed(id: string) {
     const skill = tree.skills.find((s) => s.id === id)!;
-    setDone((current) => (completedDependents(tree, current, id).length ? current : withoutSkill(current, id)));
-    showToast(t.app.undone(skill.name));
+    const blockers = completedDependents(tree, doneRef.current, id);
+    if (blockers.length) {
+      showToast(t.panel.undoFirst(blockers.map((s) => s.name)));
+    } else {
+      setDone((current) => withoutSkill(current, id));
+      showToast(t.app.undone(skill.name));
+    }
+    // The Undo button is gone, so focus goes to the skill instead of falling to the page.
+    focusSkill(id);
   }
 
   function undo(id: string) {
@@ -351,7 +381,7 @@ export default function App() {
                 skillId={selectedId}
                 onComplete={complete}
                 onUndo={undo}
-                onClose={isPhone ? () => setSheetOpen(false) : undefined}
+                onClose={isPhone ? () => closeSheet() : undefined}
                 playerLevelName={playerRungName}
                 target={targetFor(tree, selectedSkill, rung)}
                 onChangeLevel={() => setPickerOpen(true)}
@@ -415,6 +445,9 @@ export default function App() {
             className="toast-action"
             type="button"
             aria-label={toast.action.accessibleLabel}
+            // Not removed while it has keyboard focus; the countdown restarts when focus leaves.
+            onFocus={() => window.clearTimeout(toastTimer.current)}
+            onBlur={() => hideToastIn(2800)}
             onClick={() => {
               const action = toast.action!;
               setToast(null);
