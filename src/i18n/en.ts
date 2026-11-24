@@ -156,7 +156,7 @@ export const en = {
     title: "Your account",
     confirmTitle: "Delete your account?",
     confirmBody: "This deletes your account and the progress saved in it, on every device. It can't be undone.",
-    browserStays: "Progress saved in this browser stays here. To clear it too, use Reset everything in Settings.",
+    browserStays: "Progress saved in this browser stays here. To clear it too, use Reset everything in Settings on each tree.",
     signedInAs: "Signed in with Google as",
     deleting: "Deleting…",
     deleteForGood: "Delete for good",
