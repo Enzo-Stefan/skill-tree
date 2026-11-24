@@ -31,8 +31,8 @@ export function TabBar({ active, onChange, rank, summary }: Props) {
       ))}
       <div className="tabbar-summary">
         <span className="tabbar-rank">{rank}</span>
-        {summary.map((line) => (
-          <span key={line}>{line}</span>
+        {summary.map((line, i) => (
+          <span key={i}>{line}</span>
         ))}
       </div>
     </nav>

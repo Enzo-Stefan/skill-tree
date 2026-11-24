@@ -16,10 +16,6 @@ interface Props {
 
 /** Top of the Train tab: which tree, your rank, and your level (the targets depend on it). */
 export function Header({ tree, doneCount, playerLevelName, onChangeLevel, treeSwitch }: Props) {
-  const total = tree.skills.length;
-  const { current, next } = levelInfo(tree.levels, doneCount);
-  const leveledUp = useIncreased(tree.levels.indexOf(current));
-
   return (
     <header className="header">
       <div className="brand">
@@ -28,18 +24,7 @@ export function Header({ tree, doneCount, playerLevelName, onChangeLevel, treeSw
         <p>{tree.tagline}</p>
       </div>
       <div className="progress">
-        <div className="progress-top">
-          <span className={`level${leveledUp ? " bump" : ""}`}>{current.name}</span>
-          <span className="count">
-            {t.header.skillsCount(doneCount, total)}
-          </span>
-        </div>
-        <div className="bar">
-          <span style={{ width: `${(doneCount / total) * 100}%` }} />
-        </div>
-        <span className="next-level">
-          {next ? t.header.moreToReach(next.at - doneCount, next.name) : t.header.allUnlocked}
-        </span>
+        <RankProgress tree={tree} doneCount={doneCount} />
       </div>
       {onChangeLevel && (
         <div className="actions">
@@ -49,5 +34,26 @@ export function Header({ tree, doneCount, playerLevelName, onChangeLevel, treeSw
         </div>
       )}
     </header>
+  );
+}
+
+/** Rank, skill count, progress bar and how many skills to the next rank. Used on Train and Progress. */
+export function RankProgress({ tree, doneCount }: { tree: Tree; doneCount: number }) {
+  const total = tree.skills.length;
+  const { current, next } = levelInfo(tree.levels, doneCount);
+  const leveledUp = useIncreased(tree.levels.indexOf(current));
+  return (
+    <>
+      <div className="progress-top">
+        <span className={`level${leveledUp ? " bump" : ""}`}>{current.name}</span>
+        <span className="count">{t.header.skillsCount(doneCount, total)}</span>
+      </div>
+      <div className="bar">
+        <span style={{ width: `${(doneCount / total) * 100}%` }} />
+      </div>
+      <span className="next-level">
+        {next ? t.header.moreToReach(next.at - doneCount, next.name) : t.header.allUnlocked}
+      </span>
+    </>
   );
 }

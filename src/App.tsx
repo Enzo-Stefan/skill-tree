@@ -245,49 +245,48 @@ export default function App() {
         summary={[t.header.skillsCount(done.size, tree.skills.length), ...(playerRungName ? [playerRungName] : [])]}
       />
       <div className="content">
-        {tab === "train" && (
-          <>
-            <Header
-              tree={tree}
-              doneCount={done.size}
-              playerLevelName={playerRungName}
-              onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
-              treeSwitch={<TreeSwitch trees={treeChoices} onSwitch={switchToTree} />}
+        <div className="train" hidden={tab !== "train"}>
+          <Header
+            tree={tree}
+            doneCount={done.size}
+            playerLevelName={playerRungName}
+            onChangeLevel={hasLevels ? () => setPickerOpen(true) : undefined}
+            treeSwitch={<TreeSwitch trees={treeChoices} onSwitch={switchToTree} />}
+          />
+          {hasLevels && playerLevelId && (
+            <PracticeBar
+              daysThisWeek={daysThisWeek(practiceDays, today)}
+              streak={streak}
+              trainedToday={trainedToday}
+              onToggle={toggleTrainedToday}
             />
-            {hasLevels && playerLevelId && (
-              <PracticeBar
-                daysThisWeek={daysThisWeek(practiceDays, today)}
-                streak={streak}
-                trainedToday={trainedToday}
-                onToggle={toggleTrainedToday}
-              />
-            )}
-            {nextUp && <LevelUpBanner onYes={() => setTestOpen(true)} onLater={askLater} />}
-            {isPhone && <BranchTabs tree={tree} done={done} activeId={branchId} onChange={setBranchId} />}
-            <main>
-              <SkillTree
+          )}
+          {nextUp && <LevelUpBanner onYes={() => setTestOpen(true)} onLater={askLater} />}
+          {isPhone && <BranchTabs tree={tree} done={done} activeId={branchId} onChange={setBranchId} />}
+          <main>
+            <SkillTree
+              tree={tree}
+              done={done}
+              selectedId={selectedId}
+              onSelect={select}
+              branchId={isPhone ? branchId : null}
+            />
+            {/* Not kept while Train is hidden, so a playing video stops. */}
+            {tab === "train" && (!isPhone || sheetOpen) && (
+              <SkillPanel
                 tree={tree}
                 done={done}
-                selectedId={selectedId}
-                onSelect={select}
-                branchId={isPhone ? branchId : null}
+                skillId={selectedId}
+                onComplete={complete}
+                onUndo={undo}
+                onClose={isPhone ? () => setSheetOpen(false) : undefined}
+                playerLevelName={playerRungName}
+                target={targetFor(tree, selectedSkill, rung)}
+                onChangeLevel={() => setPickerOpen(true)}
               />
-              {(!isPhone || sheetOpen) && (
-                <SkillPanel
-                  tree={tree}
-                  done={done}
-                  skillId={selectedId}
-                  onComplete={complete}
-                  onUndo={undo}
-                  onClose={isPhone ? () => setSheetOpen(false) : undefined}
-                  playerLevelName={playerRungName}
-                  target={targetFor(tree, selectedSkill, rung)}
-                  onChangeLevel={() => setPickerOpen(true)}
-                />
-              )}
-            </main>
-          </>
-        )}
+            )}
+          </main>
+        </div>
         {tab === "progress" && (
           <ProgressScreen
             tree={tree}

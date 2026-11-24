@@ -1,5 +1,5 @@
 import type { Tree } from "../types";
-import { levelInfo } from "../lib/progress";
+import { RankProgress } from "./Header";
 import { PRACTICE_DAYS_PER_WEEK } from "../lib/streak";
 import { t } from "../i18n";
 
@@ -15,23 +15,12 @@ interface Props {
 
 /** Rank, training this week and the share picture. The full Progress tab (personal bests, history) is step 6 of #19. */
 export function ProgressScreen({ tree, doneCount, playerLevelName, daysThisWeek, streakWeeks, onShare }: Props) {
-  const total = tree.skills.length;
-  const { current, next } = levelInfo(tree.levels, doneCount);
   return (
     <div className="screen">
       <h1 className="screen-title">{t.tabs.progress}</h1>
 
       <section className="card" aria-label={t.progressScreen.rankLabel}>
-        <div className="progress-top">
-          <span className="level">{current.name}</span>
-          <span className="count">{t.header.skillsCount(doneCount, total)}</span>
-        </div>
-        <div className="bar">
-          <span style={{ width: `${(doneCount / total) * 100}%` }} />
-        </div>
-        <span className="next-level">
-          {next ? t.header.moreToReach(next.at - doneCount, next.name) : t.header.allUnlocked}
-        </span>
+        <RankProgress tree={tree} doneCount={doneCount} />
       </section>
 
       {playerLevelName && (

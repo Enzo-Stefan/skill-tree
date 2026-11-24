@@ -52,7 +52,6 @@ export const en = {
     level: (name: string | null) => `Level: ${name ?? "Pick"}`,
     share: "Share my tree",
     copy: "Copy my progress",
-    reset: "Reset",
     resetConfirm: "Tap again to reset all",
   },
   treeSwitch: {
@@ -140,10 +139,8 @@ export const en = {
     imageTraining: (rung: string, streak: string) => `Training at ${rung}${streak}`,
   },
   account: {
-    signIn: "Sign in",
     signOut: "Sign out",
     signedInFallback: "Signed in",
-    buttonLabel: (name: string) => `Account: ${name}`,
   },
   signIn: {
     title: "Sign in",
