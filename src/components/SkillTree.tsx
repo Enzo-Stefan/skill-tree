@@ -45,7 +45,7 @@ export function SkillTree({ tree, done, selectedId, onSelect, branchId = null }:
     <div className="pitch-wrap">
       <div className="pitch" style={{ width, height }}>
         <svg className="lines" viewBox={`0 0 ${width} ${height}`} width={width} height={height} aria-hidden="true">
-          <circle cx={width / 2} cy={TOP + 40} r={70} fill="none" stroke="rgba(238,243,234,0.07)" strokeWidth={2} />
+          <circle className="centre" cx={width / 2} cy={TOP + 40} r={70} fill="none" strokeWidth={2} />
           {visible.flatMap((child) =>
             child.requires
               .filter((parentId) => visibleIds.has(parentId))
@@ -62,8 +62,9 @@ export function SkillTree({ tree, done, selectedId, onSelect, branchId = null }:
                   <path
                     key={`${parentId}-${child.id}`}
                     d={`M${a.x} ${y1} C ${a.x} ${mid}, ${b.x} ${mid}, ${b.x} ${y2}`}
+                    className={both ? "both" : lit ? "lit" : undefined}
+                    style={both ? ({ "--c": colorOf(child) } as CSSProperties) : undefined}
                     fill="none"
-                    stroke={both ? colorOf(child) : lit ? "rgba(238,243,234,0.55)" : "rgba(238,243,234,0.16)"}
                     strokeWidth={both ? 3 : 2}
                     strokeDasharray={both ? undefined : "6 6"}
                   />
@@ -77,7 +78,7 @@ export function SkillTree({ tree, done, selectedId, onSelect, branchId = null }:
             <div
               key={b.id}
               className="branch-label"
-              style={{ color: b.color, left: PAD_X + (i * 2 + 1) * slot, top: TOP + row - 26 }}
+              style={{ "--c": b.color, left: PAD_X + (i * 2 + 1) * slot, top: TOP + row - 26 } as CSSProperties}
             >
               {b.name}
             </div>
