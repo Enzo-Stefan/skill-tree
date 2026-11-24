@@ -430,6 +430,9 @@ export default function App() {
               branchId={isPhone ? branchId : null}
             />
             {/* Not kept while Train is hidden, so a playing video stops. */}
+            {tab === "train" && sheetShown && !(pickerOpen || testOpen || placementId !== null) && (
+              <div className="sheet-backdrop" aria-hidden="true" onClick={() => closeSheet()} />
+            )}
             {tab === "train" && (!isPhone || sheetOpen) && (
               <SkillPanel
                 tree={tree}

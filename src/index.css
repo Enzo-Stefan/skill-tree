@@ -201,6 +201,8 @@ main { flex: 1; display: flex; min-height: 0; }
 .panel-actions .btn { min-height: 44px; }
 .panel-actions .btn.primary { flex: 1 1 12rem; }
 .panel-actions-hint { flex-basis: 100%; }
+.test-open { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; }
+.test-open .hint { margin: 0; font-size: 0.875rem; }
 .yt { color: var(--gold-text); font-weight: 600; }
 
 .video {
@@ -498,7 +500,23 @@ main { flex: 1; display: flex; min-height: 0; }
     border-radius: 3px;
     background: var(--chalk-dim);
   }
-  .panel.sheet .close { min-height: 44px; min-width: 44px; }
+  .panel.sheet .close {
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+  }
+  .panel.sheet .close svg { width: 20px; height: 20px; }
+  /* Dims the app behind the skill sheet; a tap on it closes the sheet. */
+  .sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 9;
+    background: var(--overlay);
+    animation: backdrop-in 0.2s ease-out;
+  }
   .sheet-more {
     display: flex;
     align-items: center;
@@ -515,6 +533,7 @@ main { flex: 1; display: flex; min-height: 0; }
   .toast { bottom: auto; top: calc(16px + env(safe-area-inset-top)); transform: translate(-50%, -20px); }
   .toast.show { transform: translate(-50%, 0); }
 }
+@keyframes backdrop-in { from { opacity: 0; } }
 @keyframes tile-pop { 0% { transform: scale(1); } 40% { transform: scale(1.28); } 100% { transform: scale(1); } }
 @keyframes unlock-glow {
   0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c-ink) 70%, transparent); }

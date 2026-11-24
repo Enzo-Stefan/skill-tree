@@ -92,6 +92,96 @@ export function SkillPanel({
   const best = keepsTimes ? bestResult(tree, keepsTimes.results, skill.id) : null;
   const query = encodeURIComponent(t.panel.youtubeSearch(tree.id, skill.name));
   const runnable = isRunnable(skill.check) && state !== "locked";
+  // Phones say "Swipe up…"; a narrow window with a mouse says "Show…". The button works by tap or click either way.
+  const touch = typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
+
+  const headline = (
+    <>
+      <h2 id={headingId} ref={heading} tabIndex={-1}>
+        {skill.name}
+      </h2>
+      <span className={`status ${state}`}>{t.panel.status[state]}</span>
+      {state === "locked" && <p className="hint">{t.panel.finishFirst(missing.filter((n) => n !== undefined))}</p>}
+    </>
+  );
+  const drill = (
+    <div className="block">
+      <h3>{t.panel.drill}</h3>
+      <p>{skill.drill}</p>
+      {skill.video && <SkillVideo key={skill.id} link={skill.video} title={skill.name} />}
+    </div>
+  );
+  const startTest = runnable && (
+    <button className="btn" type="button" onClick={() => setTestFor(skill.id)}>
+      {t.testMode.open}
+    </button>
+  );
+  const testBlock = (
+    <div className="block test">
+      <h3>{t.panel.test}</h3>
+      <p>{skill.test}</p>
+      {skill.targets &&
+        (target && playerLevelName ? (
+          <p className="target">
+            <span className="target-label">{t.panel.target(playerLevelName)}</span>
+            <strong>{target}</strong>
+            <button className="link-btn" type="button" onClick={onChangeLevel}>
+              {t.panel.changeLevel}
+            </button>
+          </p>
+        ) : (
+          <button className="link-btn" type="button" onClick={onChangeLevel}>
+            {t.panel.pickLevelForTarget}
+          </button>
+        ))}
+      {best && (
+        <p className="lift-best">
+          {t.testMode.bestTime} <strong>{t.testMode.seconds(best.value)}</strong>{" "}
+          <span className="lift-date">{t.lifts.on(best.date)}</span>
+        </p>
+      )}
+      {/* On laptops Start test stays inside the test; on phones it sits next to "I passed the test". */}
+      {!isSheet && runnable && (
+        <div className="test-open">
+          {startTest}
+          <span className="hint">{t.testMode.openHint}</span>
+        </div>
+      )}
+    </div>
+  );
+  const passOrUndo = (
+    <>
+      {state === "available" && (
+        <button className="btn primary" type="button" onClick={() => onComplete(skill.id)}>
+          {t.panel.passed}
+        </button>
+      )}
+      {isSheet && startTest}
+      {state === "done" &&
+        (dependents.length ? (
+          <p className="hint">{t.panel.undoFirst(dependents.map((d) => d.name))}</p>
+        ) : (
+          <button className="btn" type="button" onClick={() => onUndo(skill.id)}>
+            {t.panel.undo}
+          </button>
+        ))}
+      {isSheet && runnable && <p className="hint panel-actions-hint">{t.testMode.openHint}</p>}
+    </>
+  );
+  const rest = (
+    <>
+      {skill.logWeight && lifts && state !== "locked" && <LiftLogBlock key={skill.id} skillId={skill.id} lifts={lifts} />}
+      <div className="block">
+        <h3>{t.panel.tip}</h3>
+        <p>{skill.tip}</p>
+      </div>
+      {!skill.video && (
+        <a className="yt" href={`https://www.youtube.com/results?search_query=${query}`} target="_blank" rel="noopener">
+          {t.panel.watchYoutube}
+        </a>
+      )}
+    </>
+  );
 
   return (
     <aside
@@ -102,111 +192,61 @@ export function SkillPanel({
       style={sheet.style}
       onScroll={sheet.onScroll}
     >
-      {/* Half height on phones ends below this part: the name, the test and its buttons. */}
-      <div className="panel-main" ref={mainRef}>
-        <div className={isSheet ? "sheet-handle" : "panel-head"} {...(isSheet ? sheet.handleProps : {})}>
-          {isSheet && (
-            <button
-              className="sheet-grabber"
-              type="button"
-              aria-expanded={sheet.expanded}
-              aria-label={sheet.expanded ? t.panel.showLess : t.panel.showAll}
-              onClick={() => sheet.setExpanded(!sheet.expanded)}
-            />
-          )}
+      {isSheet ? (
+        <>
+          {/* Half height ends below this part: the name, the test and its buttons. */}
+          <div className="panel-main" ref={mainRef}>
+            <div className="sheet-handle" {...sheet.handleProps}>
+              <button
+                className="sheet-grabber"
+                type="button"
+                aria-expanded={sheet.expanded}
+                aria-label={sheet.expanded ? t.panel.showLess : t.panel.showAll}
+                onClick={() => sheet.setExpanded(!sheet.expanded)}
+              />
+              <div className="panel-top">
+                <span className="chip" style={{ "--c": color } as CSSProperties}>
+                  {label}
+                </span>
+                <button className="close" type="button" onClick={onClose} aria-label={t.panel.closeLabel}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" aria-hidden="true">
+                    <path d="M6 6l12 12M18 6 6 18" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            {headline}
+            {testBlock}
+            {state !== "locked" && <div className="panel-actions">{passOrUndo}</div>}
+            {!sheet.expanded && (
+              <button className="sheet-more" type="button" aria-expanded={false} onClick={() => sheet.setExpanded(true)}>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <path d="m18 15-6-6-6 6" />
+                </svg>
+                {t.panel.showMore(Boolean(skill.video), touch)}
+              </button>
+            )}
+          </div>
+          {/* Below the half height. Tabbing or a screen reader landing here opens the sheet to full height. */}
+          <div className="panel-rest" onFocus={() => !sheet.expanded && sheet.setExpanded(true)}>
+            {drill}
+            {rest}
+          </div>
+        </>
+      ) : (
+        <div className="panel-main">
           <div className="panel-top">
             <span className="chip" style={{ "--c": color } as CSSProperties}>
               {label}
             </span>
-            {onClose && (
-              <button className="close" type="button" onClick={onClose} aria-label={t.panel.closeLabel}>
-                {t.panel.close}
-              </button>
-            )}
           </div>
+          {headline}
+          {drill}
+          {testBlock}
+          {rest}
+          {state !== "locked" && <div className="panel-actions">{passOrUndo}</div>}
         </div>
-        <h2 id={headingId} ref={heading} tabIndex={-1}>
-          {skill.name}
-        </h2>
-        <span className={`status ${state}`}>{t.panel.status[state]}</span>
-        {state === "locked" && <p className="hint">{t.panel.finishFirst(missing.filter((n) => n !== undefined))}</p>}
-
-        <div className="block test">
-          <h3>{t.panel.test}</h3>
-          <p>{skill.test}</p>
-          {skill.targets &&
-            (target && playerLevelName ? (
-              <p className="target">
-                <span className="target-label">{t.panel.target(playerLevelName)}</span>
-                <strong>{target}</strong>
-                <button className="link-btn" type="button" onClick={onChangeLevel}>
-                  {t.panel.changeLevel}
-                </button>
-              </p>
-            ) : (
-              <button className="link-btn" type="button" onClick={onChangeLevel}>
-                {t.panel.pickLevelForTarget}
-              </button>
-            ))}
-          {best && (
-            <p className="lift-best">
-              {t.testMode.bestTime} <strong>{t.testMode.seconds(best.value)}</strong>{" "}
-              <span className="lift-date">{t.lifts.on(best.date)}</span>
-            </p>
-          )}
-        </div>
-
-        {state !== "locked" && (
-          <div className="panel-actions">
-            {state === "available" && (
-              <button className="btn primary" type="button" onClick={() => onComplete(skill.id)}>
-                {t.panel.passed}
-              </button>
-            )}
-            {runnable && (
-              <button className="btn" type="button" onClick={() => setTestFor(skill.id)}>
-                {t.testMode.open}
-              </button>
-            )}
-            {state === "done" &&
-              (dependents.length ? (
-                <p className="hint">{t.panel.undoFirst(dependents.map((d) => d.name))}</p>
-              ) : (
-                <button className="btn" type="button" onClick={() => onUndo(skill.id)}>
-                  {t.panel.undo}
-                </button>
-              ))}
-            {runnable && <p className="hint panel-actions-hint">{t.testMode.openHint}</p>}
-          </div>
-        )}
-        {isSheet && !sheet.expanded && (
-          <button className="sheet-more" type="button" aria-expanded={false} onClick={() => sheet.setExpanded(true)}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="m18 15-6-6-6 6" />
-            </svg>
-            {t.panel.showMore(Boolean(skill.video))}
-          </button>
-        )}
-      </div>
-
-      {/* Below the half height on phones. Tabbing or a screen reader landing here opens the sheet to full height. */}
-      <div className="panel-rest" onFocus={() => isSheet && !sheet.expanded && sheet.setExpanded(true)}>
-        <div className="block">
-          <h3>{t.panel.drill}</h3>
-          <p>{skill.drill}</p>
-          {skill.video && <SkillVideo key={skill.id} link={skill.video} title={skill.name} />}
-        </div>
-        {skill.logWeight && lifts && state !== "locked" && <LiftLogBlock key={skill.id} skillId={skill.id} lifts={lifts} />}
-        <div className="block">
-          <h3>{t.panel.tip}</h3>
-          <p>{skill.tip}</p>
-        </div>
-        {!skill.video && (
-          <a className="yt" href={`https://www.youtube.com/results?search_query=${query}`} target="_blank" rel="noopener">
-            {t.panel.watchYoutube}
-          </a>
-        )}
-      </div>
+      )}
 
       {testFor === skill.id && isRunnable(skill.check) && (
         <TestMode
