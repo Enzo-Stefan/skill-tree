@@ -1,43 +1,38 @@
 import { describe, expect, it } from "vitest";
 import { football } from "../data/football";
-import { weights } from "../data/weights";
-import { inUnlockOrder, nextUp } from "./nextUp";
+import { nextSkill } from "../lib/progress";
+import { inUnlockOrder, nextUpReason } from "./nextUp";
 
 const ids = (tree: typeof football, branch: string) => inUnlockOrder(tree.skills.filter((s) => s.branch === branch)).map((s) => s.id);
+const reasonFor = (done: Set<string>) => nextUpReason(football, nextSkill(football, done)!, done);
+const firsts = football.branches.map((b) => football.skills.find((s) => s.branch === b.id && s.requires.includes("root"))!.id);
 
-describe("nextUp", () => {
-  it("starts with the start skill", () => {
-    expect(nextUp(football, new Set())?.id).toBe("root");
+describe("nextUpReason", () => {
+  it("says start for the start skill", () => {
+    expect(reasonFor(new Set())).toBe("start");
   });
 
-  it("then suggests the first branch, in the order the tree lists them", () => {
-    expect(nextUp(football, new Set(["root"]))?.id).toBe("bc1");
+  it("says even when every branch is level", () => {
+    expect(reasonFor(new Set(["root"]))).toBe("even");
   });
 
-  it("picks the branch with the fewest finished skills", () => {
-    // Ball Control has 2 done, every other branch 1, Defending 0.
-    const done = new Set(["root", "bc1", "bc2", "ps1", "dr1", "sh1", "ft1"]);
-    expect(nextUp(football, done)?.id).toBe("df1");
+  it("says least when one branch is behind the rest", () => {
+    const done = new Set(["root", ...firsts.slice(0, -1)]);
+    expect(nextSkill(football, done)?.branch).toBe(football.branches[football.branches.length - 1].id);
+    expect(reasonFor(done)).toBe("least");
   });
 
-  it("skips a branch with nothing open", () => {
-    // Defending is finished, so nothing in it is open. Every other branch has 1 done.
-    const done = new Set(["root", ...ids(football, "df"), "bc1", "ps1", "dr1", "sh1", "ft1"]);
-    expect(nextUp(football, done)?.branch).toBe("bc");
-  });
-
-  it("suggests the final skill once everything else is done", () => {
+  it("says final for the final skill", () => {
     const all = football.skills.filter((s) => s.id !== "final").map((s) => s.id);
-    expect(nextUp(football, new Set(all))?.id).toBe("final");
+    expect(reasonFor(new Set(all))).toBe("final");
   });
 
-  it("returns null when every skill is done", () => {
-    expect(nextUp(football, new Set(football.skills.map((s) => s.id)))).toBeNull();
-  });
-
-  it("works for the strength tree too", () => {
-    expect(nextUp(weights, new Set())?.id).toBe("root");
-    expect(nextUp(weights, new Set(["root"]))?.branch).toBe(weights.branches[0].id);
+  it("ignores finished branches when deciding least", () => {
+    // Every branch done except one skill in the first branch: that branch isn't "level" with done ones.
+    const first = football.branches[0].id;
+    const last = inUnlockOrder(football.skills.filter((s) => s.branch === first)).slice(-1)[0];
+    const done = new Set(football.skills.filter((s) => s.id !== "final" && s.id !== last.id).map((s) => s.id));
+    expect(reasonFor(done)).toBe("least");
   });
 });
 

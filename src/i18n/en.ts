@@ -106,7 +106,7 @@ export const en = {
   nextUp: {
     start: "Start here. Every branch opens after it.",
     leastDone: (branch: string) => `${branch}: the branch you've done least`,
-    /** When every branch has the same number done, so none is "least". */
+    /** When another branch has the same share done, so this one isn't "least". */
     goodNextStep: (branch: string) => `A good next step in ${branch}`,
     final: "The final skill",
   },

@@ -5,7 +5,6 @@ import { Header } from "./components/Header";
 import { TreeSwitch } from "./components/TreeSwitch";
 import { SkillTree } from "./components/SkillTree";
 import { NextUpCard } from "./components/NextUpCard";
-import { nextUp as suggestNext } from "./components/nextUp";
 import { SkillPanel } from "./components/SkillPanel";
 import { BranchTabs } from "./components/BranchTabs";
 import { useMediaQuery } from "./components/useMediaQuery";
@@ -28,6 +27,7 @@ import {
   loadPlayerStep,
   loadProgress,
   newlyUnlocked,
+  nextSkill,
   progressSummary,
   rungName,
   savePlayerLevel,
@@ -300,7 +300,7 @@ export default function App() {
   }
 
   const streak = streakWeeks(practiceDays, streakState.since, today);
-  const suggested = suggestNext(tree, done);
+  const suggested = nextSkill(tree, done);
 
   /** Train's two scroll areas: the whole tab (phones) and the tree (wider screens). */
   function trainScrollers(): HTMLElement[] {

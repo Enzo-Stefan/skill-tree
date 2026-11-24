@@ -11,7 +11,7 @@ interface Props {
   onSelect: (id: string) => void;
   /** Show one branch only, as a list. Used on phones. */
   branchId?: string | null;
-  /** The skill suggested next (see nextUp.ts), marked in the tree. */
+  /** The skill suggested next (nextSkill in lib/progress.ts), marked in the tree. */
   nextId: string | null;
 }
 
