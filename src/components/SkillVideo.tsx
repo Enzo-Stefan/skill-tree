@@ -11,8 +11,8 @@ interface Props {
 /**
  * Plays a skill's video in the panel.
  *
- * YouTube videos show a thumbnail first and load YouTube's player only when tapped,
- * so opening a skill stays fast and YouTube sets no cookies until then.
+ * YouTube videos show a plain play box and contact YouTube only when tapped (no thumbnail,
+ * no player, no cookies before that), so opening a skill never shares anything with YouTube.
  * Our own video files use the browser's built-in player.
  * Videos are never stored for offline use, so offline the box says so instead of showing a broken player.
  */
@@ -56,12 +56,12 @@ export function SkillVideo({ link, title }: Props) {
 
   return (
     <button className="video video-poster" type="button" onClick={() => setPlaying(true)} aria-label={`Play ${title} video`}>
-      <img src={`https://i.ytimg.com/vi/${video.id}/hqdefault.jpg`} alt="" loading="lazy" />
       <span className="play" aria-hidden="true">
         <svg viewBox="0 0 24 24">
           <path d="M8 5.5v13l10.5-6.5z" fill="currentColor" />
         </svg>
       </span>
+      <span className="poster-note">Tap to play. This loads the video from YouTube.</span>
     </button>
   );
 }
