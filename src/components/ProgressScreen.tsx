@@ -2,6 +2,8 @@ import type { Tree } from "../types";
 import { RankProgress } from "./Header";
 import { PRACTICE_DAYS_PER_WEEK } from "../lib/streak";
 import { t } from "../i18n";
+import type { LiftEntry } from "../lib/lifts";
+import { PersonalBests } from "./PersonalBests";
 
 interface Props {
   tree: Tree;
@@ -10,11 +12,13 @@ interface Props {
   playerLevelName: string | null;
   daysThisWeek: number;
   streakWeeks: number;
+  /** The tree's lift log, for the personal bests. */
+  liftLog: LiftEntry[];
   onShare: () => void;
 }
 
-/** Rank, training this week and the share picture. The full Progress tab (personal bests, history) is step 6 of #19. */
-export function ProgressScreen({ tree, doneCount, playerLevelName, daysThisWeek, streakWeeks, onShare }: Props) {
+/** Rank, training this week, personal bests on lifts, and the share picture. */
+export function ProgressScreen({ tree, doneCount, playerLevelName, daysThisWeek, streakWeeks, liftLog, onShare }: Props) {
   return (
     <div className="screen">
       <h1 className="screen-title">{t.tabs.progress}</h1>
@@ -39,6 +43,8 @@ export function ProgressScreen({ tree, doneCount, playerLevelName, daysThisWeek,
           </div>
         </section>
       )}
+
+      <PersonalBests tree={tree} log={liftLog} />
 
       <button className="btn primary wide" type="button" onClick={onShare}>
         {t.header.share}

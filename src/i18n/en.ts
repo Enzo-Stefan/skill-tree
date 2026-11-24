@@ -30,6 +30,28 @@ export const en = {
     progress: "Progress",
     settings: "Settings",
   },
+  lifts: {
+    title: "Your weights",
+    best: "Personal best",
+    /** A logged day, e.g. "3 Nov", with the year only when it isn't this year. */
+    on: (date: string) => {
+      const d = new Date(`${date}T12:00:00`);
+      const thisYear = d.getFullYear() === new Date().getFullYear();
+      return d.toLocaleDateString("en-GB", thisYear ? { day: "numeric", month: "short" } : { day: "numeric", month: "short", year: "numeric" });
+    },
+    empty: "Log the weight you used each time you do this lift, and your personal best shows here.",
+    inputLabel: "Weight you used today",
+    log: "Log",
+    invalid: "Enter a weight from 0 to 500 kg, like 62.5.",
+    newBest: (kg: string) => `New personal best: ${kg}!`,
+    logged: (kg: string) => `Logged ${kg}.`,
+    undo: "Undo",
+    recent: "Latest weights",
+    bestsTitle: "Personal bests",
+    bestsEmpty: "Log a weight on any lift in this tree and your bests show here.",
+    upFrom: (kg: string, times: number) => `Up from ${kg} · logged ${times} ${times === 1 ? "time" : "times"}`,
+    timesLogged: (times: number) => `Logged ${times} ${times === 1 ? "time" : "times"}`,
+  },
   progressScreen: {
     rankLabel: "Your rank",
     level: "Level",

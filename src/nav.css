@@ -161,3 +161,43 @@
   .screen { padding: calc(20px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 24px max(16px, env(safe-area-inset-left)); }
   .screen-title { font-size: 2.125rem; }
 }
+
+/* Lift log: "Your weights" in the skill sheet, and personal bests on Progress. */
+.lift-log { display: flex; flex-direction: column; gap: 8px; }
+.lift-best { margin: 0; }
+.lift-best strong { font-size: 1.125rem; font-variant-numeric: tabular-nums; }
+.lift-date { color: var(--text-2); font-size: 0.875rem; }
+.lift-form { display: flex; flex-direction: column; gap: 6px; }
+.lift-form label { font-size: 0.875rem; font-weight: 600; color: var(--text-2); }
+.lift-input-row { display: flex; align-items: center; gap: 8px; }
+.lift-input-row input {
+  width: 7rem;
+  min-height: 44px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1.5px solid var(--chalk-dim);
+  background: var(--grass);
+  color: var(--chalk);
+  /* 16px or more, so iPhones don't zoom in when the field is tapped. */
+  font: inherit;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+}
+.lift-input-row input[aria-invalid="true"] { border-color: var(--danger); }
+.lift-unit { color: var(--text-2); font-weight: 600; }
+.lift-input-row .btn { min-height: 44px; }
+.lift-error { margin: 0; font-size: 0.875rem; color: var(--danger-text); }
+.lift-saved { margin: 0; font-size: 0.875rem; font-weight: 600; }
+.lift-history { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.lift-history li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; font-size: 0.875rem; color: var(--text-2); }
+.lift-history li + li { box-shadow: inset 0 1px 0 var(--chalk-faint); }
+.lift-kg { color: var(--chalk); font-weight: 600; font-variant-numeric: tabular-nums; }
+
+.card-title { margin: 0; font-size: 1.125rem; font-weight: 700; }
+.best-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.best-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 0; }
+.best-list li + li { box-shadow: inset 0 1px 0 var(--chalk-faint); }
+.best-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.best-name { font-weight: 600; }
+.best-sub { font-size: 0.8125rem; color: var(--text-2); }
+.best-kg { font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }

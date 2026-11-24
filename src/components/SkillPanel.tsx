@@ -2,6 +2,8 @@ import type { CSSProperties } from "react";
 import type { Tree } from "../types";
 import { completedDependents, skillState } from "../lib/progress";
 import { SkillVideo } from "./SkillVideo";
+import { LiftLogBlock } from "./LiftLogBlock";
+import type { LiftLog } from "./useLiftLog";
 import { t } from "../i18n";
 
 interface Props {
@@ -17,6 +19,8 @@ interface Props {
   onChangeLevel: () => void;
   /** When set, the panel shows as a bottom sheet with a Close button (phones). */
   onClose?: () => void;
+  /** The tree's lift log, for skills with logWeight. */
+  lifts?: LiftLog;
 }
 
 export function SkillPanel({
@@ -29,6 +33,7 @@ export function SkillPanel({
   playerLevelName,
   target,
   onChangeLevel,
+  lifts,
 }: Props) {
   const skill = tree.skills.find((s) => s.id === skillId)!;
   const state = skillState(skill, done);
@@ -80,6 +85,7 @@ export function SkillPanel({
             </button>
           ))}
       </div>
+      {skill.logWeight && lifts && state !== "locked" && <LiftLogBlock key={skill.id} skillId={skill.id} lifts={lifts} />}
       <div className="block">
         <h3>{t.panel.tip}</h3>
         <p>{skill.tip}</p>
