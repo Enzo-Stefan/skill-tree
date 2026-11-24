@@ -31,6 +31,14 @@ describe("English language file", () => {
   });
 });
 
+describe("test times", () => {
+  it("writes decimals with a point", () => {
+    expect(en.testMode.seconds(5.8)).toBe("5.8 s");
+    expect(en.testMode.duration(7.5)).toBe("7.5 seconds");
+    expect(en.testMode.duration(90.5)).toBe("1 min 30.5 s");
+  });
+});
+
 describe("YouTube search", () => {
   it("doesn't call a Strength lift a football drill", () => {
     expect(en.panel.youtubeSearch("weights", "Goblet Squat")).toBe("Goblet Squat exercise form tutorial");

@@ -1,9 +1,16 @@
+import { formatNumber } from "../lib/progress";
+
 /**
  * Every piece of app text in English, grouped by the screen it appears on.
  *
  * Skill content (drills, tests, tips, rank and level names) is not here: it lives in src/data/.
  * Text with numbers or names in it is a function, so each language can put them where its grammar needs.
  */
+/** A number written the English way: "5.8". */
+function num(n: number): string {
+  return formatNumber(n, "en");
+}
+
 /** "A" or "A and B". */
 function listAnd(items: string[]): string {
   return items.join(" and ");
@@ -152,11 +159,11 @@ export const en = {
     goalHold: (time: string) => `Hold for ${time}.`,
     /** A length of time in words, for the goal line: "60 seconds", "25 minutes", "1 min 30 s". */
     duration: (s: number) =>
-      s < 60 ? `${s} seconds` : s % 60 === 0 ? `${s / 60} minutes` : `${Math.floor(s / 60)} min ${s % 60} s`,
+      s < 60 ? `${num(s)} seconds` : s % 60 === 0 ? `${s / 60} minutes` : `${Math.floor(s / 60)} min ${num(s % 60)} s`,
     bestOf: (n: number) => `Best of ${n} runs.`,
     everyRun: (n: number) => `${n} runs, every one under the time.`,
     eachTry: (seconds: number) =>
-      `Each try lasts ${seconds} seconds. Tap Start for each try, and Miss if it goes wrong. Lasting the whole time counts as a hit.`,
+      `Each try lasts ${num(seconds)} seconds. Tap Start for each try, and Miss if it goes wrong. Lasting the whole time counts as a hit.`,
     /** Under the big hit count: "hits from 6 tries". */
     hitsFrom: (tries: number) => `hits from ${tries} ${tries === 1 ? "try" : "tries"}`,
     /** Under the big count: "of 20". */
@@ -183,7 +190,7 @@ export const en = {
     markPassed: "Mark the skill as passed",
     alreadyPassed: "You've already passed this skill.",
     /** A saved time, e.g. "5.61 s". */
-    seconds: (value: number) => `${value} s`,
+    seconds: (value: number) => `${num(value)} s`,
     saveTime: (time: string) => `Save my time: ${time}`,
     saved: (time: string) => `Saved ${time}.`,
     newBest: (time: string) => `New best time: ${time}!`,
