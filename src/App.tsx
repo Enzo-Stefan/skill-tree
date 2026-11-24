@@ -19,6 +19,8 @@ import { TabBar, type Tab } from "./components/TabBar";
 import { ProgressScreen } from "./components/ProgressScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { useAuth } from "./auth/useAuth";
+import { SignInDialog } from "./components/SignInDialog";
+import { loadWelcomeSkipped, saveWelcomeSkipped } from "./lib/welcome";
 import {
   clearPlayerLevel,
   levelInfo,
@@ -78,6 +80,9 @@ export default function App() {
   // The tree the player last chose (src/lib/activeTree.ts). Switching reloads the app.
   const [tree] = useState(() => activeTree(trees));
   const auth = useAuth();
+  // The sign-in screen that opens the app, until the player signs in or skips it (remembered in this browser).
+  const [welcomeSkipped, setWelcomeSkipped] = useState(loadWelcomeSkipped);
+  const welcomeOpen = auth.configured && !auth.loading && !auth.account && !welcomeSkipped;
   // Weights logged on lifts (Strength tree). Saved in this browser and, when signed in, in the account.
   const lifts = useLiftLog(tree);
   // Times saved from test mode (sprints). Saved to the account too, like the lift log.
@@ -444,7 +449,17 @@ export default function App() {
           />
         )}
       </div>
-      {pickerOpen && tree.playerLevels && (
+      {welcomeOpen && (
+        <SignInDialog
+          welcome
+          onGoogle={auth.signInWithGoogle}
+          onClose={() => {
+            saveWelcomeSkipped();
+            setWelcomeSkipped(true);
+          }}
+        />
+      )}
+      {pickerOpen && !welcomeOpen && tree.playerLevels && (
         <LevelPicker
           levels={tree.playerLevels}
           currentId={playerLevelId}

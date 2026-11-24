@@ -6,9 +6,11 @@ interface Props {
   /** Starts Google sign-in. Resolves to an error message, or null when the browser is being redirected. */
   onGoogle: () => Promise<string | null>;
   onClose: () => void;
+  /** The screen shown when the app opens: says what skipping costs, and the close button reads "Skip". */
+  welcome?: boolean;
 }
 
-export function SignInDialog({ onGoogle, onClose }: Props) {
+export function SignInDialog({ onGoogle, onClose, welcome = false }: Props) {
   const dialog = useRef<HTMLDivElement>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -34,8 +36,9 @@ export function SignInDialog({ onGoogle, onClose }: Props) {
         aria-labelledby="sign-in-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="sign-in-title">{t.signIn.title}</h2>
-        <p>{t.signIn.body}</p>
+        <h2 id="sign-in-title">{welcome ? t.signIn.welcomeTitle : t.signIn.title}</h2>
+        <p>{welcome ? t.signIn.welcomeBody : t.signIn.body}</p>
+        {welcome && <p className="dialog-note">{t.signIn.skipWarning}</p>}
         <p className="dialog-note">
           <a className="privacy-link" href="/privacy.html" target="_blank" rel="noopener">
             {t.signIn.privacy}
@@ -51,7 +54,7 @@ export function SignInDialog({ onGoogle, onClose }: Props) {
             {busy ? t.signIn.opening : t.signIn.google}
           </button>
           <button className="btn" type="button" onClick={onClose}>
-            {t.signIn.notNow}
+            {welcome ? t.signIn.skip : t.signIn.notNow}
           </button>
         </div>
       </div>
