@@ -71,6 +71,8 @@ export interface Level {
 export interface Tree {
   id: string;
   title: string;
+  /** Short name for the tree switch, e.g. "Football". Falls back to the title. */
+  shortName?: string;
   tagline: string;
   branches: Branch[];
   skills: Skill[];

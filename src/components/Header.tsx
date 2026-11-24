@@ -14,9 +14,11 @@ interface Props {
   onChangeLevel?: () => void;
   /** Sign in button or the signed-in account, shown first in the actions. */
   account?: ReactNode;
+  /** The switch between trees (Football / Strength), shown above the title. */
+  treeSwitch?: ReactNode;
 }
 
-export function Header({ tree, doneCount, onCopy, onShare, onReset, playerLevelName, onChangeLevel, account }: Props) {
+export function Header({ tree, doneCount, onCopy, onShare, onReset, playerLevelName, onChangeLevel, account, treeSwitch }: Props) {
   const total = tree.skills.length;
   const { current, next } = levelInfo(tree.levels, doneCount);
   const leveledUp = useIncreased(tree.levels.indexOf(current));
@@ -39,6 +41,7 @@ export function Header({ tree, doneCount, onCopy, onShare, onReset, playerLevelN
   return (
     <header className="header">
       <div className="brand">
+        {treeSwitch}
         <h1>{tree.title}</h1>
         <p>{tree.tagline}</p>
       </div>

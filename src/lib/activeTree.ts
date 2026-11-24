@@ -50,6 +50,8 @@ export function switchTree(trees: Tree[], current: Tree, treeId: string, reload:
 export interface TreeSummary {
   id: string;
   title: string;
+  /** Short name for the tree switch, e.g. "Football". */
+  shortName: string;
   tagline: string;
   done: number;
   total: number;
@@ -65,6 +67,7 @@ export function treeSummaries(trees: Tree[], current: Tree): TreeSummary[] {
     return {
       id: tree.id,
       title: tree.title,
+      shortName: tree.shortName ?? tree.title,
       tagline: tree.tagline,
       done,
       total: tree.skills.length,

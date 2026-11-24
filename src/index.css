@@ -45,6 +45,34 @@ button { font: inherit; color: inherit; cursor: pointer; }
   text-wrap: balance;
 }
 .brand p { margin: 2px 0 0; color: var(--chalk-dim); font-size: 14px; }
+
+/* Football / Strength switch, above the title. */
+.tree-switch {
+  display: inline-flex;
+  margin-bottom: 8px;
+  padding: 3px;
+  gap: 3px;
+  border: 1.5px solid var(--chalk-faint);
+  border-radius: 8px;
+}
+.tree-switch-option {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  min-height: 32px;
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: rgba(238, 243, 234, 0.75);
+  font-size: 14px;
+  font-weight: 600;
+}
+.tree-switch-option:hover:not([aria-pressed="true"]):not(:disabled) { color: var(--chalk); background: var(--chalk-faint); }
+.tree-switch-option[aria-pressed="true"] { background: var(--gold); color: var(--panel); cursor: default; }
+.tree-switch-option[aria-busy="true"] { opacity: 0.7; cursor: progress; }
+.tree-switch-option:disabled { opacity: 0.5; cursor: default; }
+.tree-switch-count { font-size: 12px; font-weight: 400; font-variant-numeric: tabular-nums; opacity: 0.8; }
 .progress { flex: 1 1 260px; display: flex; flex-direction: column; gap: 6px; min-width: 220px; }
 .progress-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-variant-numeric: tabular-nums; }
 .level { font-family: var(--font-display); font-size: 18px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--gold); }
@@ -414,6 +442,9 @@ main { flex: 1; display: flex; min-height: 0; }
   .header { gap: 12px; }
   .brand h1 { font-size: 22px; }
   .brand p { display: none; }
+  .brand { width: 100%; }
+  .tree-switch { display: flex; width: 100%; }
+  .tree-switch-option { flex: 1; justify-content: center; min-height: 44px; }
   .actions { width: 100%; }
   .actions .btn { flex: 1; }
   .pitch-wrap { display: flex; justify-content: center; }

@@ -11,6 +11,7 @@ import type { Tree } from "../types";
 export const weights: Tree = {
   id: "weights",
   title: "Football Strength",
+  shortName: "Strength",
   tagline: "Get stronger, faster and harder to injure. Form first, then weight.",
   branches: [
     { id: "lg", name: "Legs", color: "#ff9a62" },
