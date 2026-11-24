@@ -8,7 +8,7 @@ import type { TestCheck } from "../types";
 export type RunnableCheck = Exclude<TestCheck, { kind: "done" }>;
 
 /**
- * - `ready`: waiting for Start (timed tests, and between stopwatch runs).
+ * - `ready`: waiting for Start (timed tests, between stopwatch runs, and between timed tries).
  * - `running`: counting or timing.
  * - `sideDone`: the first side passed, the other side is next.
  * - `passed` / `failed`: the run is over.
@@ -40,11 +40,14 @@ export interface RunState extends Core {
   past: Core[];
 }
 
+/**
+ * Taps carry the time when they can, so a tap that lands after a countdown ran out (before the
+ * next redraw noticed) is judged by the countdown first, not counted as if it were in time.
+ */
 export type RunAction =
   | { type: "start"; now: number }
-  | { type: "hit" }
-  | { type: "miss" }
-  /** `now`: when the tap happened, so a tap after a countdown ran out doesn't count. */
+  | { type: "hit"; now?: number }
+  | { type: "miss"; now?: number }
   | { type: "add"; now?: number }
   /** Counts "in a row": a miss starts the count again. */
   | { type: "slip" }
@@ -69,9 +72,14 @@ export function runCount(check: RunnableCheck): number {
   return check.tries ?? check.reps ?? 1;
 }
 
-/** True when the test waits for a Start tap: anything with a clock. Hits and plain counts start counting straight away. */
+/** True when the test waits for a Start tap: anything with a clock. Untimed hits and plain counts start counting straight away. */
 export function needsStart(check: RunnableCheck): boolean {
-  return check.kind === "time" || check.kind === "hold" || (check.kind === "count" && check.seconds !== undefined);
+  return check.kind === "time" || check.kind === "hold" || ((check.kind === "count" || check.kind === "hits") && check.seconds !== undefined);
+}
+
+/** Hits where every try lasts a set time ("keep the ball for 10 seconds"): each try has its own countdown, and lasting it out is a hit. */
+export function timedTries(check: RunnableCheck): boolean {
+  return check.kind === "hits" && check.seconds !== undefined;
 }
 
 function fresh(check: RunnableCheck, side: number): Core {
@@ -97,8 +105,27 @@ export function remaining(state: RunState, now: number): number | null {
 
 function countdownSeconds(check: RunnableCheck): number | null {
   if (check.kind === "hold") return check.seconds;
-  if (check.kind === "count") return check.seconds ?? null;
+  if (check.kind === "count" || check.kind === "hits") return check.seconds ?? null;
   return null;
+}
+
+/** True when a countdown is running and has reached 0 at `now`. */
+function countdownOver(state: RunState, now: number | undefined): boolean {
+  if (now === undefined || state.phase !== "running" || state.startedAt === null) return false;
+  return remaining(state, now) === 0;
+}
+
+/**
+ * What happens when a countdown reaches 0: a hold is done, a timed count didn't get there in time,
+ * and a timed try lasted the whole time, so it's a hit (which Undo can take back if it wasn't).
+ */
+function countdownEnded(state: RunState): RunState {
+  const check = state.check;
+  if (check.kind === "hold") return { ...state, ...sidePassed(state), past: [] };
+  if (check.kind === "hits") {
+    return withPast(state, afterHitOrMiss(state, { ...core(state), hits: state.hits + 1, tries: state.tries + 1 }));
+  }
+  return { ...state, phase: "failed", startedAt: null, past: [] };
 }
 
 /** Ends this side as passed: on to the other side, or the whole test passes. */
@@ -112,17 +139,22 @@ function core(state: RunState): Core {
   return { phase, side, hits, tries, count, startedAt, times };
 }
 
-/** A tap that changes counts can be undone; the earlier state goes on the stack. */
+/**
+ * A tap that changes counts can be undone; the earlier state goes on the stack. A timed try goes
+ * back to before its Start, not into a countdown that has already run out.
+ */
 function withPast(state: RunState, next: Core): RunState {
-  return { ...state, ...next, past: [...state.past, core(state)] };
+  const before = timedTries(state.check) ? { ...core(state), phase: "ready" as const, startedAt: null } : core(state);
+  return { ...state, ...next, past: [...state.past, before] };
 }
 
 function afterHitOrMiss(state: RunState, next: Core): Core {
   const check = state.check;
   if (check.kind !== "hits") return next;
   if (next.hits >= check.needed) return sidePassed({ ...state, ...next });
-  if (next.hits + (check.attempts - next.tries) < check.needed) return { ...next, phase: "failed" };
-  return next;
+  if (next.hits + (check.attempts - next.tries) < check.needed) return { ...next, phase: "failed", startedAt: null };
+  // A timed try is over either way; the next one waits for Start.
+  return check.seconds !== undefined ? { ...next, phase: "ready", startedAt: null } : next;
 }
 
 function stopwatchStop(state: RunState, now: number): Core {
@@ -152,16 +184,20 @@ export function runReducer(state: RunState, action: RunAction): RunState {
 
     case "hit":
     case "miss": {
-      if (check.kind !== "hits" || state.phase !== "running") return state;
+      if (check.kind !== "hits") return state;
+      if (countdownOver(state, action.now)) return countdownEnded(state);
+      if (state.phase !== "running") return state;
+      // In a timed try only the clock gives a hit; the player taps Miss if it goes wrong.
       const hit = action.type === "hit";
+      if (hit && check.seconds !== undefined) return state;
       const next = { ...core(state), hits: state.hits + (hit ? 1 : 0), tries: state.tries + 1 };
       return withPast(state, afterHitOrMiss(state, next));
     }
 
     case "add": {
-      if (check.kind !== "count" || state.phase !== "running") return state;
-      // A tap can land after the countdown ran out but before the next tick noticed: time's up, it doesn't count.
-      if (action.now !== undefined && remaining(state, action.now) === 0) return { ...state, phase: "failed", startedAt: null, past: [] };
+      if (check.kind !== "count") return state;
+      if (countdownOver(state, action.now)) return countdownEnded(state);
+      if (state.phase !== "running") return state;
       const next = { ...core(state), count: state.count + 1 };
       return withPast(state, next.count >= check.needed ? sidePassed({ ...state, ...next }) : next);
     }
@@ -171,6 +207,7 @@ export function runReducer(state: RunState, action: RunAction): RunState {
       return withPast(state, { ...core(state), count: 0 });
 
     case "stop":
+      if (countdownOver(state, action.now)) return countdownEnded(state);
       if (state.phase !== "running") return state;
       if (check.kind === "time") return { ...state, ...stopwatchStop(state, action.now), past: [] };
       // Giving up a hold or a timed count before the end.
@@ -181,11 +218,7 @@ export function runReducer(state: RunState, action: RunAction): RunState {
 
     case "tick": {
       if (state.phase !== "running") return state;
-      const left = remaining(state, action.now);
-      if (left === null || left > 0) return state;
-      // The countdown ran out: a hold is done, a timed count didn't reach the number in time.
-      if (check.kind === "hold") return { ...state, ...sidePassed(state), past: [] };
-      return { ...state, phase: "failed", startedAt: null, past: [] };
+      return countdownOver(state, action.now) ? countdownEnded(state) : state;
     }
 
     case "nextSide":
@@ -193,6 +226,7 @@ export function runReducer(state: RunState, action: RunAction): RunState {
       return { ...state, ...fresh(check, state.side + 1), past: [] };
 
     case "undo": {
+      if (!canUndo(state)) return state;
       const previous = state.past[state.past.length - 1];
       if (!previous) return state;
       return { ...state, ...previous, past: state.past.slice(0, -1) };
@@ -201,6 +235,25 @@ export function runReducer(state: RunState, action: RunAction): RunState {
     case "restart":
       return startRun(check, state.limit);
   }
+}
+
+/** True when "Undo last tap" can do something: there is a tap to take back, and no timed try is counting down. */
+export function canUndo(state: RunState): boolean {
+  return state.past.length > 0 && !(timedTries(state.check) && state.startedAt !== null);
+}
+
+/**
+ * The number to save as the player's result once a stopwatch test is over: the best run for "best
+ * of 3", the slowest run for "every run under" (the target is about that one). Null while the test
+ * is still going, when not every run was done, or for tests that aren't a stopwatch on one side.
+ */
+export function runResult(state: RunState): number | null {
+  const check = state.check;
+  if (check.kind !== "time" || check.perSide || state.times.length === 0) return null;
+  if (state.phase !== "passed" && state.phase !== "failed" && state.phase !== "finished") return null;
+  const value = check.reps !== undefined ? (state.times.length === check.reps ? Math.max(...state.times) : null) : Math.min(...state.times);
+  // A Start then Stop by mistake gives 0, which isn't a time worth keeping.
+  return value !== null && value > 0 ? value : null;
 }
 
 /** Seconds as the clock shows them: "8.4" under a minute, "24:59" from a minute up. */

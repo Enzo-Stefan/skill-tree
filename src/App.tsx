@@ -53,6 +53,7 @@ import {
   type StreakState,
 } from "./lib/streak";
 import { useLiftLog } from "./components/useLiftLog";
+import { useResults } from "./components/useResults";
 import { undoPass, withoutSkill } from "./components/undoPass";
 import type { SavedProgress } from "./lib/cloud";
 import { useCloudSync } from "./lib/useCloudSync";
@@ -77,8 +78,10 @@ export default function App() {
   // The tree the player last chose (src/lib/activeTree.ts). Switching reloads the app.
   const [tree] = useState(() => activeTree(trees));
   const auth = useAuth();
-  // Weights logged on lifts (Strength tree). They stay in this browser, never in the account.
+  // Weights logged on lifts (Strength tree). Saved in this browser and, when signed in, in the account.
   const lifts = useLiftLog(tree);
+  // Times saved from test mode (sprints). Only in this browser until the account keeps them.
+  const results = useResults(tree);
   const [done, setDone] = useState<Set<string>>(() => loadProgress(tree));
   const [selectedId, setSelectedId] = useState(tree.skills[0].id);
   // Not in the URL: Google sign-in comes back with its tokens in the address's # part.
@@ -300,7 +303,7 @@ export default function App() {
     }
   }
 
-  /** Clears everything for this tree: finished skills, level and step, training days, streak and logged weights. */
+  /** Clears everything for this tree: finished skills, level and step, training days, streak, logged weights and saved times. */
   function reset() {
     setDone(new Set());
     setPlayerLevelId(null);
@@ -310,6 +313,7 @@ export default function App() {
     savePracticeDays(tree.id, []);
     updateStreak({ since: null, askedWeek: null });
     lifts.clear();
+    results.clear();
     setTestOpen(false);
     setSelectedId(tree.skills[0].id);
     setBranchId(tree.branches[0].id);
@@ -410,6 +414,7 @@ export default function App() {
                 onChangeLevel={() => setPickerOpen(true)}
                 lifts={lifts}
                 timeLimit={timeLimit(tree, selectedSkill, rung)}
+                results={results}
               />
             )}
           </main>
