@@ -21,20 +21,22 @@ jobs:
 
   # Vercel's GitHub link stopped starting builds for main (#63), so CI asks Vercel to deploy instead,
   # and only after lint, tests and build pass. VERCEL_DEPLOY_HOOK is a deploy hook URL from Vercel
-  # (Project Settings > Git > Deploy Hooks, branch main), saved as a repository secret. If Vercel's own
-  # trigger works again, the hook does no harm: Vercel skips a commit it has already deployed.
+  # (Project Settings > Git > Deploy Hooks, branch main), saved as a repository secret.
+  # A deploy hook always starts a new build. If Vercel's own Git trigger works again, each push to
+  # main builds twice; then remove this job or the hook.
   deploy:
     needs: check
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions: {}
     steps:
       - name: Ask Vercel to deploy main
         env:
           HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
         run: |
           if [ -z "$HOOK" ]; then
-            echo "VERCEL_DEPLOY_HOOK isn't set, so nothing to do. See #63."
+            echo "::warning::VERCEL_DEPLOY_HOOK isn't set, so main was not deployed. See #63."
             exit 0
           fi
           curl --fail --silent --show-error -X POST "$HOOK" > /dev/null
-          echo "Vercel is deploying ${GITHUB_SHA::7}."
+          echo "Asked Vercel to deploy main."
