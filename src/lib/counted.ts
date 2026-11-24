@@ -41,8 +41,9 @@ export function mergeCounted<T>(a: T[], b: T[], key: (e: T) => string): T[] {
  *
  * Replaying can happen twice: a save can reach the account just before the page closes, before
  * this browser notes it. So an entry added here is never counted more times than this browser
- * has it (or the account already had it). The cost: the same entry added on two devices before
- * either syncs counts once.
+ * has it (or the account already had it), and an entry removed here is never taken below what
+ * this browser has (or the account already had). The cost: the same entry added, or removed, on
+ * two devices before either syncs counts once.
  */
 export function replayCounted<T>(onto: T[], from: T[], to: T[], key: (e: T) => string): T[] {
   const out = count(onto, key);
@@ -54,7 +55,10 @@ export function replayCounted<T>(onto: T[], from: T[], to: T[], key: (e: T) => s
     if (change === 0) continue;
     const entry = (after.get(k) ?? before.get(k))!.entry;
     const there = out.get(k)?.count ?? 0;
-    const n = change > 0 ? Math.min(there + change, Math.max(there, here)) : Math.max(0, there + change);
+    const n =
+      change > 0
+        ? Math.min(there + change, Math.max(there, here))
+        : Math.max(there + change, Math.min(there, here), 0);
     if (n === 0) out.delete(k);
     else out.set(k, { entry, count: n });
   }

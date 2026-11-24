@@ -161,4 +161,12 @@ describe("merging results (account sync)", () => {
     const account = [...base, sprint("2026-11-21", 5.8)];
     expect(replayResults(football, account, base, [sprint("2026-11-18", 6.0)])).toEqual([sprint("2026-11-18", 6.0), sprint("2026-11-21", 5.8)]);
   });
+
+  it("doesn't remove the other copy of a result when an undo is replayed twice", () => {
+    const base = [sprint("2026-11-18", 6.0), sprint("2026-11-18", 6.0)];
+    const here = [sprint("2026-11-18", 6.0)];
+    const account = replayResults(football, base, base, here);
+    expect(account).toEqual(here);
+    expect(replayResults(football, account, base, here)).toEqual(here);
+  });
 });
