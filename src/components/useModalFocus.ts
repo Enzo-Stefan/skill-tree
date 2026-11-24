@@ -1,7 +1,11 @@
 import { useEffect, useRef, type RefObject } from "react";
 
+// Everything Tab can land on inside a dialog. Disabled controls are skipped, because focusing
+// them does nothing and would stop the loop at that point.
+const FOCUSABLE = "button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])";
+
 /**
- * For dialogs: focuses the first button on open, keeps Tab inside, closes on Escape,
+ * For dialogs: focuses the first button on open, keeps Tab inside (links and fields included), closes on Escape,
  * and gives focus back to whatever opened the dialog.
  */
 export function useModalFocus(dialog: RefObject<HTMLElement | null>, onClose: () => void): void {
@@ -24,7 +28,7 @@ export function useModalFocus(dialog: RefObject<HTMLElement | null>, onClose: ()
         return;
       }
       if (e.key !== "Tab" || !dialog.current) return;
-      const items = dialog.current.querySelectorAll<HTMLElement>("button");
+      const items = dialog.current.querySelectorAll<HTMLElement>(FOCUSABLE);
       const first = items[0];
       const last = items[items.length - 1];
       const active = document.activeElement;

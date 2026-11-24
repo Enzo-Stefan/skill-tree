@@ -26,6 +26,7 @@ export const en = {
     copy: "Copy my progress",
     reset: "Reset",
     resetConfirm: "Tap again to reset all",
+    privacy: "Privacy",
   },
   treeSwitch: {
     label: "Skill tree",
@@ -123,6 +124,7 @@ export const en = {
     opening: "Opening Google…",
     google: "Continue with Google",
     notNow: "Not now",
+    privacy: "What we save and how to delete it",
     notSetUp: "Accounts aren't set up yet.",
     loadFailed: "Couldn't load sign-in. Check your connection and try again.",
   },

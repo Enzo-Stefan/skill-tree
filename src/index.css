@@ -606,3 +606,8 @@ a.btn { color: inherit; text-decoration: none; display: inline-flex; align-items
 .lines path { stroke: var(--line-faint); }
 .lines path.lit { stroke: var(--line-lit); }
 .lines path.both { stroke: var(--c-ink); }
+
+/* Privacy links in the header and the sign-in dialog. */
+.privacy-link { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
+.privacy-link:hover { color: var(--chalk); }
+.dialog-note { font-size: 0.875rem; }

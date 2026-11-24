@@ -36,6 +36,11 @@ export function SignInDialog({ onGoogle, onClose }: Props) {
       >
         <h2 id="sign-in-title">{t.signIn.title}</h2>
         <p>{t.signIn.body}</p>
+        <p className="dialog-note">
+          <a className="privacy-link" href="/privacy.html" target="_blank" rel="noopener">
+            {t.signIn.privacy}
+          </a>
+        </p>
         {error && (
           <p className="dialog-error" role="alert">
             {error}
