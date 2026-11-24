@@ -216,3 +216,41 @@ describe("loadProgress", () => {
     }
   });
 });
+
+describe("test checks (idea 4)", () => {
+  const withCheck = (id: string, check: unknown) => ({
+    ...football,
+    skills: football.skills.map((s) => (s.id === id ? { ...s, check } : s)),
+  }) as typeof football;
+
+  it("every skill in every tree has one", async () => {
+    const { trees } = await import("../data");
+    for (const tree of trees) for (const s of tree.skills) expect(s.check, `${tree.id}/${s.id}`).toBeDefined();
+  });
+
+  it("catches a missing check", () => {
+    expect(validateTree(withCheck("bc1", undefined))).toContain("bc1: has no check, so test mode can't count or time it");
+  });
+
+  it("catches numbers that don't match the test text", () => {
+    // ps1 says "8 of 10 passes".
+    expect(validateTree(withCheck("ps1", { kind: "hits", needed: 7, attempts: 10 }))).toContain("ps1: check needed 7 isn't in the test text");
+  });
+
+  it("catches more hits than attempts", () => {
+    expect(validateTree(withCheck("ps1", { kind: "hits", needed: 10, attempts: 8 }))).toContain("ps1: check needs 10 hits from only 8 attempts");
+  });
+
+  it("catches a timed check with no limit", () => {
+    expect(validateTree(withCheck("dr1", { kind: "time" }))).toContain("dr1: timed check has no limit: give it under, or targets");
+  });
+
+  it("gives the stopwatch limit: its own, or the level target", async () => {
+    const { timeLimit } = await import("./progress");
+    const skill = (id: string) => football.skills.find((s) => s.id === id)!;
+    expect(timeLimit(football, skill("dr1"), null)).toBe(15);
+    expect(timeLimit(football, skill("ft2"), { levelId: "beginner", step: 1 })).toBe(5.8);
+    expect(timeLimit(football, skill("ft2"), null)).toBeNull();
+    expect(timeLimit(football, skill("bc1"), null)).toBeNull();
+  });
+});
