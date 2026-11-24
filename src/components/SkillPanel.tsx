@@ -1,3 +1,4 @@
+import type { CSSProperties } from "react";
 import type { Tree } from "../types";
 import { completedDependents, skillState } from "../lib/progress";
 import { SkillVideo } from "./SkillVideo";
@@ -44,7 +45,7 @@ export function SkillPanel({
   return (
     <aside className={`panel${onClose ? " sheet" : ""}`} aria-live="polite">
       <div className="panel-top">
-        <span className="chip" style={{ color }}>
+        <span className="chip" style={{ "--c": color } as CSSProperties}>
           {label}
         </span>
         {onClose && (
