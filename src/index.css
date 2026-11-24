@@ -281,6 +281,9 @@ main { flex: 1; display: flex; min-height: 0; }
   width: max-content;
   max-width: min(560px, calc(100% - 32px));
   text-align: center;
+  /* The phone sheet's backdrop has the same z-index and comes earlier in the page, so the toast's
+     Undo stays above the dim and takes taps; the sheet (z-index 10) still covers it. */
+  z-index: 9;
 }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
 /* Only the button takes taps, so the message never blocks the skill under it. */
