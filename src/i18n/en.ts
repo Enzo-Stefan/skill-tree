@@ -53,6 +53,7 @@ export const en = {
     share: "Share my tree",
     copy: "Copy my progress",
     resetConfirm: "Tap again to reset all",
+    privacy: "Privacy",
   },
   treeSwitch: {
     label: "Skill tree",
