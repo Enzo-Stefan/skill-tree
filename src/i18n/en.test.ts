@@ -40,3 +40,16 @@ describe("YouTube search", () => {
     expect(en.panel.youtubeSearch("swimming", "Flip Turn")).toBe("Flip Turn tutorial");
   });
 });
+
+describe("lift log text", () => {
+  it("shows a day without the year when it's this year", () => {
+    const year = new Date().getFullYear();
+    expect(en.lifts.on(`${year}-11-03`)).toBe("3 Nov");
+    expect(en.lifts.on("2019-11-03")).toBe("3 Nov 2019");
+  });
+
+  it("counts entries in plain words", () => {
+    expect(en.lifts.upFrom("20 kg", 2)).toBe("Up from 20 kg · logged 2 times");
+    expect(en.lifts.timesLogged(1)).toBe("Logged 1 time");
+  });
+});

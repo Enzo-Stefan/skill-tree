@@ -48,7 +48,7 @@ import {
   weekOf,
   type StreakState,
 } from "./lib/streak";
-import { saveLiftLog } from "./lib/lifts";
+import { useLiftLog } from "./components/useLiftLog";
 import type { SavedProgress } from "./lib/cloud";
 import { useCloudSync } from "./lib/useCloudSync";
 import { t } from "./i18n";
@@ -57,6 +57,8 @@ export default function App() {
   // The tree the player last chose (src/lib/activeTree.ts). Switching reloads the app.
   const [tree] = useState(() => activeTree(trees));
   const auth = useAuth();
+  // Weights logged on lifts (Strength tree). They stay in this browser, never in the account.
+  const lifts = useLiftLog(tree);
   const [done, setDone] = useState<Set<string>>(() => loadProgress(tree));
   const [selectedId, setSelectedId] = useState(tree.skills[0].id);
   // Not in the URL: Google sign-in comes back with its tokens in the address's # part.
@@ -227,7 +229,7 @@ export default function App() {
     setPracticeDays([]);
     savePracticeDays(tree.id, []);
     updateStreak({ since: null, askedWeek: null });
-    saveLiftLog(tree.id, []);
+    lifts.clear();
     setTestOpen(false);
     setSelectedId(tree.skills[0].id);
     setBranchId(tree.branches[0].id);
@@ -326,6 +328,7 @@ export default function App() {
                 playerLevelName={playerRungName}
                 target={targetFor(tree, selectedSkill, rung)}
                 onChangeLevel={() => setPickerOpen(true)}
+                lifts={lifts}
               />
             )}
           </main>
@@ -337,6 +340,7 @@ export default function App() {
             playerLevelName={playerRungName}
             daysThisWeek={daysThisWeek(practiceDays, today)}
             streakWeeks={streak}
+            liftLog={lifts.log}
             onShare={() => setSharing(shareStats(tree, done, playerRungName, streak, window.location.host))}
           />
         )}
