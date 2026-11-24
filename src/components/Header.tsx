@@ -20,7 +20,7 @@ export function Header({ tree, doneCount, playerLevelName, onChangeLevel, treeSw
     <header className="header">
       <div className="brand">
         {treeSwitch}
-        <h1>{tree.title}</h1>
+        <h1>{t.app.train}</h1>
         <p>{tree.tagline}</p>
       </div>
       <div className="progress">

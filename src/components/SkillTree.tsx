@@ -1,125 +1,144 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Skill, SkillState, Tree } from "../types";
 import { skillState } from "../lib/progress";
+import { inUnlockOrder } from "./nextUp";
 import { t } from "../i18n";
-
-const SLOT = 104;
-const ROW = 140;
-const PAD_X = 56;
-const TOP = 70;
 
 interface Props {
   tree: Tree;
   done: Set<string>;
   selectedId: string;
   onSelect: (id: string) => void;
-  /** Show one branch only, as a narrow column. Used on phones. */
+  /** Show one branch only, as a list. Used on phones. */
   branchId?: string | null;
+  /** The skill suggested next (see nextUp.ts), marked in the tree. */
+  nextId: string | null;
 }
 
-export function SkillTree({ tree, done, selectedId, onSelect, branchId = null }: Props) {
+/**
+ * The skill tree. Wide screens: one column per branch, with the start skill above and the final
+ * skill below, so every branch fits on screen. Phones: the chosen branch as a list.
+ *
+ * Inside a branch, skills are listed in the order they unlock. A branch isn't a straight line
+ * (two skills open after the first, and the last needs two), so a locked skill says which skills
+ * it is waiting for instead of relying on lines to show it.
+ */
+export function SkillTree({ tree, done, selectedId, onSelect, branchId = null, nextId }: Props) {
   const effects = useUnlockEffects(tree, done);
-  // Skill names grow with the browser's text size, so the spacing grows with them or they overlap.
-  const [scale] = useState(textScale);
-  const slot = SLOT * scale;
-  const row = ROW * scale;
-  const narrow = branchId !== null;
-  const branchIndex = tree.branches.findIndex((b) => b.id === branchId);
-
-  // In narrow mode keep the start, the chosen branch and the final skill,
-  // and squeeze the branch's two slots down to slots 0 and 1.
-  const visible = narrow
-    ? tree.skills.filter((s) => s.branch === null || s.branch === branchId)
-    : tree.skills;
-  const slotOf = (s: Skill) => (!narrow ? s.x : s.branch === null ? 0.5 : s.x - branchIndex * 2);
-  const slots = narrow ? 2 : tree.branches.length * 2;
-
-  const pos = (s: Skill) => ({ x: PAD_X + slotOf(s) * slot + slot / 2, y: TOP + s.row * row + 40 });
-  const maxRow = Math.max(...tree.skills.map((s) => s.row));
-  const width = PAD_X * 2 + slots * slot;
-  const height = TOP + maxRow * row + ROW;
-  const visibleIds = new Set(visible.map((s) => s.id));
-  const byId = new Map(tree.skills.map((s) => [s.id, s]));
+  const start = tree.skills.filter((s) => s.branch === null && s.requires.length === 0);
+  const finish = tree.skills.filter((s) => s.branch === null && s.requires.length > 0);
   const colorOf = (s: Skill) => tree.branches.find((b) => b.id === s.branch)?.color ?? "#f2c14e";
+  const nameOf = (id: string) => tree.skills.find((s) => s.id === id)?.name ?? id;
+
+  const item = (s: Skill, layout: "card" | "row") => {
+    const state = skillState(s, done);
+    const waitingFor = s.requires.filter((id) => !done.has(id)).map(nameOf);
+    return (
+      <SkillItem
+        key={s.id}
+        skill={s}
+        state={state}
+        layout={layout}
+        color={colorOf(s)}
+        // In the phone list the open skill shows in the sheet instead.
+        selected={layout === "card" && s.id === selectedId}
+        next={s.id === nextId}
+        effect={effects.get(s.id)}
+        sub={state === "done" ? t.tree.passed : state === "locked" ? t.tree.after(waitingFor) : t.panel.status.available}
+        onSelect={onSelect}
+      />
+    );
+  };
+
+  if (branchId !== null) {
+    const branch = tree.branches.find((b) => b.id === branchId);
+    const skills = [...start, ...inUnlockOrder(tree.skills.filter((s) => s.branch === branchId)), ...finish];
+    return (
+      <div className="tree-wrap">
+        <ol className="skill-list" aria-label={branch?.name}>
+          {skills.map((s) => (
+            <li key={s.id} className={`skill-li ${skillState(s, done)}`} style={{ "--c": colorOf(s) } as CSSProperties}>
+              {item(s, "row")}
+            </li>
+          ))}
+        </ol>
+      </div>
+    );
+  }
 
   return (
-    <div className="pitch-wrap">
-      <div className="pitch" style={{ width, height }}>
-        <svg className="lines" viewBox={`0 0 ${width} ${height}`} width={width} height={height} aria-hidden="true">
-          <circle className="centre" cx={width / 2} cy={TOP + 40} r={70} fill="none" strokeWidth={2} />
-          {visible.flatMap((child) =>
-            child.requires
-              .filter((parentId) => visibleIds.has(parentId))
-              .map((parentId) => {
-                const parent = byId.get(parentId)!;
-                const a = pos(parent);
-                const b = pos(child);
-                const y1 = a.y + (parent.big ? 42 : 34);
-                const y2 = b.y - (child.big ? 42 : 34);
-                const mid = (y1 + y2) / 2;
-                const both = done.has(parentId) && done.has(child.id);
-                const lit = done.has(parentId);
-                return (
-                  <path
-                    key={`${parentId}-${child.id}`}
-                    d={`M${a.x} ${y1} C ${a.x} ${mid}, ${b.x} ${mid}, ${b.x} ${y2}`}
-                    className={both ? "both" : lit ? "lit" : undefined}
-                    style={both ? ({ "--c": colorOf(child) } as CSSProperties) : undefined}
-                    fill="none"
-                    strokeWidth={both ? 3 : 2}
-                    strokeDasharray={both ? undefined : "6 6"}
-                  />
-                );
-              }),
-          )}
-        </svg>
-
-        {!narrow &&
-          tree.branches.map((b, i) => (
-            <div
-              key={b.id}
-              className="branch-label"
-              style={{ "--c": b.color, left: PAD_X + (i * 2 + 1) * slot, top: TOP + row - 26 } as CSSProperties}
-            >
-              {b.name}
-            </div>
-          ))}
-
-        {visible.map((s) => {
-          const state = skillState(s, done);
-          const p = pos(s);
-          return (
-            <button
-              key={s.id}
-              type="button"
-              className={`node ${state}${s.big ? " big" : ""}${s.id === selectedId ? " selected" : ""}${effects.get(s.id) ? ` fx-${effects.get(s.id)}` : ""}`}
-              style={{ left: p.x, top: p.y, width: slot - 8, "--c": colorOf(s) } as CSSProperties}
-              onClick={() => onSelect(s.id)}
-              aria-label={t.tree.nodeLabel(s.name, t.panel.status[state])}
-            >
-              <span className="tile">
-                {state === "done" ? <CheckIcon /> : state === "locked" ? <LockIcon /> : tileLabel(s)}
-              </span>
-              <span className="name">{s.name}</span>
-            </button>
-          );
-        })}
+    <div className="tree-wrap">
+      <div className="tree">
+        <div className="tree-end">{start.map((s) => item(s, "card"))}</div>
+        <div className="branch-cols">
+          {tree.branches.map((b) => {
+            const skills = inUnlockOrder(tree.skills.filter((s) => s.branch === b.id));
+            const count = skills.filter((s) => done.has(s.id)).length;
+            return (
+              <section key={b.id} className="branch-col" aria-label={b.name} style={{ "--c": b.color } as CSSProperties}>
+                <h3>
+                  <span className="branch-dot" aria-hidden="true" />
+                  {b.name}
+                </h3>
+                <p className="branch-count">{t.tree.branchCount(count, skills.length)}</p>
+                <ol>
+                  {skills.map((s) => (
+                    <li key={s.id} className={`skill-li ${skillState(s, done)}`}>
+                      {item(s, "card")}
+                    </li>
+                  ))}
+                </ol>
+              </section>
+            );
+          })}
+        </div>
+        <div className="tree-end">{finish.map((s) => item(s, "card"))}</div>
       </div>
     </div>
   );
 }
 
-/** The browser's text size against the default 16px, never below 1, so the default layout is unchanged. */
-function textScale(): number {
-  const px = parseFloat(getComputedStyle(document.documentElement).fontSize);
-  return Number.isFinite(px) ? Math.max(1, px / 16) : 1;
+interface ItemProps {
+  skill: Skill;
+  state: SkillState;
+  layout: "card" | "row";
+  color: string;
+  selected: boolean;
+  next: boolean;
+  effect?: Effect;
+  /** Second line in the phone list: Passed, Ready to train, or what it's waiting for. */
+  sub: string;
+  onSelect: (id: string) => void;
 }
 
-/** Text inside an open (available) tile: GO for the start, 90' for the final, else the tier number. */
-function tileLabel(s: Skill): string {
+function SkillItem({ skill, state, layout, color, selected, next, effect, sub, onSelect }: ItemProps) {
+  const classes = ["skill", layout, state, selected && "selected", next && "next", skill.big && "big", effect && `fx-${effect}`];
+  return (
+    <button
+      type="button"
+      className={classes.filter(Boolean).join(" ")}
+      style={{ "--c": color } as CSSProperties}
+      onClick={() => onSelect(skill.id)}
+      aria-label={t.tree.nodeLabel(skill.name, t.panel.status[state])}
+      aria-current={selected ? "true" : undefined}
+    >
+      <span className="skill-node" aria-hidden="true">
+        {state === "done" ? <CheckIcon /> : state === "locked" ? <LockIcon /> : tileLabel(skill)}
+      </span>
+      <span className="skill-text">
+        <span className="skill-name">{skill.name}</span>
+        {layout === "row" && <span className="skill-sub">{sub}</span>}
+      </span>
+      {next && <span className="skill-badge">{t.tree.nextUp}</span>}
+    </button>
+  );
+}
+
+/** Text inside an open skill's circle: GO for the start, 90' for the final, else a dot. */
+function tileLabel(s: Skill) {
   if (s.big) return t.tree.finalTile;
   if (s.requires.length === 0) return t.tree.startTile;
-  return String(s.row);
+  return <span className="skill-dot" />;
 }
 
 function CheckIcon() {
@@ -141,7 +160,7 @@ function LockIcon() {
 
 type Effect = "done" | "unlock";
 
-/** Which skills just finished or just unlocked, so their tiles can animate for a moment. */
+/** Which skills just finished or just unlocked, so their circles can animate for a moment. */
 function useUnlockEffects(tree: Tree, done: Set<string>): Map<string, Effect> {
   const previous = useRef<Map<string, SkillState> | null>(null);
   const [effects, setEffects] = useState<Map<string, Effect>>(new Map());

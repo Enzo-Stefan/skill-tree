@@ -4,8 +4,14 @@
  * Skill content (drills, tests, tips, rank and level names) is not here: it lives in src/data/.
  * Text with numbers or names in it is a function, so each language can put them where its grammar needs.
  */
+/** "A" or "A and B". */
+function listAnd(items: string[]): string {
+  return items.join(" and ");
+}
+
 export const en = {
   app: {
+    train: "Train",
     showingTargets: (rung: string) => `Showing ${rung} targets.`,
     newRank: (rank: string) => `New rank: ${rank}.`,
     skillCompleteUnlocked: (skill: string, unlocked: string[]) => `${skill} complete. Unlocked: ${unlocked.join(", ")}.`,
@@ -65,6 +71,16 @@ export const en = {
     startTile: "GO",
     finalTile: "90'",
     nodeLabel: (skill: string, state: string) => `${skill}, ${state}`,
+    passed: "Passed",
+    /** What a locked skill waits for. More than two (the final skill) becomes a count. */
+    after: (skills: string[]) => (skills.length > 2 ? `After ${skills.length} more skills` : `After ${listAnd(skills)}`),
+    branchCount: (done: number, total: number) => `${done} of ${total} done`,
+    nextUp: "Next up",
+  },
+  nextUp: {
+    start: "Start here. Every branch opens after it.",
+    leastDone: (branch: string) => `${branch}: the branch you've done least`,
+    final: "The final skill",
   },
   panel: {
     status: { done: "Completed", available: "Ready to train", locked: "Locked" },

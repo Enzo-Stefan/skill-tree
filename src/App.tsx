@@ -4,6 +4,8 @@ import { activeTree, switchTree, treeSummaries } from "./lib/activeTree";
 import { Header } from "./components/Header";
 import { TreeSwitch } from "./components/TreeSwitch";
 import { SkillTree } from "./components/SkillTree";
+import { NextUpCard } from "./components/NextUpCard";
+import { nextUp as suggestNext } from "./components/nextUp";
 import { SkillPanel } from "./components/SkillPanel";
 import { BranchTabs } from "./components/BranchTabs";
 import { useMediaQuery } from "./components/useMediaQuery";
@@ -232,6 +234,7 @@ export default function App() {
   }
 
   const streak = streakWeeks(practiceDays, streakState.since);
+  const suggested = suggestNext(tree, done);
 
   return (
     <div className="app">
@@ -262,9 +265,20 @@ export default function App() {
             />
           )}
           {nextUp && <LevelUpBanner onYes={() => setTestOpen(true)} onLater={askLater} />}
+          {suggested && (
+            <NextUpCard
+              tree={tree}
+              skill={suggested}
+              onOpen={(s) => {
+                if (s.branch) setBranchId(s.branch);
+                select(s.id);
+              }}
+            />
+          )}
           {isPhone && <BranchTabs tree={tree} done={done} activeId={branchId} onChange={setBranchId} />}
           <main>
             <SkillTree
+              nextId={suggested?.id ?? null}
               tree={tree}
               done={done}
               selectedId={selectedId}
