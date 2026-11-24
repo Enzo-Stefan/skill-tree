@@ -7,15 +7,16 @@ interface Props {
   tree: Tree;
   doneCount: number;
   onCopy: () => void;
+  onShare: () => void;
   onReset: () => void;
-  /** Name of the player's chosen level, or null. Leave undefined for trees without levels. */
+  /** The player's level and step, e.g. "Beginner 2", or null. Leave undefined for trees without levels. */
   playerLevelName?: string | null;
   onChangeLevel?: () => void;
   /** Sign in button or the signed-in account, shown first in the actions. */
   account?: ReactNode;
 }
 
-export function Header({ tree, doneCount, onCopy, onReset, playerLevelName, onChangeLevel, account }: Props) {
+export function Header({ tree, doneCount, onCopy, onShare, onReset, playerLevelName, onChangeLevel, account }: Props) {
   const total = tree.skills.length;
   const { current, next } = levelInfo(tree.levels, doneCount);
   const leveledUp = useIncreased(tree.levels.indexOf(current));
@@ -62,6 +63,9 @@ export function Header({ tree, doneCount, onCopy, onReset, playerLevelName, onCh
             Level: {playerLevelName ?? "Pick"}
           </button>
         )}
+        <button className="btn" type="button" onClick={onShare}>
+          Share my tree
+        </button>
         <button className="btn" type="button" onClick={onCopy}>
           Copy my progress
         </button>

@@ -27,13 +27,24 @@ export interface Skill {
   test: string;
   tip: string;
   /**
-   * Per-level targets for this skill's test, keyed by PlayerLevel id.
-   * When set, the player sees only the target for the level they picked.
-   * Must have one entry for every level in the tree's playerLevels.
+   * Per-level targets for this skill's test. When set, the player sees only the target
+   * for their own level and step.
    */
-  targets?: Record<string, string>;
+  targets?: Targets;
   /** Draw as a large round node (used for the final skill). */
   big?: boolean;
+}
+
+/**
+ * A skill's test targets as numbers, so the steps inside each level can be worked out.
+ * Each level has 4 steps. Step 1 is the level's own number, steps 2 to 4 sit evenly
+ * between it and the next level's number. The top level keeps going at the same pace.
+ */
+export interface Targets {
+  /** The target sentence with `{n}` where the number goes, e.g. "Under {n} seconds." */
+  text: string;
+  /** The number at step 1 of each level, keyed by PlayerLevel id. One for every level. */
+  values: Record<string, number>;
 }
 
 /** How good the player already is. They pick one, and it sets which targets they see. */

@@ -7,7 +7,7 @@ interface Props {
   skillId: string;
   onComplete: (id: string) => void;
   onUndo: (id: string) => void;
-  /** Name of the player's chosen level, or null if not picked yet. */
+  /** The player's level and step, e.g. "Beginner 2", or null if not picked yet. */
   playerLevelName: string | null;
   /** The chosen level's target for this skill, or null. */
   target: string | null;
