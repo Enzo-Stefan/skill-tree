@@ -466,7 +466,7 @@ export default function App() {
           }}
         />
       )}
-      {pickerOpen && !welcomeOpen && tree.playerLevels && (
+      {pickerOpen && !welcomeOpen && !auth.loading && tree.playerLevels && (
         <LevelPicker
           levels={tree.playerLevels}
           currentId={playerLevelId}
