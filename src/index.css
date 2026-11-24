@@ -118,6 +118,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
   font-size: 0.875rem;
   font-weight: 600;
 }
+@media (pointer: coarse) { .tree-switch-option { min-height: 44px; } }
 .tree-switch-option:hover:not([aria-pressed="true"]):not(:disabled) { color: var(--chalk); background: var(--chalk-faint); }
 .tree-switch-option[aria-pressed="true"] { background: var(--gold); color: var(--on-gold); cursor: default; }
 .tree-switch-option[aria-busy="true"] { opacity: 0.7; cursor: progress; }
