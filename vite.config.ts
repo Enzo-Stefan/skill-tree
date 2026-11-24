@@ -10,8 +10,8 @@ export default defineConfig({
       // New deploys replace the cached app on the next visit, so nobody gets stuck on an old version.
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Skill Tree',
-        short_name: 'Skill Tree',
+        name: 'hapi skill',
+        short_name: 'hapi skill',
         description: 'Learn football the way you level up in a game. Pass the test, unlock the next skill.',
         theme_color: '#0a2118',
         background_color: '#0e2c20',
