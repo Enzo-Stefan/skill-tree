@@ -39,7 +39,7 @@ export function SkillPanel({
     .filter((r) => !done.has(r))
     .map((r) => tree.skills.find((s) => s.id === r)?.name);
   const dependents = completedDependents(tree, done, skill.id);
-  const query = encodeURIComponent(t.panel.youtubeSearch(skill.name));
+  const query = encodeURIComponent(t.panel.youtubeSearch(tree.id, skill.name));
 
   return (
     <aside className={`panel${onClose ? " sheet" : ""}`} aria-live="polite">
