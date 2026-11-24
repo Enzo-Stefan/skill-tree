@@ -78,9 +78,9 @@ export default function App() {
   // The tree the player last chose (src/lib/activeTree.ts). Switching reloads the app.
   const [tree] = useState(() => activeTree(trees));
   const auth = useAuth();
-  // Weights logged on lifts (Strength tree). They stay in this browser, never in the account.
+  // Weights logged on lifts (Strength tree). Saved in this browser and, when signed in, in the account.
   const lifts = useLiftLog(tree);
-  // Times saved from test mode (sprints). Browser only too, until the account keeps them.
+  // Times saved from test mode (sprints). Only in this browser until the account keeps them.
   const results = useResults(tree);
   const [done, setDone] = useState<Set<string>>(() => loadProgress(tree));
   const [selectedId, setSelectedId] = useState(tree.skills[0].id);
