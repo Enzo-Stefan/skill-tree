@@ -1,8 +1,10 @@
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Tree } from "../types";
 import { completedDependents, skillState } from "../lib/progress";
 import { SkillVideo } from "./SkillVideo";
 import { LiftLogBlock } from "./LiftLogBlock";
+import { TestMode } from "./TestMode";
+import { isRunnable } from "./testRun";
 import type { LiftLog } from "./useLiftLog";
 import { t } from "../i18n";
 
@@ -21,6 +23,8 @@ interface Props {
   onClose?: () => void;
   /** The tree's lift log, for skills with logWeight. */
   lifts?: LiftLog;
+  /** The stopwatch limit in seconds for this skill's test at the player's level, or null. */
+  timeLimit?: number | null;
 }
 
 export function SkillPanel({
@@ -34,11 +38,14 @@ export function SkillPanel({
   target,
   onChangeLevel,
   lifts,
+  timeLimit = null,
 }: Props) {
   const skill = tree.skills.find((s) => s.id === skillId)!;
   const heading = useRef<HTMLHeadingElement>(null);
   const headingId = `skill-${skill.id}-title`;
   const isSheet = Boolean(onClose);
+  // Which skill's test is open, so switching skills closes it.
+  const [testFor, setTestFor] = useState<string | null>(null);
 
   // As a sheet (phones), move focus to the skill's name so a screen reader reads it, instead of the
   // whole sheet. App gives focus back to the skill in the tree when the sheet closes.
@@ -95,7 +102,30 @@ export function SkillPanel({
               {t.panel.pickLevelForTarget}
             </button>
           ))}
+        {isRunnable(skill.check) && state !== "locked" && (
+          <div className="test-open">
+            <button className="btn" type="button" onClick={() => setTestFor(skill.id)}>
+              {t.testMode.open}
+            </button>
+            <span className="hint">{t.testMode.openHint}</span>
+          </div>
+        )}
       </div>
+      {testFor === skill.id && isRunnable(skill.check) && (
+        <TestMode
+          key={skill.id}
+          skill={skill}
+          check={skill.check}
+          limit={timeLimit}
+          canPass={state === "available"}
+          onPassed={() => {
+            // Close first: passing closes the sheet on phones and moves focus to the skill in the tree.
+            setTestFor(null);
+            onComplete(skill.id);
+          }}
+          onClose={() => setTestFor(null)}
+        />
+      )}
       {skill.logWeight && lifts && state !== "locked" && <LiftLogBlock key={skill.id} skillId={skill.id} lifts={lifts} />}
       <div className="block">
         <h3>{t.panel.tip}</h3>

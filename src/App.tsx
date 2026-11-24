@@ -34,6 +34,7 @@ import {
   saveProgress,
   targetFor,
   testTargets,
+  timeLimit,
   type Rung,
 } from "./lib/progress";
 import {
@@ -399,6 +400,7 @@ export default function App() {
                 target={targetFor(tree, selectedSkill, rung)}
                 onChangeLevel={() => setPickerOpen(true)}
                 lifts={lifts}
+                timeLimit={timeLimit(tree, selectedSkill, rung)}
               />
             )}
           </main>
