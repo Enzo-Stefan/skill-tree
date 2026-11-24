@@ -4,6 +4,8 @@ import { activeTree, switchTree, treeSummaries } from "./lib/activeTree";
 import { Header } from "./components/Header";
 import { TreeSwitch } from "./components/TreeSwitch";
 import { SkillTree } from "./components/SkillTree";
+import { NextUpCard } from "./components/NextUpCard";
+import { nextUp as suggestNext } from "./components/nextUp";
 import { SkillPanel } from "./components/SkillPanel";
 import { BranchTabs } from "./components/BranchTabs";
 import { useMediaQuery } from "./components/useMediaQuery";
@@ -31,10 +33,12 @@ import {
   savePlayerStep,
   saveProgress,
   targetFor,
+  testTargets,
   type Rung,
 } from "./lib/progress";
 import {
   canPickLevel,
+  needsPlacementTest,
   dayKey,
   daysThisWeek,
   levelUpDue,
@@ -55,12 +59,15 @@ export default function App() {
   // The tree the player last chose (src/lib/activeTree.ts). Switching reloads the app.
   const [tree] = useState(() => activeTree(trees));
   const auth = useAuth();
-  const [done, setDone] = useState<Set<string>>(() => loadProgress(tree.id));
+  const [done, setDone] = useState<Set<string>>(() => loadProgress(tree));
   const [selectedId, setSelectedId] = useState(tree.skills[0].id);
   // Not in the URL: Google sign-in comes back with its tokens in the address's # part.
   const [tab, setTab] = useState<Tab>("train");
   const [toast, setToast] = useState<string | null>(null);
   const toastTimer = useRef<number | undefined>(undefined);
+  // Where Train was scrolled when you left it. Some browsers reset a scroll area that gets hidden.
+  const trainRef = useRef<HTMLDivElement>(null);
+  const trainScroll = useRef<number[]>([]);
   // Keep in sync with the phone media query in index.css. The height clause catches phones held sideways.
   const isPhone = useMediaQuery("(max-width: 700px), (max-height: 500px) and (pointer: coarse)");
   const [branchId, setBranchId] = useState(tree.branches[0].id);
@@ -76,18 +83,16 @@ export default function App() {
   const [practiceDays, setPracticeDays] = useState(() => loadPracticeDays(tree.id));
   const [streakState, setStreakState] = useState(() => loadStreakState(tree.id));
   const [testOpen, setTestOpen] = useState(false);
+  // A first pick above the easiest level: the level being tested, until the player passes or picks again.
+  const [placementId, setPlacementId] = useState<string | null>(null);
   // Snapshot of the progress when Share was tapped, so the image isn't redrawn on every re-render.
   const [sharing, setSharing] = useState<ShareStats | null>(null);
   const today = useToday();
   const trainedToday = practiceDays.includes(today);
-  const nextUp = pickerOpen || testOpen ? null : levelUpDue(tree, rung, practiceDays, today, streakState);
+  const nextUp = pickerOpen || testOpen || placementId ? null : levelUpDue(tree, rung, practiceDays, today, streakState);
   const nextForTest = levelUpDue(tree, rung, practiceDays, today, streakState);
-  const testItems = nextForTest
-    ? tree.skills.flatMap((s) => {
-        const target = targetFor(tree, s, nextForTest);
-        return target ? [{ skillName: s.name, target }] : [];
-      })
-    : [];
+  const testItems = testTargets(tree, nextForTest);
+  const placementRung: Rung | null = placementId ? { levelId: placementId, step: 1 } : null;
   const selectedSkill = tree.skills.find((s) => s.id === selectedId)!;
 
   // Everything that is saved to a signed-in player's account.
@@ -169,6 +174,10 @@ export default function App() {
   /** From the Level picker: the same level keeps your step, any other level starts at its step 1. */
   function pickLevel(id: string) {
     setPickerOpen(false);
+    if (needsPlacementTest(tree, playerLevelId, id)) {
+      setPlacementId(id);
+      return;
+    }
     moveTo({ levelId: id, step: id === playerLevelId ? playerStep : 1 });
   }
 
@@ -232,12 +241,38 @@ export default function App() {
   }
 
   const streak = streakWeeks(practiceDays, streakState.since, today);
+  const suggested = suggestNext(tree, done);
+
+  /** Train's two scroll areas: the whole tab (phones) and the tree (wider screens). */
+  function trainScrollers(): HTMLElement[] {
+    const train = trainRef.current;
+    const tree = train?.querySelector<HTMLElement>(".tree-wrap");
+    return [train, tree].filter((e): e is HTMLElement => !!e);
+  }
+
+  // Back on Train: put both scroll areas where they were.
+  useEffect(() => {
+    if (tab !== "train") return;
+    trainScrollers().forEach((e, i) => (e.scrollTop = trainScroll.current[i] ?? e.scrollTop));
+  }, [tab]);
+
+  // A new branch on a phone: if the list's start is hidden under the pinned branch tabs, scroll up to it.
+  useEffect(() => {
+    const train = trainRef.current;
+    const tabs = train?.querySelector<HTMLElement>(".branch-tabs");
+    const list = train?.querySelector<HTMLElement>("main");
+    if (!train || !tabs || !list) return;
+    const listStart = train.scrollTop + list.getBoundingClientRect().top - train.getBoundingClientRect().top;
+    const want = listStart - tabs.offsetHeight;
+    if (train.scrollTop > want) train.scrollTop = want;
+  }, [branchId]);
 
   return (
     <div className="app">
       <TabBar
         active={tab}
         onChange={(next) => {
+          if (tab === "train") trainScroll.current = trainScrollers().map((e) => e.scrollTop);
           setTab(next);
           setSheetOpen(false);
         }}
@@ -245,7 +280,7 @@ export default function App() {
         summary={[t.header.skillsCount(done.size, tree.skills.length), ...(playerRungName ? [playerRungName] : [])]}
       />
       <div className="content">
-        <div className="train" hidden={tab !== "train"}>
+        <div className="train" hidden={tab !== "train"} ref={trainRef}>
           <Header
             tree={tree}
             doneCount={done.size}
@@ -262,9 +297,21 @@ export default function App() {
             />
           )}
           {nextUp && <LevelUpBanner onYes={() => setTestOpen(true)} onLater={askLater} />}
+          {suggested && (
+            <NextUpCard
+              tree={tree}
+              skill={suggested}
+              done={done}
+              onOpen={(s) => {
+                if (s.branch) setBranchId(s.branch);
+                select(s.id);
+              }}
+            />
+          )}
           {isPhone && <BranchTabs tree={tree} done={done} activeId={branchId} onChange={setBranchId} />}
           <main>
             <SkillTree
+              nextId={suggested?.id ?? null}
               tree={tree}
               done={done}
               selectedId={selectedId}
@@ -331,6 +378,27 @@ export default function App() {
           }}
           onNotYet={askLater}
           onDismiss={() => setTestOpen(false)}
+        />
+      )}
+      {placementRung && (
+        <LevelTestDialog
+          nextName={rungName(tree, placementRung) ?? ""}
+          items={testTargets(tree, placementRung)}
+          intro={t.levelTest.placementIntro(rungName(tree, placementRung) ?? "")}
+          notYetLabel={t.levelTest.pickAnother}
+          onPass={() => {
+            setPlacementId(null);
+            moveTo(placementRung);
+          }}
+          // Not passed yet: back to the picker, where the easiest level is always open.
+          onNotYet={() => {
+            setPlacementId(null);
+            setPickerOpen(true);
+          }}
+          onDismiss={() => {
+            setPlacementId(null);
+            setPickerOpen(true);
+          }}
         />
       )}
       {sharing && <ShareDialog stats={sharing} onClose={() => setSharing(null)} />}

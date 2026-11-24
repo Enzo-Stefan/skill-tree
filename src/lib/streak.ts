@@ -91,8 +91,9 @@ export function levelUpDue(
 }
 
 /**
- * Whether the Level picker may switch to `targetId`. The first pick is free, after that the picker
- * only goes down or stays put. The only way up is passing the test.
+ * Whether the Level picker may switch to `targetId`. On the first pick every level is open (one
+ * above the first asks for its test first, see needsPlacementTest). After that the picker only
+ * goes down or stays put. The only way up is passing the test.
  */
 export function canPickLevel(tree: Tree, currentId: string | null, targetId: string): boolean {
   const levels = tree.playerLevels ?? [];
@@ -139,4 +140,14 @@ export function saveStreakState(treeId: string, state: StreakState): void {
   } catch {
     // Storage can be blocked. The state then only lasts for this visit.
   }
+}
+
+/**
+ * Whether a first pick needs the placement test: the player has no level yet, picks one above the
+ * easiest, and the tree has targets to test. The easiest level is always a free pick.
+ */
+export function needsPlacementTest(tree: Tree, currentId: string | null, targetId: string): boolean {
+  const levels = tree.playerLevels ?? [];
+  if (levels.some((l) => l.id === currentId)) return false;
+  return levels.findIndex((l) => l.id === targetId) > 0 && tree.skills.some((s) => s.targets);
 }

@@ -4,8 +4,14 @@
  * Skill content (drills, tests, tips, rank and level names) is not here: it lives in src/data/.
  * Text with numbers or names in it is a function, so each language can put them where its grammar needs.
  */
+/** "A" or "A and B". */
+function listAnd(items: string[]): string {
+  return items.join(" and ");
+}
+
 export const en = {
   app: {
+    train: "Train",
     showingTargets: (rung: string) => `Showing ${rung} targets.`,
     newRank: (rank: string) => `New rank: ${rank}.`,
     skillCompleteUnlocked: (skill: string, unlocked: string[]) => `${skill} complete. Unlocked: ${unlocked.join(", ")}.`,
@@ -65,7 +71,19 @@ export const en = {
     /** Text inside the first and the last tile. */
     startTile: "GO",
     finalTile: "90'",
-    nodeLabel: (skill: string, state: string) => `${skill}, ${state}`,
+    nodeLabel: (skill: string, status: string, next: boolean) => `${skill}, ${status}${next ? ", next up" : ""}`,
+    passed: "Passed",
+    /** What a locked skill waits for. More than two (the final skill) becomes a count. */
+    after: (skills: string[]) => (skills.length > 2 ? `After ${skills.length} more skills` : `After ${listAnd(skills)}`),
+    branchCount: (done: number, total: number) => `${done} of ${total} done`,
+    nextUp: "Next up",
+  },
+  nextUp: {
+    start: "Start here. Every branch opens after it.",
+    leastDone: (branch: string) => `${branch}: the branch you've done least`,
+    /** When every branch has the same number done, so none is "least". */
+    goodNextStep: (branch: string) => `A good next step in ${branch}`,
+    final: "The final skill",
   },
   panel: {
     status: { done: "Completed", available: "Ready to train", locked: "Locked" },
@@ -120,7 +138,7 @@ export const en = {
     title: "What's your level?",
     lockedIntro: (days: number, weeks: number) =>
       `You can move to a lower level any time. To move up, train ${days} days a week for ${weeks} weeks and pass the test.`,
-    intro: "Some tests have a different target for each level. You'll only see yours.",
+    intro: "Some tests have a different target for each level. You'll only see yours. The easiest level is open to everyone. For a higher one, you pass its test first.",
     lockedHint: "Pass the test to move up",
   },
   levelTest: {
@@ -128,6 +146,8 @@ export const en = {
     intro: (rung: string) => `Do these at the ${rung} targets. Pass them all and you move up to ${rung}.`,
     passed: "I passed",
     notYet: "Not yet",
+    placementIntro: (rung: string) => `To start at ${rung}, do these at its targets. Pass them all and you start there.`,
+    pickAnother: "Pick another level",
   },
   share: {
     title: "Share my tree",
@@ -163,7 +183,7 @@ export const en = {
     title: "Your account",
     confirmTitle: "Delete your account?",
     confirmBody: "This deletes your account and the progress saved in it, on every device. It can't be undone.",
-    browserStays: "Progress saved in this browser stays here. Use Reset if you want to clear it too.",
+    browserStays: "Progress saved in this browser stays here. To clear it too, use Reset everything in Settings on each tree.",
     signedInAs: "Signed in with Google as",
     deleting: "Deleting…",
     deleteForGood: "Delete for good",

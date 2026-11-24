@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { football } from "../data/football";
-import { canPickLevel, daysThisWeek, levelUpDue, streakWeeks, weekOf, type StreakState } from "./streak";
+import { canPickLevel, daysThisWeek, levelUpDue, needsPlacementTest, streakWeeks, weekOf, type StreakState } from "./streak";
 
 // 2026-11-23 is a Monday.
 const week = (monday: string, count: number): string[] =>
@@ -114,5 +114,26 @@ describe("level picker", () => {
     expect(canPickLevel(football, "intermediate", "intermediate")).toBe(true);
     expect(canPickLevel(football, "intermediate", "advanced")).toBe(false);
     expect(canPickLevel(football, "beginner", "expert")).toBe(false);
+  });
+});
+
+describe("placement test", () => {
+  it("lets a new player pick the easiest level without a test", () => {
+    expect(needsPlacementTest(football, null, "beginner")).toBe(false);
+  });
+
+  it("asks a new player to pass the test for any higher level", () => {
+    expect(needsPlacementTest(football, null, "intermediate")).toBe(true);
+    expect(needsPlacementTest(football, null, "expert")).toBe(true);
+  });
+
+  it("isn't used once the player has a level, where the picker rules apply", () => {
+    expect(needsPlacementTest(football, "beginner", "beginner")).toBe(false);
+    expect(needsPlacementTest(football, "advanced", "beginner")).toBe(false);
+  });
+
+  it("isn't needed when the tree has no targets to test", () => {
+    const noTargets = { ...football, skills: football.skills.map((s) => ({ ...s, targets: undefined })) };
+    expect(needsPlacementTest(noTargets, null, "expert")).toBe(false);
   });
 });
