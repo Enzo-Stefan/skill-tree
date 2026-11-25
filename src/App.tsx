@@ -616,6 +616,7 @@ export default function App() {
             onBack={() => setBoardOpen(false)}
             onEditProfile={() => setProfileOpen(true)}
             onSignIn={() => void auth.signInWithGoogle()}
+            onMessage={showToast}
           />
         )}
         {tab === "progress" && !(boardOpen && hasLeaderboard) && (
