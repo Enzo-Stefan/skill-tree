@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Skill, Tree } from "../types";
-import { calendarLink, trainingIcs } from "../lib/ics";
+import { DEFAULT_REMINDER_MINUTES, calendarLink, trainingIcs } from "../lib/ics";
 import { saveTextFile } from "../lib/saveFile";
 import { MAX_DAY_MINUTES, MIN_DAY_MINUTES, trainedPlanDays, type PlanDay } from "../lib/plan";
 import type { DayKey } from "../lib/streak";
@@ -214,7 +214,7 @@ function WeekView({ days, skills, today, trained, state, unplaced }: { days: Pla
           <button className="btn" type="button" onClick={exportCalendar}>
             {t.training.addToCalendar}
           </button>
-          <p className="hint">{t.training.calendarNote}</p>
+          <p className="hint">{t.training.calendarNote(DEFAULT_REMINDER_MINUTES)}</p>
           <p className="sr-only" role="status" aria-live="polite">
             {calendarStatus}
           </p>

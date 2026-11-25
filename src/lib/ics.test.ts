@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { PRODUCTION_URL, calendarLink, escapeText, foldLine, trainingIcs, type TrainingCalendarInput } from "./ics";
+import { DEFAULT_REMINDER_MINUTES, PRODUCTION_URL, calendarLink, escapeText, foldLine, trainingIcs, type TrainingCalendarInput } from "./ics";
 import { saveTextFile } from "./saveFile";
+import { en } from "../i18n/en";
+import { es } from "../i18n/es";
 
 const LINK = "https://skill.example.app/app/";
 // 2026-11-25 is a Wednesday (plan index 2).
@@ -110,6 +112,13 @@ describe("trainingIcs", () => {
     expect(lines.slice(i, i + 5)).toEqual(["BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Legs\\, arms\\; core", "TRIGGER:-PT30M", "END:VALARM"]);
     expect(lines.indexOf("END:VEVENT")).toBeGreaterThan(i);
     expect(unfold(trainingIcs(input({ reminderMinutes: 10 }))).includes("TRIGGER:-PT10M")).toBe(true);
+  });
+
+  it("tells the player the same reminder time the file sets", () => {
+    expect(unfold(trainingIcs(input())).includes(`TRIGGER:-PT${DEFAULT_REMINDER_MINUTES}M`)).toBe(true);
+    for (const note of [en.training.calendarNote, es.training.calendarNote]) expect(note(DEFAULT_REMINDER_MINUTES)).toContain(`${DEFAULT_REMINDER_MINUTES} `);
+    expect(en.training.calendarNote(45)).toContain("45 minutes");
+    expect(es.training.calendarNote(45)).toContain("45 minutos");
   });
 
   it("identifies the product as hapi skill", () => {

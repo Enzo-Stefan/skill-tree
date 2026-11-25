@@ -4,7 +4,8 @@
 const BYDAY = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"] as const;
 const DEFAULT_START_HOUR = 17;
 const DEFAULT_DURATION_MINUTES = 60;
-const DEFAULT_REMINDER_MINUTES = 30;
+/** Minutes before each event that the reminder fires, unless the caller picks another. */
+export const DEFAULT_REMINDER_MINUTES = 30;
 const MAX_LINE_OCTETS = 75;
 /** The deployed app, used in calendar events when the app runs somewhere a player's calendar can't reach. */
 export const PRODUCTION_URL = "https://skill-tree-5y8k.vercel.app/";
