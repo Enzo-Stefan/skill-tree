@@ -94,6 +94,8 @@ export const weightsRoutines: Record<string, Routine> = {
     coolDown: COOL_GYM,
     sessionsPerWeek: 2,
     minutes: all(30),
+
+    heavy: true,
   },
   pw2: {
     warmUp: WARM_GYM,
@@ -124,6 +126,8 @@ export const weightsRoutines: Record<string, Routine> = {
     coolDown: COOL_GYM,
     sessionsPerWeek: 2,
     minutes: all(30),
+
+    heavy: true,
   },
   pw5: {
     warmUp: WARM_JUMP,
@@ -134,6 +138,8 @@ export const weightsRoutines: Record<string, Routine> = {
     coolDown: COOL_GYM,
     sessionsPerWeek: 2,
     minutes: all(35),
+
+    heavy: true,
   },
   cr1: {
     warmUp: WARM_CORE,
@@ -173,7 +179,7 @@ export const weightsRoutines: Record<string, Routine> = {
     ],
     coolDown: COOL_CORE,
     sessionsPerWeek: 2,
-    minutes: all(25),
+    minutes: all(20),
   },
   cr5: {
     warmUp: WARM_CORE,
@@ -213,7 +219,7 @@ export const weightsRoutines: Record<string, Routine> = {
     ],
     coolDown: COOL_GYM,
     sessionsPerWeek: 2,
-    minutes: all(20),
+    minutes: all(15),
   },
   ip4: {
     warmUp: WARM_GYM,
@@ -247,5 +253,7 @@ export const weightsRoutines: Record<string, Routine> = {
     coolDown: COOL_GYM,
     sessionsPerWeek: 2,
     minutes: all(40),
+
+    heavy: true,
   },
 };

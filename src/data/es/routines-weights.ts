@@ -9,11 +9,11 @@ import type { RoutineText } from "../../lib/translate";
 // from the phone's setting (#19).
 
 const WARM_GYM =
-  "8 minutos: trote suave o comba, balanceos de piernas, círculos de cadera, sentadillas y zancadas sin peso. Luego haz 1 o 2 series ligeras del primer ejercicio antes de las pesadas.";
+  "8 minutos: trote suave o saltar la cuerda, balanceos de piernas, círculos de cadera, sentadillas y zancadas sin peso. Luego haz 1 o 2 series ligeras del primer ejercicio antes de las pesadas.";
 const COOL_GYM = "5 minutos: camina y luego estira cuádriceps, isquiotibiales, cadera y gemelos, 20 segundos de cada lado.";
 const WARM_JUMP =
-  "8 minutos: trote suave, rodillas arriba, comba y sentadillas sin peso. Luego haz 3 saltos pequeños de prueba, un poco más altos cada vez.";
-const WARM_CORE = "5 minutos: trote suave o comba, círculos de brazos y de cadera, y unas cuantas vacas y gatos lentos.";
+  "8 minutos: trote suave, rodillas arriba, saltar la cuerda y sentadillas sin peso. Luego haz 3 saltos pequeños de prueba, un poco más altos cada vez.";
+const WARM_CORE = "5 minutos: trote suave o saltar la cuerda, círculos de brazos y de cadera, y unas cuantas posturas lentas de gato-vaca.";
 const COOL_CORE = "3 minutos: tumbado boca arriba, abrázate las rodillas y luego estira la cadera y la zona lumbar con suavidad.";
 
 export const weightsRoutinesEs: Record<string, RoutineText> = {
