@@ -22,6 +22,8 @@ import { ProgressScreen } from "./components/ProgressScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { useAuth } from "./auth/useAuth";
 import { SignInDialog } from "./components/SignInDialog";
+import { challengeText } from "./lib/challenge";
+import { resultDirection } from "./lib/results";
 import { skillFromSearch, skillUrl, withoutSkillParam } from "./lib/skillLink";
 import { loadWelcomeSkipped, saveWelcomeSkipped } from "./lib/welcome";
 import {
@@ -283,6 +285,28 @@ export default function App() {
       .catch(() => window.prompt(t.panel.copyLink, url));
   }
 
+  // Shares "I did X in 13.2 s. Beat it?" plus the skill link: the share sheet where there is one, else the clipboard.
+  function challengeMate(skillId: string, value: number) {
+    const skill = tree.skills.find((s) => s.id === skillId);
+    const better = skill ? resultDirection(tree, skill) : null;
+    if (!skill || !better) return;
+    const url = skillUrl(window.location.href, skillId);
+    const text = challengeText(skill.name, t.testMode.seconds(value), better, url);
+    const copy = () =>
+      Promise.resolve()
+        .then(() => navigator.clipboard.writeText(text))
+        .then(() => showToast(t.challenge.copied))
+        .catch(() => window.prompt(t.testMode.challenge, text));
+    if (typeof navigator.share !== "function") {
+      void copy();
+      return;
+    }
+    navigator.share({ title: t.challenge.title(skill.name), text }).catch((e: unknown) => {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      void copy();
+    });
+  }
+
   function select(id: string) {
     setSelectedId(id);
     setSheetOpen(true);
@@ -540,6 +564,7 @@ export default function App() {
                 planAdded={planState.added.includes(selectedId)}
                 onTogglePlan={() => planState.toggleAdded(selectedId)}
                 onCopyLink={copySkillLink}
+                onChallenge={challengeMate}
                 // One sheet at a time: on phones the skill sheet steps aside while a level dialog is open.
                 hidden={isPhone && (pickerOpen || testOpen || placementId !== null)}
               />
