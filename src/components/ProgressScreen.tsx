@@ -69,6 +69,18 @@ export function ProgressScreen(props: Props) {
         <RankProgress tree={tree} doneCount={done.size} />
       </section>
 
+      {onOpenLeaderboard && (
+        <section className="card" aria-labelledby="progress-board">
+          <h2 className="card-label" id="progress-board">
+            {t.leaderboard.title}
+          </h2>
+          <p className="card-note">{t.leaderboard.cardNote}</p>
+          <button className="btn" type="button" onClick={onOpenLeaderboard}>
+            {t.leaderboard.open}
+          </button>
+        </section>
+      )}
+
       {!playerLevelName && onPickLevel && (
         <section className="card" aria-labelledby="progress-level">
           <h2 className="card-label" id="progress-level">
@@ -146,18 +158,6 @@ export function ProgressScreen(props: Props) {
           })}
         </ul>
       </section>
-
-      {onOpenLeaderboard && (
-        <section className="card" aria-labelledby="progress-board">
-          <h2 className="card-label" id="progress-board">
-            {t.leaderboard.title}
-          </h2>
-          <p className="card-note">{t.leaderboard.cardNote}</p>
-          <button className="btn" type="button" onClick={onOpenLeaderboard}>
-            {t.leaderboard.open}
-          </button>
-        </section>
-      )}
 
       <PersonalBests tree={tree} log={liftLog} />
     </div>
