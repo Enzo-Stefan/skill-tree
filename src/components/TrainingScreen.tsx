@@ -3,7 +3,7 @@ import type { Skill, Tree } from "../types";
 import { MAX_DAY_MINUTES, MIN_DAY_MINUTES, trainedPlanDays, type PlanDay } from "../lib/plan";
 import type { DayKey } from "../lib/streak";
 import { language, t } from "../i18n";
-import { exerciseLine } from "./exerciseAmount";
+import { duration, exerciseLine } from "./exerciseAmount";
 import type { PlanState } from "./usePlan";
 import { useRestTimer } from "./useRestTimer";
 
@@ -94,7 +94,7 @@ function TodayView({ day, skills, levelId, state, finished, onFinish }: { day: P
                     </label>
                     {ex.restSeconds > 0 && (
                       <button className="btn rest-btn" type="button" onClick={() => rest.start(ex.restSeconds)}>
-                        {t.training.startRest(ex.restSeconds)}
+                        {t.training.startRest(duration(ex.restSeconds))}
                       </button>
                     )}
                   </li>

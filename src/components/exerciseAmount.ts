@@ -3,7 +3,7 @@ import { forLevel } from "../lib/progress";
 import { t } from "../i18n";
 
 /** A whole number of seconds as "45 s", "20 min" or "1 min 30 s". The units are the same in every language. */
-function duration(s: number): string {
+export function duration(s: number): string {
   if (s < 60) return `${s} s`;
   return s % 60 === 0 ? `${s / 60} min` : `${Math.floor(s / 60)} min ${s % 60} s`;
 }
@@ -24,8 +24,8 @@ export function exerciseAmount(ex: RoutineExercise, levelId: string | null): str
   return t.training.setsReps(sets, reps);
 }
 
-/** The amount, plus the rest between sets when there is one: "3 × 10 reps · Rest 60 s", or just "20 min". */
+/** The amount, plus the rest between sets when there is one: "3 × 10 reps · Rest 1 min", or just "20 min". */
 export function exerciseLine(ex: RoutineExercise, levelId: string | null): string {
   const amount = exerciseAmount(ex, levelId);
-  return ex.restSeconds > 0 ? `${amount} · ${t.training.rest(ex.restSeconds)}` : amount;
+  return ex.restSeconds > 0 ? `${amount} · ${t.training.rest(duration(ex.restSeconds))}` : amount;
 }
