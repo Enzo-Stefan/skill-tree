@@ -30,6 +30,7 @@ const weightsContent: Tree = {
       row: 0,
       drill:
         "Learn the movements with no weight: squats, lunges, push-ups and a plank. Film yourself or ask a coach to check your form. If you're under 16, train with an adult who knows the lifts.",
+      video: "https://www.youtube.com/watch?v=Oh5ziYGlgoI",
       test: "20 bodyweight squats, 10 push-ups and a 30 second plank, all with good form.",
       check: { kind: "done" },
       tip: "Good form now is what lets you add weight safely later. Never trade form for weight.",
@@ -186,6 +187,7 @@ const weightsContent: Tree = {
       x: 4.5,
       row: 1,
       drill: "Forearms and toes on the floor, body in a straight line. Squeeze your glutes.",
+      video: "https://www.youtube.com/watch?v=yeKv5oX_6GY",
       test: "Hold a plank for 60 seconds without your hips dropping.",
       check: { kind: "hold", seconds: 60 },
       tip: "Breathe normally. Holding your breath doesn't count.",
@@ -238,6 +240,7 @@ const weightsContent: Tree = {
       x: 4.5,
       row: 4,
       drill: "Hang from a bar and lift your knees to your chest without swinging.",
+      video: "https://www.youtube.com/watch?v=0BmrlKCfTPU",
       test: "12 reps without swinging.",
       check: { kind: "count", needed: 12 },
       tip: "Curl your hips up at the top. Lifting only your legs works your hip flexors, not your core.",
