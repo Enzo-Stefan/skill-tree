@@ -64,9 +64,23 @@ export const es: Strings = {
   },
   progressScreen: {
     rankLabel: "Tu rango",
-    level: "Nivel",
     thisWeek: "Esta semana",
     streak: "Racha",
+    yourLevel: "Tu nivel",
+    noLevel: "Elige tu nivel para ver tus objetivos y entrenar para la prueba de nivel.",
+    pickLevel: "Elegir mi nivel",
+    step: (step: number, total: number) => `Paso ${step} de ${total}`,
+    weeksOf: (weeks: number, goal: number) => `${weeks} de ${goal} semanas`,
+    towardTest: "hacia la prueba de nivel",
+    daysOf: (done: number, goal: number) => `${done} de ${goal} días`,
+    daysLeft: (n: number) =>
+      n === 1 ? "Falta 1 día esta semana para que cuente en tu racha." : `Faltan ${n} días esta semana para que cuente en tu racha.`,
+    weekCounts: "Esta semana cuenta para tu racha.",
+    weekAfterMove: "Cambiaste de nivel esta semana, así que tu racha empieza de nuevo la semana que viene.",
+    dayLabel: (day: string, trained: boolean, today: boolean) =>
+      `${day}: ${trained ? "entrenado" : "sin entrenar"}${today ? " (hoy)" : ""}`,
+    branches: "Ramas",
+    branchCount: (done: number, total: number) => `${done} de ${total}`,
   },
   settings: {
     training: "Entrenamiento",

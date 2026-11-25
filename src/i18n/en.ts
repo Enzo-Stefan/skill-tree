@@ -64,9 +64,24 @@ export const en = {
   },
   progressScreen: {
     rankLabel: "Your rank",
-    level: "Level",
     thisWeek: "This week",
     streak: "Streak",
+    yourLevel: "Your level",
+    noLevel: "Pick your level to see your targets and train toward the level test.",
+    pickLevel: "Pick your level",
+    step: (step: number, total: number) => `Step ${step} of ${total}`,
+    /** "Streak: <2 of 4 weeks> toward the level test" */
+    weeksOf: (weeks: number, goal: number) => `${weeks} of ${goal} weeks`,
+    towardTest: "toward the level test",
+    daysOf: (done: number, goal: number) => `${done} of ${goal} days`,
+    daysLeft: (n: number) => `${n} more ${n === 1 ? "day" : "days"} this week to count it toward your streak.`,
+    weekCounts: "This week counts toward your streak.",
+    weekAfterMove: "You changed level this week, so your streak starts again next week.",
+    /** For screen readers, one per day: "Monday: trained (today)". */
+    dayLabel: (day: string, trained: boolean, today: boolean) =>
+      `${day}: ${trained ? "trained" : "not trained"}${today ? " (today)" : ""}`,
+    branches: "Branches",
+    branchCount: (done: number, total: number) => `${done} of ${total}`,
   },
   settings: {
     training: "Training",

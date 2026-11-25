@@ -28,6 +28,7 @@ import {
   loadPlayerStep,
   loadProgress,
   newlyUnlocked,
+  nextRung,
   nextSkill,
   progressSummary,
   rungName,
@@ -51,6 +52,7 @@ import {
   addTrainingDay,
   saveStreakState,
   streakWeeks,
+  weekCanCount,
   weekOf,
   type StreakState,
 } from "./lib/streak";
@@ -489,12 +491,18 @@ export default function App() {
         {tab === "progress" && (
           <ProgressScreen
             tree={tree}
-            doneCount={done.size}
+            done={done}
             playerLevelName={playerRungName}
+            playerStep={playerStep}
+            levelTestAhead={nextRung(tree, rung) !== null}
+            practiceDays={practiceDays}
+            today={today}
             daysThisWeek={daysThisWeek(practiceDays, today)}
+            weekCanCount={weekCanCount(streakState.since, today)}
             streakWeeks={streak}
             liftLog={lifts.log}
             onShare={() => setSharing(shareStats(tree, done, playerRungName, streak, window.location.host))}
+            onPickLevel={hasLevels ? () => setPickerOpen(true) : undefined}
           />
         )}
         {tab === "settings" && (
