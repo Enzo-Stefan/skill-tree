@@ -119,6 +119,8 @@ describe("trainingIcs", () => {
     for (const note of [en.training.calendarNote, es.training.calendarNote]) expect(note(DEFAULT_REMINDER_MINUTES)).toContain(`${DEFAULT_REMINDER_MINUTES} `);
     expect(en.training.calendarNote(45)).toContain("45 minutes");
     expect(es.training.calendarNote(45)).toContain("45 minutos");
+    expect(en.training.calendarNote(45)).toContain("duplicate");
+    expect(es.training.calendarNote(45)).toContain("duplicado");
   });
 
   it("identifies the product as hapi skill", () => {

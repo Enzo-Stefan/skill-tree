@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Skill, Tree } from "../types";
 import { DEFAULT_REMINDER_MINUTES, calendarLink, trainingIcs } from "../lib/ics";
 import { saveTextFile } from "../lib/saveFile";
@@ -136,6 +136,8 @@ function WeekView({ days, skills, today, trained, state, unplaced }: { days: Pla
   const short = new Intl.DateTimeFormat(language, { weekday: "narrow" });
   const date = new Intl.DateTimeFormat(language, { day: "numeric", month: "short" });
   const [calendarStatus, setCalendarStatus] = useState("");
+  const statusTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(statusTimer.current), []);
   // Plan indexes (0 Monday to 6 Sunday) of the days with sessions scheduled.
   const training = days.flatMap((d, i) => (!d.rest && d.items.length > 0 ? [i] : []));
   const exportCalendar = () => {
@@ -150,7 +152,10 @@ function WeekView({ days, skills, today, trained, state, unplaced }: { days: Pla
       "training.ics",
       "text/calendar;charset=utf-8",
     );
-    setCalendarStatus(t.training.calendarSaved);
+    // Clear first so a repeat export changes the live region again and is re-announced.
+    setCalendarStatus("");
+    window.clearTimeout(statusTimer.current);
+    statusTimer.current = window.setTimeout(() => setCalendarStatus(t.training.calendarSaved), 100);
   };
   return (
     <>

@@ -85,7 +85,7 @@ export const en = {
     calendarSummary: "Training",
     calendarDescription: "Your weekly training days in hapi skill. Open the app to see today's session:",
     calendarNote: (reminderMinutes: number) =>
-      `Events are 17:00 to 18:00 with a reminder ${reminderMinutes} minutes before. You can edit the time in your calendar.`,
+      `Events are 17:00 to 18:00 with a reminder ${reminderMinutes} minutes before. You can edit the time in your calendar. Importing the file twice, or again after your plan changes, can create a duplicate repeating event, so delete the old one first.`,
     calendarSaved: "Calendar file downloaded. Open it to add your training days.",
   },
   lifts: {
