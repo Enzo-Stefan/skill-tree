@@ -290,7 +290,7 @@ export default function App() {
     const skill = tree.skills.find((s) => s.id === skillId);
     const better = skill ? resultDirection(tree, skill) : null;
     if (!skill || !better) return;
-    const url = skillUrl(window.location.href, skillId);
+    const url = skillUrl(window.location.href, skillId, tree.id);
     const text = challengeText(skill.name, t.testMode.seconds(value), better, url);
     const copy = () =>
       Promise.resolve()
