@@ -4,6 +4,7 @@ import { completedDependents, skillState } from "../lib/progress";
 import { SkillVideo } from "./SkillVideo";
 import { LiftLogBlock } from "./LiftLogBlock";
 import { TestMode } from "./TestMode";
+import { RoutineBlock } from "./RoutineBlock";
 import { isRunnable } from "./testRun";
 import type { LiftLog } from "./useLiftLog";
 import type { Results } from "./useResults";
@@ -30,6 +31,11 @@ interface Props {
   timeLimit?: number | null;
   /** The tree's saved test results, for "Your best time" and saving a time in test mode. */
   results?: Results;
+  /** The player's level id, for the routine's sets, reps and minutes. */
+  levelId?: string | null;
+  /** The skill was added to the weekly plan by hand ("Add to my plan"). */
+  planAdded?: boolean;
+  onTogglePlan?: () => void;
   /** Hides the sheet while a dialog is open over it, so only one shows at a time (phones). */
   hidden?: boolean;
 }
@@ -47,6 +53,9 @@ export function SkillPanel({
   lifts,
   timeLimit = null,
   results,
+  levelId = null,
+  planAdded = false,
+  onTogglePlan,
   hidden = false,
 }: Props) {
   const skill = tree.skills.find((s) => s.id === skillId)!;
@@ -171,6 +180,16 @@ export function SkillPanel({
   const rest = (
     <>
       {skill.logWeight && lifts && state !== "locked" && <LiftLogBlock key={skill.id} skillId={skill.id} lifts={lifts} />}
+      {skill.routine && onTogglePlan && (
+        <RoutineBlock
+          routine={skill.routine}
+          levelId={levelId}
+          inPlanAlready={state === "available"}
+          canPlan={state !== "done"}
+          added={planAdded}
+          onToggleAdd={onTogglePlan}
+        />
+      )}
       <div className="block">
         <h3>{t.panel.tip}</h3>
         <p>{skill.tip}</p>
