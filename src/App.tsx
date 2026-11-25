@@ -14,6 +14,8 @@ import { PracticeBar } from "./components/PracticeBar";
 import { useToday } from "./components/useToday";
 import { ShareDialog } from "./components/ShareDialog";
 import { shareStats, type ShareStats } from "./components/shareImage";
+import { slideDirection, slideIn } from "./lib/areaSlide";
+import { TREE_PANEL_ID } from "./components/treeView";
 import { AreasScreen } from "./components/AreasScreen";
 import { TabBar, type Tab } from "./components/TabBar";
 import { TrainingScreen } from "./components/TrainingScreen";
@@ -124,6 +126,11 @@ export default function App() {
   const [branchId, setBranchId] = useState<string | null>(
     () => (link && tree.skills.find((s) => s.id === link.skillId)?.branch) || activeBranch(tree),
   );
+  // Set when an area is picked on the Areas tab: the tree slides in from that side once Train shows again.
+  const [slide, setSlide] = useState<{ dir: -1 | 0 | 1; n: number }>({ dir: 0, n: 0 });
+  useEffect(() => {
+    if (slide.n > 0) slideIn(document.getElementById(TREE_PANEL_ID), slide.dir);
+  }, [slide]);
   // Where the tree should scroll to next (after picking a branch, or when a skill opens).
   const [scrollTo, setScrollTo] = useState<ScrollRequest | null>(link ? { id: link.skillId } : null);
   const [sheetOpen, setSheetOpen] = useState(link !== null);
@@ -589,6 +596,7 @@ export default function App() {
             onPickBranch={(id) => {
               // Forget Train's saved scroll: restoring it runs after SkillTree's scroll to the branch and would undo it.
               trainScroll.current = [];
+              setSlide({ dir: slideDirection(tree, branchId, id), n: slide.n + 1 });
               goTo("train");
               chooseBranch(id);
             }}
