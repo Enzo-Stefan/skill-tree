@@ -1,7 +1,7 @@
 import type { Routine } from "../types";
 import { forLevel } from "../lib/progress";
 import { t } from "../i18n";
-import { exerciseAmount } from "./exerciseAmount";
+import { exerciseLine } from "./exerciseAmount";
 
 interface Props {
   routine: Routine;
@@ -29,7 +29,7 @@ export function RoutineBlock({ routine, levelId, inPlanAlready, canPlan, added, 
           <li key={ex.name}>
             <span className="routine-name">{ex.name}</span>
             <span className="routine-amount">
-              {exerciseAmount(ex, levelId)} · {t.training.rest(ex.restSeconds)}
+              {exerciseLine(ex, levelId)}
             </span>
             <span className="routine-how">{ex.howTo}</span>
           </li>
