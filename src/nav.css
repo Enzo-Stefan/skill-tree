@@ -248,7 +248,7 @@
 .seg { display: inline-flex; border: 1.5px solid var(--chalk-faint); border-radius: 999px; padding: 2px; }
 .seg-btn { border: 0; background: transparent; color: var(--text-2); font: inherit; font-weight: 600; min-height: 36px; padding: 0 16px; border-radius: 999px; cursor: pointer; }
 .seg-btn[aria-pressed="true"] { background: var(--chalk-faint); color: var(--chalk); }
-.session { display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1.5px solid var(--chalk-faint); border-radius: 16px; background: var(--chalk-faint); -webkit-backdrop-filter: blur(20px) saturate(1.4); backdrop-filter: blur(20px) saturate(1.4); }
+.session { display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1.5px solid var(--chalk-faint); border-radius: 16px; background: var(--chalk-faint); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
 .session p { margin: 0; max-width: 65ch; }
 .session-title { margin: 0; font-size: 1.125rem; }
 .checklist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
@@ -262,7 +262,7 @@
 .routine-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .routine-list li { display: flex; flex-direction: column; gap: 2px; border-left: 2px solid var(--chalk-faint); padding-left: 12px; }
 .rest-bar { position: sticky; bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
-.rest-bar[data-running="true"] { padding: 10px 14px; border-radius: 14px; border: 1.5px solid var(--chalk-faint); background: var(--bar-bg); -webkit-backdrop-filter: blur(20px) saturate(1.6); backdrop-filter: blur(20px) saturate(1.6); }
+.rest-bar[data-running="true"] { padding: 10px 14px; border-radius: 14px; border: 1.5px solid var(--chalk-faint); background: var(--bar-bg); -webkit-backdrop-filter: var(--glass-blur); backdrop-filter: var(--glass-blur); }
 .rest-time { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1.25rem; }
 .finish { align-self: stretch; min-height: 48px; }
 .finish:disabled { opacity: 0.6; cursor: default; }
