@@ -40,7 +40,7 @@ export function SkillTree({ tree, done, selectedId, onSelect, branchId, phone, n
   const [wrapEl, setWrapEl] = useState<HTMLDivElement | null>(null);
   const start = tree.skills.filter((s) => s.branch === null && s.requires.length === 0);
   const finish = tree.skills.filter((s) => s.branch === null && s.requires.length > 0);
-  const colorOf = (s: Skill) => tree.branches.find((b) => b.id === s.branch)?.color ?? "#f2c14e";
+  const colorOf = (s: Skill) => tree.branches.find((b) => b.id === s.branch)?.color ?? "var(--fg-2)";
   const nameOf = (id: string) => tree.skills.find((s) => s.id === id)?.name ?? id;
   const grid = useMemo(() => treeGrid(tree), [tree]);
   const room = useWidth(wrapEl);

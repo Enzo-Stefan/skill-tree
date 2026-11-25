@@ -52,9 +52,14 @@ export const en = {
     coolDown: "Cool-down",
     exercises: "Exercises",
     setsReps: (sets: number, reps: number) => `${sets} × ${reps} reps`,
-    setsSeconds: (sets: number, seconds: number) => `${sets} × ${seconds} s`,
-    rest: (seconds: number) => `Rest ${seconds} s`,
-    startRest: (seconds: number) => `Start ${seconds} s rest`,
+    /** "3 × 20 min": several sets of something. */
+    setsOf: (sets: number, what: string) => `${sets} × ${what}`,
+    /** Sets of a single rep, e.g. rounds of a circuit: "2 sets". */
+    setsOnly: (sets: number) => `${sets} sets`,
+    /** One set: "8 reps". */
+    repsOnly: (reps: number) => `${reps} ${reps === 1 ? "rep" : "reps"}`,
+    rest: (duration: string) => `Rest ${duration}`,
+    startRest: (duration: string) => `Start ${duration} rest`,
     restRunning: (left: number) => `Rest: ${left} s`,
     restOver: "Rest over. Next set.",
     skipRest: "Skip rest",

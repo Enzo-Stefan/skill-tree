@@ -16,10 +16,13 @@
   padding: 12px 0 8px;
 }
 .branch-col {
-  border: 1.5px solid transparent;
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--chalk) 4%, transparent);
-  transition: background-color 0.2s ease, border-color 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 6px 8px;
+  border-radius: var(--radius-card);
+  background: var(--glass-faint);
+  border: 1px solid var(--glass-border);
 }
 /* The branch picked in the switcher. */
 .branch-col.focused { border-color: var(--c-ink); background: color-mix(in srgb, var(--c-ink) 12%, transparent); }
@@ -55,13 +58,14 @@
 
 .skill {
   position: relative;
-  border: 2px solid transparent;
-  border-radius: 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius-md);
   background: transparent;
-  color: var(--chalk);
+  color: var(--fg);
+  transition: background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
-.skill:hover { background: var(--chalk-faint); }
-.skill.selected { border-color: var(--chalk); background: var(--chalk-faint); }
+.skill:hover { background: var(--hover); }
+.skill.selected { border-color: var(--fg); background: var(--glass-strong); }
 .skill-node {
   width: 40px;
   height: 40px;
@@ -69,17 +73,19 @@
   display: grid;
   place-items: center;
   border-radius: 50%;
-  border: 2.5px solid var(--c-ink);
-  background: var(--panel);
+  border: 1.5px solid var(--glass-border-strong);
+  background: var(--glass);
   font-family: var(--font-display);
-  font-size: 0.875rem;
-  transition: box-shadow 0.15s ease;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  transition: box-shadow var(--dur) var(--ease), background-color var(--dur) var(--ease);
 }
 .skill-node svg { width: 20px; height: 20px; }
-.skill-dot { width: 12px; height: 12px; border-radius: 50%; background: var(--c-ink); }
-.skill.available .skill-node { box-shadow: 0 0 0 4px color-mix(in srgb, var(--c-ink) 22%, transparent); }
-.skill.done .skill-node { background: var(--c-ink); color: var(--on-branch); }
-.skill.locked .skill-node { border: 1.5px dashed var(--chalk-dim); color: var(--text-2); }
+.skill-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--fg); }
+/* Open: brighter glass and a crisp border. Passed: solid with a soft glow. Locked: dim. */
+.skill.available .skill-node { border: 2px solid var(--fg); background: var(--glass-strong); box-shadow: 0 0 0 4px var(--node-ring); }
+.skill.done .skill-node { border-color: var(--btn-primary-bg); background: var(--btn-primary-bg); color: var(--btn-primary-fg); box-shadow: var(--node-done-glow); }
+.skill.locked .skill-node { border: 1px dashed var(--fg-3); background: var(--glass-faint); color: var(--fg-2); }
 .skill.locked .skill-name { color: var(--text-2); }
 .skill.big .skill-node { width: 56px; height: 56px; font-size: 1.125rem; }
 .skill-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -87,9 +93,9 @@
 .skill-sub { font-size: 0.875rem; color: var(--text-2); }
 .skill-badge {
   padding: 2px 8px;
-  border-radius: 999px;
-  background: var(--gold);
-  color: var(--on-gold);
+  border-radius: var(--radius-pill);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-fg);
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -149,13 +155,13 @@
   gap: 14px;
   margin: 14px max(24px, env(safe-area-inset-right)) 0 max(24px, env(safe-area-inset-left));
   padding: 14px 16px;
-  border-radius: 16px;
-  border: 1px solid var(--chalk-faint);
-  background: var(--panel);
-  color: var(--chalk);
+  border-radius: var(--radius-card);
+  color: var(--fg);
   text-align: left;
+  transition: transform var(--dur-fast) var(--ease), border-color var(--dur) var(--ease);
 }
-.next-up:hover { border-color: var(--chalk-dim); }
+.next-up:hover { border-color: var(--btn-border-hover); }
+.next-up:active { transform: scale(0.99); }
 .next-up .branch-dot { width: 12px; height: 12px; }
 .next-up-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .next-up-label { font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2); }
