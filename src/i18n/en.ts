@@ -52,7 +52,14 @@ export const en = {
     coolDown: "Cool-down",
     exercises: "Exercises",
     setsReps: (sets: number, reps: number) => `${sets} × ${reps} reps`,
-    setsSeconds: (sets: number, seconds: number) => `${sets} × ${seconds} s`,
+    /** A length of time for an exercise: "45 s", "20 min", "1 min 30 s". */
+    duration: (s: number) => (s < 60 ? `${s} s` : s % 60 === 0 ? `${s / 60} min` : `${Math.floor(s / 60)} min ${s % 60} s`),
+    /** "3 × 20 min": several sets of something. */
+    setsOf: (sets: number, what: string) => `${sets} × ${what}`,
+    /** Sets of a single rep, e.g. rounds of a circuit: "2 sets". */
+    setsOnly: (sets: number) => `${sets} ${sets === 1 ? "set" : "sets"}`,
+    /** One set: "8 reps". */
+    repsOnly: (reps: number) => `${reps} ${reps === 1 ? "rep" : "reps"}`,
     rest: (seconds: number) => `Rest ${seconds} s`,
     startRest: (seconds: number) => `Start ${seconds} s rest`,
     restRunning: (left: number) => `Rest: ${left} s`,
