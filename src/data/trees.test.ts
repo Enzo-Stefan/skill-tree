@@ -8,6 +8,14 @@ describe.each(trees)("$id tree", (tree) => {
   });
 });
 
+describe("weights tree videos", () => {
+  it("gives every skill except the final one a video", () => {
+    const weights = trees.find((t) => t.id === "weights");
+    const missing = weights?.skills.filter((s) => s.id !== "final" && !s.video).map((s) => s.id);
+    expect(missing).toEqual([]);
+  });
+});
+
 describe("strength tree routines", () => {
   const weights = trees.find((t) => t.id === "weights")!;
 
