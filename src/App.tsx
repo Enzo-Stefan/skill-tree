@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { treesIn } from "./data";
-import { activeTree, switchTree, treeSummaries } from "./lib/activeTree";
+import { treesIn, upcomingTrees } from "./data";
+import { activeBranch, activeTree, saveActiveBranch, switchTree, treeSummaries } from "./lib/activeTree";
 import { Header } from "./components/Header";
 import { TreeSwitch } from "./components/TreeSwitch";
-import { SkillTree } from "./components/SkillTree";
+import { SkillTree, type ScrollRequest } from "./components/SkillTree";
+import { branchFocusSkill, revealTarget } from "./components/treeView";
 import { NextUpCard } from "./components/NextUpCard";
 import { SkillPanel } from "./components/SkillPanel";
 import { BranchTabs } from "./components/BranchTabs";
@@ -110,7 +111,10 @@ export default function App() {
   const trainScroll = useRef<number[]>([]);
   // Keep in sync with the phone media query in index.css. The height clause catches phones held sideways.
   const isPhone = useMediaQuery("(max-width: 700px), (max-height: 500px) and (pointer: coarse)");
-  const [branchId, setBranchId] = useState(tree.branches[0].id);
+  // The branch pill: highlighted in the tree, and remembered in this browser. null is "All".
+  const [branchId, setBranchId] = useState<string | null>(() => activeBranch(tree));
+  // Where the tree should scroll to next (after picking a branch, or when a skill opens).
+  const [scrollTo, setScrollTo] = useState<ScrollRequest | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [playerLevelId, setPlayerLevelId] = useState<string | null>(() => loadPlayerLevel(tree));
   const hasLevels = (tree.playerLevels?.length ?? 0) > 0;
@@ -163,7 +167,7 @@ export default function App() {
   };
 
   // The switch's counts come from the browser, except the open tree's, which can be a change ahead.
-  const treeChoices = treeSummaries(trees, tree).map((choice) =>
+  const treeChoices = treeSummaries(trees, tree, upcomingTrees).map((choice) =>
     choice.active ? { ...choice, done: tree.skills.filter((s) => done.has(s.id)).length } : choice,
   );
 
@@ -249,6 +253,14 @@ export default function App() {
       return;
     }
     moveTo({ levelId: id, step: id === playerLevelId ? playerStep : 1 });
+  }
+
+  /** From the branch pills: remember the pick, highlight that branch and scroll to where the player is in it. */
+  function chooseBranch(id: string | null) {
+    setBranchId(id);
+    saveActiveBranch(tree.id, id);
+    const target = id === null ? null : branchFocusSkill(tree, id, done);
+    if (target) setScrollTo({ id: target.id });
   }
 
   function select(id: string) {
@@ -343,6 +355,9 @@ export default function App() {
     const after = levelInfo(tree.levels, next.size).current.name;
     setDone(next);
     markTrainedToday();
+    // The tree grows upward: follow the new growth up to the skill that just opened.
+    const reveal = revealTarget(unlocked);
+    if (reveal) setScrollTo({ id: reveal.id });
     // On laptops the panel stays on screen, but "I passed" turns into Undo there, so focus goes
     // to the skill in the tree, the same as on phones.
     if (sheetOpen) closeSheet(id);
@@ -394,7 +409,8 @@ export default function App() {
     sessions.clear();
     setTestOpen(false);
     setSelectedId(tree.skills[0].id);
-    setBranchId(tree.branches[0].id);
+    setBranchId(null);
+    saveActiveBranch(tree.id, null);
     setSheetOpen(false);
     setPickerOpen(hasLevels);
     showToast(t.app.resetDone);
@@ -416,17 +432,6 @@ export default function App() {
     trainScrollers().forEach((e, i) => (e.scrollTop = trainScroll.current[i] ?? e.scrollTop));
   }, [tab]);
 
-  // A new branch on a phone: if the list's start is hidden under the pinned branch tabs, scroll up to it.
-  useEffect(() => {
-    const train = trainRef.current;
-    const tabs = train?.querySelector<HTMLElement>(".branch-tabs");
-    const list = train?.querySelector<HTMLElement>("main");
-    if (!train || !tabs || !list) return;
-    const listStart = train.scrollTop + list.getBoundingClientRect().top - train.getBoundingClientRect().top;
-    const want = listStart - tabs.offsetHeight;
-    if (train.scrollTop > want) train.scrollTop = want;
-  }, [branchId]);
-
   return (
     <div className="app">
       <TabBar
@@ -446,8 +451,11 @@ export default function App() {
             doneCount={done.size}
             playerLevelName={playerRungName}
             onChangeLevel={hasLevels ? openPicker : undefined}
-            treeSwitch={<TreeSwitch trees={treeChoices} onSwitch={switchToTree} />}
           />
+          <div className="switcher">
+            <TreeSwitch trees={treeChoices} onSwitch={switchToTree} />
+            <BranchTabs tree={tree} done={done} activeId={branchId} onChange={chooseBranch} />
+          </div>
           {hasLevels && playerLevelId && (
             <PracticeBar
               daysThisWeek={daysThisWeek(practiceDays, today)}
@@ -463,12 +471,12 @@ export default function App() {
               skill={suggested}
               done={done}
               onOpen={(s) => {
-                if (s.branch) setBranchId(s.branch);
+                if (s.branch) chooseBranch(s.branch);
+                else setScrollTo({ id: s.id });
                 select(s.id);
               }}
             />
           )}
-          {isPhone && <BranchTabs tree={tree} done={done} activeId={branchId} onChange={setBranchId} />}
           <main>
             <SkillTree
               nextId={suggested?.id ?? null}
@@ -476,7 +484,9 @@ export default function App() {
               done={done}
               selectedId={selectedId}
               onSelect={select}
-              branchId={isPhone ? branchId : null}
+              branchId={branchId}
+              phone={isPhone}
+              scrollTo={scrollTo}
             />
             {/* Not kept while Train is hidden, so a playing video stops. */}
             {tab === "train" && sheetShown && !(pickerOpen || testOpen || placementId !== null) && (

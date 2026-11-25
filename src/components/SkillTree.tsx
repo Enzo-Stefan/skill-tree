@@ -1,36 +1,57 @@
-import { useEffect, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { Skill, SkillState, Tree } from "../types";
 import { skillState } from "../lib/progress";
-import { inUnlockOrder } from "./nextUp";
+import { connectorPath, TREE_PANEL_ID, treeEdges, treeGrid } from "./treeView";
 import { t } from "../i18n";
+
+/** A request to scroll the tree to a skill. A new object each time, so asking for the same skill twice works. */
+export interface ScrollRequest {
+  id: string;
+}
 
 interface Props {
   tree: Tree;
   done: Set<string>;
   selectedId: string;
   onSelect: (id: string) => void;
-  /** Show one branch only, as a list. Used on phones. */
-  branchId?: string | null;
+  /** The branch picked in the switcher, highlighted in the tree. null is "All". */
+  branchId: string | null;
+  /** Always one column, for phones. Otherwise one column only when the space is too narrow for the branches side by side. */
+  phone: boolean;
   /** The skill suggested next (nextSkill in lib/progress.ts), marked in the tree. */
   nextId: string | null;
+  /** Scrolls this skill to the middle of the screen, smoothly. */
+  scrollTo: ScrollRequest | null;
 }
 
 /**
- * The skill tree. Wide screens: one column per branch, with the start skill above and the final
- * skill below, so every branch fits on screen. Phones: the chosen branch as a list.
+ * The skill tree. It grows upward like a real tree: the first skill sits at the bottom, the final
+ * skill at the top, and lines grow from each skill up to the skills it unlocks.
  *
- * Inside a branch, skills are listed in the order they unlock. A branch isn't a straight line
- * (two skills open after the first, and the last needs two), so a locked skill says which skills
- * it is waiting for instead of relying on lines to show it.
+ * Wide screens: every skill on its own spot from the tree data (tier and slot), one band per branch,
+ * with lines drawn between skills. Phones, and any space too narrow for that: one column. The final skill is on top, then each branch
+ * (the first branch nearest the bottom), then the start skill. Inside a branch, skills are listed in
+ * the order they unlock, last one on top. A branch isn't a straight line (two skills open after the
+ * first, and the last needs two), so a locked skill says which skills it is waiting for.
  */
-export function SkillTree({ tree, done, selectedId, onSelect, branchId = null, nextId }: Props) {
+export function SkillTree({ tree, done, selectedId, onSelect, branchId, phone, nextId, scrollTo }: Props) {
   const effects = useUnlockEffects(tree, done);
+  const [treeEl, setTreeEl] = useState<HTMLDivElement | null>(null);
+  const [wrapEl, setWrapEl] = useState<HTMLDivElement | null>(null);
   const start = tree.skills.filter((s) => s.branch === null && s.requires.length === 0);
   const finish = tree.skills.filter((s) => s.branch === null && s.requires.length > 0);
   const colorOf = (s: Skill) => tree.branches.find((b) => b.id === s.branch)?.color ?? "#f2c14e";
   const nameOf = (id: string) => tree.skills.find((s) => s.id === id)?.name ?? id;
+  const grid = useMemo(() => treeGrid(tree), [tree]);
+  const room = useWidth(wrapEl);
+  // Names need about 4.5rem a slot (two columns) to fit on a line. Before the first measure, the page's width stands in.
+  const stacked = phone || (room ?? window.innerWidth) < (grid.columns / 2) * SLOT_PX + WRAP_PADDING_PX;
+  const layout = stacked ? "row" : "card";
 
-  const item = (s: Skill, layout: "card" | "row") => {
+  useScrollTo(treeEl, scrollTo);
+  useStartAtBase(wrapEl, stacked);
+
+  const item = (s: Skill) => {
     const state = skillState(s, done);
     const waitingFor = s.requires.filter((id) => !done.has(id)).map(nameOf);
     return (
@@ -50,53 +71,230 @@ export function SkillTree({ tree, done, selectedId, onSelect, branchId = null, n
     );
   };
 
-  if (branchId !== null) {
-    const branch = tree.branches.find((b) => b.id === branchId);
-    const skills = [...start, ...inUnlockOrder(tree.skills.filter((s) => s.branch === branchId)), ...finish];
-    return (
-      <div className="tree-wrap">
-        <ol className="skill-list" aria-label={branch?.name}>
-          {skills.map((s) => (
-            <li key={s.id} className={`skill-li ${skillState(s, done)}`} style={{ "--c": colorOf(s) } as CSSProperties}>
-              {item(s, "row")}
-            </li>
-          ))}
-        </ol>
-      </div>
-    );
-  }
+  // Top of the screen first, so the reading and Tab order follow what is on screen.
+  const topFirst = (skills: Skill[]) => [...skills].sort((a, b) => b.row - a.row || a.x - b.x);
+  const branches = tree.branches.map((b) => ({ branch: b, skills: topFirst(tree.skills.filter((s) => s.branch === b.id)) }));
 
-  return (
-    <div className="tree-wrap">
-      <div className="tree">
-        <div className="tree-end">{start.map((s) => item(s, "card"))}</div>
-        <div className="branch-cols">
-          {tree.branches.map((b) => {
-            const skills = inUnlockOrder(tree.skills.filter((s) => s.branch === b.id));
+  const label = tree.shortName ?? tree.title;
+
+  if (stacked) {
+    return (
+      <div className="tree-wrap" id={TREE_PANEL_ID} role="tabpanel" aria-label={label} ref={setWrapEl}>
+        <div className="tree stacked" ref={setTreeEl}>
+          <div className="tree-end">{finish.map(item)}</div>
+          {[...branches].reverse().map(({ branch, skills }) => {
             const count = skills.filter((s) => done.has(s.id)).length;
             return (
-              <section key={b.id} className="branch-col" aria-label={b.name} style={{ "--c": b.color } as CSSProperties}>
-                <h3>
-                  <span className="branch-dot" aria-hidden="true" />
-                  {b.name}
-                </h3>
-                <p className="branch-count">{t.tree.branchCount(count, skills.length)}</p>
-                <ol>
-                  {skills.map((s) => (
-                    <li key={s.id} className={`skill-li ${skillState(s, done)}`}>
-                      {item(s, "card")}
-                    </li>
-                  ))}
+              <section
+                key={branch.id}
+                className={`branch-col${branch.id === branchId ? " focused" : ""}`}
+                aria-label={branch.name}
+                style={{ "--c": branch.color } as CSSProperties}
+              >
+                <div className="branch-head">
+                  <h3>
+                    <span className="branch-dot" aria-hidden="true" />
+                    {branch.name}
+                  </h3>
+                  <p className="branch-count">{t.tree.branchCount(count, skills.length)}</p>
+                </div>
+                <ol className="skill-list">
+                  {skills.map((s, i) => {
+                    // The line down to the skill below it: lit once that one is passed, growing when this one opens.
+                    // The first skill in a branch has none below, so its line is a short stub down to the start.
+                    const below = skills[i + 1];
+                    const lit = below ? done.has(below.id) : s.requires.length > 0 && s.requires.every((r) => done.has(r));
+                    const classes = [
+                      "skill-li",
+                      skillState(s, done),
+                      "has-rail",
+                      !below && "rail-stub",
+                      lit && "rail-lit",
+                      effects.get(s.id) === "unlock" && "rail-grow",
+                    ];
+                    return (
+                      <li key={s.id} className={classes.filter(Boolean).join(" ")} style={{ "--c": colorOf(s) } as CSSProperties}>
+                        {item(s)}
+                      </li>
+                    );
+                  })}
                 </ol>
               </section>
             );
           })}
+          <div className="tree-end">{start.map(item)}</div>
         </div>
-        <div className="tree-end">{finish.map((s) => item(s, "card"))}</div>
+      </div>
+    );
+  }
+
+  const place = (s: Skill, offset = 0): CSSProperties => {
+    const spot = grid.spots.get(s.id)!;
+    return { gridColumn: `${spot.column - offset} / span ${spot.span}`, gridRow: spot.row };
+  };
+
+  return (
+    <div className="tree-wrap" id={TREE_PANEL_ID} role="tabpanel" aria-label={label} ref={setWrapEl}>
+      <div
+        className="tree wide"
+        ref={setTreeEl}
+        style={{ gridTemplateColumns: `repeat(${grid.columns}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${grid.rows}, auto)` }}
+      >
+        <Connectors tree={tree} done={done} effects={effects} colorOf={colorOf} container={treeEl} />
+        {finish.map((s) => (
+          <div key={s.id} className="tree-end" style={place(s)}>
+            {item(s)}
+          </div>
+        ))}
+        {branches.map(({ branch, skills }) => {
+          const band = grid.bands.get(branch.id);
+          if (!band) return null;
+          const count = skills.filter((s) => done.has(s.id)).length;
+          return (
+            <section
+              key={branch.id}
+              className={`branch-col${branch.id === branchId ? " focused" : ""}`}
+              aria-label={branch.name}
+              style={{ "--c": branch.color, gridColumn: `${band.column} / span ${band.span}`, gridRow: `2 / ${grid.rows}` } as CSSProperties}
+            >
+              <div className="branch-head">
+                <h3>
+                  <span className="branch-dot" aria-hidden="true" />
+                  {branch.name}
+                </h3>
+                <p className="branch-count">{t.tree.branchCount(count, skills.length)}</p>
+              </div>
+              <ol className="branch-grid">
+                {skills.map((s) => {
+                  const spot = grid.spots.get(s.id)!;
+                  return (
+                    <li
+                      key={s.id}
+                      className={`skill-li ${skillState(s, done)}`}
+                      style={{ "--c": colorOf(s), gridColumn: `${spot.column - band.column + 1} / span ${spot.span}`, gridRow: spot.row - 2 } as CSSProperties}
+                    >
+                      {item(s)}
+                    </li>
+                  );
+                })}
+              </ol>
+            </section>
+          );
+        })}
+        {start.map((s) => (
+          <div key={s.id} className="tree-end" style={place(s)}>
+            {item(s)}
+          </div>
+        ))}
       </div>
     </div>
   );
 }
+
+interface ConnectorsProps {
+  tree: Tree;
+  done: Set<string>;
+  effects: Map<string, Effect>;
+  colorOf: (s: Skill) => string;
+  /** The tree the lines are drawn in. Null until it is on the page. */
+  container: HTMLDivElement | null;
+}
+
+/**
+ * The lines between skills, drawn behind them. Each starts at the lower skill and ends at the upper one,
+ * so when a skill opens its line grows upward, like growth moving up a branch. The skills' places come from
+ * the page, so the lines are measured again when the tree changes size.
+ */
+function Connectors({ tree, done, effects, colorOf, container }: ConnectorsProps) {
+  const [drawn, setDrawn] = useState<{ width: number; height: number; paths: Map<string, string> }>({ width: 0, height: 0, paths: new Map() });
+
+  useLayoutEffect(() => {
+    if (!container) return;
+    const measure = () => {
+      const box = container.getBoundingClientRect();
+      const node = (id: string) => container.querySelector<HTMLElement>(`[data-skill-id="${CSS.escape(id)}"] .skill-node`)?.getBoundingClientRect();
+      const paths = new Map<string, string>();
+      for (const e of treeEdges(tree)) {
+        const lower = node(e.from);
+        const upper = node(e.to);
+        if (!lower || !upper) continue;
+        const from = { x: lower.left + lower.width / 2 - box.left, y: lower.top - box.top };
+        const to = { x: upper.left + upper.width / 2 - box.left, y: upper.bottom - box.top };
+        paths.set(`${e.from}>${e.to}`, connectorPath(from, to));
+      }
+      setDrawn({ width: container.scrollWidth, height: container.scrollHeight, paths });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(container);
+    // Web fonts change how names wrap, which moves the skills.
+    void document.fonts?.ready.then(measure);
+    return () => observer.disconnect();
+  }, [tree, done, container]);
+
+  return (
+    <svg className="edges" width={drawn.width} height={drawn.height} aria-hidden="true">
+      {treeEdges(tree).map((e) => {
+        const d = drawn.paths.get(`${e.from}>${e.to}`);
+        if (!d) return null;
+        const target = tree.skills.find((s) => s.id === e.to)!;
+        // The line that opened this skill: its lower skill was just passed and the upper one just opened.
+        const grow = effects.get(e.from) === "done" && effects.get(e.to) === "unlock";
+        return (
+          <g key={`${e.from}>${e.to}`} style={{ "--c": colorOf(target) } as CSSProperties}>
+            <path d={d} className="edge base" />
+            {done.has(e.from) && <path d={d} pathLength={1} className={`edge lit${grow ? " grow" : ""}`} />}
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+/** Scrolls the tree to a skill when asked. Smooth, unless the player asked for less motion. */
+function useScrollTo(tree: HTMLElement | null, request: ScrollRequest | null) {
+  useEffect(() => {
+    if (!request) return;
+    const skill = tree?.querySelector<HTMLElement>(`[data-skill-id="${CSS.escape(request.id)}"]`);
+    const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    skill?.scrollIntoView({ block: "center", inline: "nearest", behavior: calm ? "auto" : "smooth" });
+  }, [request, tree]);
+}
+
+/**
+ * The tree grows upward, so the player starts at its base: the first skill, at the bottom. Scrolls
+ * the tree's own scroll area (wide screens) and the Train page it sits in (phones) all the way down, and
+ * does it again when the layout changes between one column and side by side, since that's a different height.
+ */
+function useStartAtBase(wrap: HTMLElement | null, stacked: boolean) {
+  useLayoutEffect(() => {
+    if (!wrap) return;
+    for (const area of [wrap, wrap.closest<HTMLElement>(".train")]) {
+      if (area) area.scrollTop = area.scrollHeight;
+    }
+  }, [wrap, stacked]);
+}
+
+/** The width of an element, kept up to date. Null until it has been measured. */
+function useWidth(el: HTMLElement | null): number | null {
+  const [width, setWidth] = useState<number | null>(null);
+  useLayoutEffect(() => {
+    if (!el) return;
+    // A hidden Train tab measures 0. Keep the last real width, so the layout doesn't flip while it is away.
+    const measure = () => {
+      if (el.clientWidth > 0) setWidth(el.clientWidth);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [el]);
+  return width;
+}
+
+/** Room one slot (two grid columns) of the wide tree needs, and the tree area's side padding. Keep in sync with tree.css. */
+const SLOT_PX = 72;
+const WRAP_PADDING_PX = 48;
 
 interface ItemProps {
   skill: Skill;
@@ -181,7 +379,7 @@ function useUnlockEffects(tree: Tree, done: Set<string>): Map<string, Effect> {
     // previous clear-timer, so returning early here would leave old fx classes stuck.
     setEffects(changed);
     if (changed.size === 0) return;
-    const timer = window.setTimeout(() => setEffects(new Map()), 900);
+    const timer = window.setTimeout(() => setEffects(new Map()), 2000);
     return () => window.clearTimeout(timer);
   }, [tree, done]);
 

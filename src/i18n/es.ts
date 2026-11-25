@@ -153,9 +153,14 @@ export const es: Strings = {
   },
   treeSwitch: {
     label: "Árbol de habilidades",
+    /** On the pill of a tree that isn't built yet. */
+    soon: "Próximamente",
+    soonLabel: (name: string) => `${name}, próximamente`,
   },
   branchTabs: {
     label: "Ramas",
+    /** The pill that shows the whole tree. */
+    all: "Todas",
   },
   tree: {
     startTile: "YA",

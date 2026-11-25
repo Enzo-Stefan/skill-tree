@@ -8,6 +8,8 @@ import { levelInfo, loadProgress } from "./progress";
 // to remember the choice and show that tree. Each tree keeps its own progress.
 
 const ACTIVE_KEY = "skill-tree:active-tree";
+// The branch pill last picked in a tree. One key per tree, since every tree has its own branches.
+const BRANCH_KEY = "skill-tree:active-branch";
 
 /** The tree with this id, or the first tree if there's none (an old or broken choice). */
 export function findTree(trees: Tree[], id: string | null): Tree {
@@ -28,6 +30,29 @@ export function saveActiveTree(treeId: string): void {
     localStorage.setItem(ACTIVE_KEY, treeId);
   } catch {
     // Storage can be blocked. Then the app opens on the first tree next time.
+  }
+}
+
+/**
+ * The branch the player last picked in this tree, or null for "All". An unknown id (a branch that
+ * was renamed or removed) and blocked storage both fall back to "All".
+ */
+export function activeBranch(tree: Tree): string | null {
+  try {
+    const id = localStorage.getItem(`${BRANCH_KEY}:${tree.id}`);
+    return tree.branches.some((b) => b.id === id) ? id : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Remembers the branch pill for this tree. `null` is "All". */
+export function saveActiveBranch(treeId: string, branchId: string | null): void {
+  try {
+    if (branchId === null) localStorage.removeItem(`${BRANCH_KEY}:${treeId}`);
+    else localStorage.setItem(`${BRANCH_KEY}:${treeId}`, branchId);
+  } catch {
+    // Storage can be blocked. Then the tree opens on "All" next time.
   }
 }
 
@@ -58,10 +83,18 @@ export interface TreeSummary {
   /** The player's rank in that tree, e.g. "Academy". */
   rank: string;
   active: boolean;
+  /** A tree that isn't built yet. Its pill shows "Coming soon" and can't be picked. */
+  soon?: boolean;
 }
 
-export function treeSummaries(trees: Tree[], current: Tree): TreeSummary[] {
-  return trees.map((tree) => {
+/** A tree that is planned but has no content yet. It only needs a name for its pill. */
+export interface UpcomingTree {
+  id: string;
+  name: string;
+}
+
+export function treeSummaries(trees: Tree[], current: Tree, upcoming: UpcomingTree[] = []): TreeSummary[] {
+  const real = trees.map((tree) => {
     const done = loadProgress(tree).size;
     return {
       id: tree.id,
@@ -74,4 +107,9 @@ export function treeSummaries(trees: Tree[], current: Tree): TreeSummary[] {
       active: tree.id === current.id,
     };
   });
+  // Upcoming trees come last, and never repeat a tree that already exists.
+  const soon = upcoming
+    .filter((u) => !trees.some((t) => t.id === u.id))
+    .map((u): TreeSummary => ({ id: u.id, title: u.name, shortName: u.name, tagline: "", done: 0, total: 0, rank: "", active: false, soon: true }));
+  return [...real, ...soon];
 }

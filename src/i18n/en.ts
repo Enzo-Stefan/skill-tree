@@ -155,9 +155,14 @@ export const en = {
   },
   treeSwitch: {
     label: "Skill tree",
+    /** On the pill of a tree that isn't built yet. */
+    soon: "Coming soon",
+    soonLabel: (name: string) => `${name}, coming soon`,
   },
   branchTabs: {
     label: "Branches",
+    /** The pill that shows the whole tree. */
+    all: "All",
   },
   tree: {
     /** Text inside the first and the last tile. */

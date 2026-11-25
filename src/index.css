@@ -57,9 +57,9 @@
 }
 /* A branch's colour as set in the tree data (--c), and the shade used to draw with it.
    In daylight the bright branch colours are darkened so they stay readable on the light grass. */
-.skill, .skill-li, .branch-tab, .chip, .branch-col, .next-up, .branch-bar { --c-ink: var(--c); }
+.skill, .skill-li, .branch-tab, .chip, .branch-col, .next-up, .branch-bar, .edge { --c-ink: var(--c); }
 @media (prefers-color-scheme: light) {
-  .skill, .skill-li, .branch-tab, .chip, .branch-col, .next-up, .branch-bar { --c-ink: color-mix(in oklab, var(--c) 58%, #000); }
+  .skill, .skill-li, .branch-tab, .chip, .branch-col, .next-up, .branch-bar, .edge { --c-ink: color-mix(in oklab, var(--c) 58%, #000); }
 }
 * { box-sizing: border-box; }
 html, body, #root { margin: 0; height: 100%; }
@@ -98,8 +98,8 @@ button { font: inherit; color: inherit; cursor: pointer; }
 
 /* Football / Strength switch, above the title. */
 .tree-switch {
-  display: inline-flex;
-  margin-bottom: 8px;
+  display: flex;
+  align-self: flex-start;
   padding: 3px;
   gap: 3px;
   border: 1.5px solid var(--chalk-faint);
@@ -107,7 +107,7 @@ button { font: inherit; color: inherit; cursor: pointer; }
 }
 .tree-switch-option {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: 6px;
   min-height: 32px;
   padding: 4px 12px;
@@ -119,10 +119,17 @@ button { font: inherit; color: inherit; cursor: pointer; }
   font-weight: 600;
 }
 @media (pointer: coarse) { .tree-switch-option { min-height: 44px; } }
-.tree-switch-option:hover:not([aria-pressed="true"]):not(:disabled) { color: var(--chalk); background: var(--chalk-faint); }
-.tree-switch-option[aria-pressed="true"] { background: var(--gold); color: var(--on-gold); cursor: default; }
+.tree-switch-option:hover:not([aria-selected="true"]):not([aria-disabled="true"]) { color: var(--chalk); background: var(--chalk-faint); }
+.tree-switch-option[aria-selected="true"] { background: var(--gold); color: var(--on-gold); cursor: default; }
 .tree-switch-option[aria-busy="true"] { opacity: 0.7; cursor: progress; }
-.tree-switch-option:disabled { opacity: 0.5; cursor: default; }
+.tree-switch-option[aria-disabled="true"]:not(.soon) { opacity: 0.5; cursor: default; }
+/* A tree that isn't built yet: dashed, with a "Coming soon" label. It can be focused, but not picked. */
+.tree-switch-option.soon { border: 1.5px dashed var(--chalk-dim); cursor: default; }
+.tree-switch-soon { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2); }
+.tree-switch-option:focus-visible, .branch-tab:focus-visible { outline-offset: 1px; }
+/* Pills never wrap. With many trees the row scrolls sideways instead. */
+.tree-switch { overflow-x: auto; max-width: 100%; scrollbar-width: none; }
+.tree-switch-option { flex: 0 0 auto; white-space: nowrap; }
 .tree-switch-count { font-size: 0.75rem; font-weight: 400; font-variant-numeric: tabular-nums; opacity: 0.8; }
 .progress { flex: 1 1 260px; display: flex; flex-direction: column; gap: 6px; min-width: 220px; }
 .progress-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-variant-numeric: tabular-nums; }
@@ -431,13 +438,22 @@ main { flex: 1; display: flex; min-height: 0; }
 }
 .test-actions { display: flex; gap: 10px; flex-wrap: wrap; }
 
+/* The two rows of pills under the header: the tree (Football / Strength), then its branches. */
+.switcher {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px max(24px, env(safe-area-inset-right)) 10px max(24px, env(safe-area-inset-left));
+  border-bottom: 2px solid var(--chalk-faint);
+  background: var(--bar-bg);
+}
 .branch-tabs {
   display: flex;
   gap: 8px;
-  padding: 12px max(16px, env(safe-area-inset-right)) 12px max(16px, env(safe-area-inset-left));
+  /* Room for the focus ring, which an overflow:auto row would otherwise cut off. */
+  padding: 3px;
+  margin: -3px;
   overflow-x: auto;
-  border-bottom: 2px solid var(--chalk-faint);
-  background: var(--bar-bg);
   scrollbar-width: none;
 }
 .branch-tab {
@@ -455,16 +471,24 @@ main { flex: 1; display: flex; min-height: 0; }
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+.branch-tab.all { --c: var(--chalk); }
 .branch-tab.active { background: var(--c-ink); color: var(--on-branch); }
 .branch-tab-count { font-family: var(--font-body); font-weight: 700; font-size: 0.75rem; font-variant-numeric: tabular-nums; opacity: 0.85; }
 
 @media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+  .switcher {
+    padding: 8px max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left));
+    gap: 8px;
+    /* The tree scrolls under the pills, so they get the same frosted glass as the tab bar. */
+    -webkit-backdrop-filter: blur(20px) saturate(1.6);
+    backdrop-filter: blur(20px) saturate(1.6);
+  }
   .header { gap: 12px; }
   .brand h1 { font-size: 1.375rem; }
   .brand p { display: none; }
   .brand { width: 100%; }
   .tree-switch { display: flex; width: 100%; }
-  .tree-switch-option { flex: 1; justify-content: center; min-height: 44px; }
+  .tree-switch-option { flex: 1 0 auto; justify-content: center; min-height: 44px; }
   .actions { width: 100%; }
   .actions .btn { flex: 1; }
   /* Two resting heights: half (ends under the test's buttons, measured in useSheet) and full. */
@@ -537,6 +561,12 @@ main { flex: 1; display: flex; min-height: 0; }
   .toast { bottom: auto; top: calc(16px + env(safe-area-inset-top)); transform: translate(-50%, -20px); }
   .toast.show { transform: translate(-50%, 0); }
 }
+/* A phone held sideways has little height: both rows of pills share one line. */
+@media (max-height: 500px) and (pointer: coarse) {
+  .switcher { flex-direction: row; align-items: center; gap: 12px; }
+  .switcher .tree-switch { width: auto; flex: none; margin: 0; }
+  .switcher .branch-tabs { flex: 1; min-width: 0; }
+}
 @keyframes backdrop-in { from { opacity: 0; } }
 @keyframes tile-pop { 0% { transform: scale(1); } 40% { transform: scale(1.28); } 100% { transform: scale(1); } }
 @keyframes unlock-glow {
@@ -545,7 +575,8 @@ main { flex: 1; display: flex; min-height: 0; }
 }
 @keyframes level-bump { 0% { transform: scale(1); } 30% { transform: scale(1.3); color: var(--chalk); } 100% { transform: scale(1); } }
 .skill.fx-done .skill-node { animation: tile-pop 0.5s ease-out; }
-.skill.fx-unlock .skill-node { animation: unlock-glow 0.8s ease-out; }
+/* After the scroll and the line have arrived (see edge-grow in tree.css). */
+.skill.fx-unlock .skill-node { animation: unlock-glow 0.8s ease-out 0.85s backwards; }
 .level.bump { display: inline-block; animation: level-bump 0.7s ease-out; }
 
 /* Reduced motion: nothing moves or changes size, but the same events still get a brief colour cue. */
@@ -559,7 +590,7 @@ main { flex: 1; display: flex; min-height: 0; }
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
   .skill.fx-done .skill-node { animation: tile-flash 0.8s ease-out; }
-  .skill.fx-unlock .skill-node { animation: unlock-ring 0.9s ease-out; }
+  .skill.fx-unlock .skill-node { animation: unlock-ring 0.9s ease-out 0.3s backwards; }
   .level.bump { animation: level-flash 0.9s ease-out; }
 }
 

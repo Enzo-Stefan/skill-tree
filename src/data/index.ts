@@ -4,10 +4,17 @@ import { footballEs } from "./es/football";
 import { weightsEs } from "./es/weights";
 import { translateTree, type TreeTranslation } from "../lib/translate";
 import type { Tree } from "../types";
+import type { UpcomingTree } from "../lib/activeTree";
 
 // Add new trees here (guitar, chess, Albanian...).
 // The app shows the first one. The weight training tree opens from a side panel once Enzo adds it (#18).
 export const trees: Tree[] = [football, weights];
+
+/**
+ * Trees that are planned but not built. Each one shows as a locked "Coming soon" pill in the tree
+ * switch, so the switch already works when its tree arrives: move it into `trees` above.
+ */
+export const upcomingTrees: UpcomingTree[] = [];
 
 /**
  * Skill content in other languages, by language code and tree id (#19, step 7). English is the
