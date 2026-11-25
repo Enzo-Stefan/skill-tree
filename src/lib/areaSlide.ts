@@ -11,10 +11,13 @@ export function slideDirection(tree: Tree, from: string | null, to: string | nul
 
 const SLIDE_MS = 260;
 
+function canAnimate(el: HTMLElement | null): el is HTMLElement {
+  return !!el && typeof el.animate === "function" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
 /** Slides an element in from the side. Does nothing when the person asked for less motion or the browser can't animate. */
 export function slideIn(el: HTMLElement | null, direction: -1 | 0 | 1): void {
-  if (!el || direction === 0 || typeof el.animate !== "function") return;
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (direction === 0 || !canAnimate(el)) return;
   el.animate(
     [
       { transform: `translateX(${direction * 48}px)`, opacity: 0 },
@@ -25,10 +28,6 @@ export function slideIn(el: HTMLElement | null, direction: -1 | 0 | 1): void {
 }
 
 const PANEL_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
-
-function canAnimate(el: HTMLElement | null): el is HTMLElement {
-  return !!el && typeof el.animate === "function" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
 
 /** Slides a side panel in from the right edge. Does nothing under reduced motion or when the browser can't animate. */
 export function panelIn(el: HTMLElement | null): void {

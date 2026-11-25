@@ -40,6 +40,10 @@ describe("slideIn", () => {
     slideIn(el, 0);
     expect(animate).not.toHaveBeenCalled();
   });
+  it("does nothing when the browser has no element.animate", () => {
+    reducedMotion(false);
+    expect(() => slideIn({} as HTMLElement, 1)).not.toThrow();
+  });
   it("animates otherwise", () => {
     const { el, animate } = fakeEl();
     reducedMotion(false);
@@ -49,13 +53,33 @@ describe("slideIn", () => {
 });
 
 describe("panelIn and panelOut", () => {
-  it("do not animate under reduced motion, and panelOut finishes at once", () => {
+  it("panelIn does not animate under reduced motion", () => {
+    const { el, animate } = fakeEl();
+    reducedMotion(true);
+    panelIn(el);
+    expect(animate).not.toHaveBeenCalled();
+  });
+  it("panelOut finishes at once under reduced motion", () => {
     const { el, animate } = fakeEl();
     const done = vi.fn();
     reducedMotion(true);
-    panelIn(el);
     panelOut(el, done);
     expect(animate).not.toHaveBeenCalled();
+    expect(done).toHaveBeenCalledTimes(1);
+  });
+  it("without element.animate, panelIn does nothing and panelOut finishes at once", () => {
+    const el = {} as HTMLElement;
+    const done = vi.fn();
+    reducedMotion(false);
+    expect(() => panelIn(el)).not.toThrow();
+    panelOut(el, done);
+    expect(done).toHaveBeenCalledTimes(1);
+  });
+  it("tolerates a missing element", () => {
+    const done = vi.fn();
+    reducedMotion(false);
+    expect(() => panelIn(null)).not.toThrow();
+    panelOut(null, done);
     expect(done).toHaveBeenCalledTimes(1);
   });
   it("panelOut calls done only when the animation finishes", () => {
