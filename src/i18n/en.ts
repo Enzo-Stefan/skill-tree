@@ -99,6 +99,12 @@ export const en = {
     about: "About",
     privacy: "Privacy policy",
     privacySub: "What we save and how to delete it",
+    feedback: "Send feedback",
+    feedbackSub: "Ideas, bugs or a skill that's too hard",
+    feedbackSubject: "hapi skill feedback",
+    videos: "Videos",
+    videosSub: "From creators on YouTube. Each video belongs to its channel, which the player shows.",
+    version: "Version",
     followsPhone: "Light or dark follows your phone's setting.",
   },
   header: {

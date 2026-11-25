@@ -97,6 +97,12 @@ export const es: Strings = {
     about: "Información",
     privacy: "Política de privacidad",
     privacySub: "Qué guardamos y cómo borrarlo",
+    feedback: "Enviar comentarios",
+    feedbackSub: "Ideas, errores o una habilidad demasiado difícil",
+    feedbackSubject: "Comentarios sobre hapi skill",
+    videos: "Vídeos",
+    videosSub: "De creadores en YouTube. Cada vídeo pertenece a su canal, que aparece en el reproductor.",
+    version: "Versión",
     followsPhone: "El modo claro u oscuro sigue el ajuste de tu teléfono.",
   },
   header: {
