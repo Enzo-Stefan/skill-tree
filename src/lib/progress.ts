@@ -1,4 +1,4 @@
-import type { Level, Skill, SkillState, TestCheck, Tree } from "../types";
+import type { Level, PerLevel, Routine, Skill, SkillState, TestCheck, Tree } from "../types";
 
 export function skillState(skill: Skill, done: Set<string>): SkillState {
   if (done.has(skill.id)) return "done";
@@ -273,6 +273,11 @@ export function validateTree(tree: Tree): string[] {
       errors.push(`${s.id}: test has no number in it, so nobody can tell when they've passed`);
     }
     errors.push(...checkErrors(s));
+    if (s.routine) errors.push(...routineErrors(tree, s.id, s.routine));
+  }
+  const withRoutine = tree.skills.filter((s) => s.routine).length;
+  if (withRoutine > 0 && withRoutine < tree.skills.length) {
+    for (const s of tree.skills) if (!s.routine) errors.push(`${s.id}: has no routine, but other skills in this tree do`);
   }
   const roots = tree.skills.filter((s) => s.requires.length === 0);
   if (roots.length !== 1) errors.push(`Tree needs exactly 1 start skill, found ${roots.length}`);
@@ -340,5 +345,54 @@ function checkErrors(s: Skill): string[] {
       secondsInText("seconds", c.seconds);
       break;
   }
+  return errors;
+}
+
+/** The keys a PerLevel needs in this tree: its player level ids, or "all" for trees without levels. */
+export function levelKeys(tree: Tree): string[] {
+  const ids = (tree.playerLevels ?? []).map((l) => l.id);
+  return ids.length ? ids : ["all"];
+}
+
+/** A PerLevel value for a level, falling back to "all" and then the first value. Null if there's none. */
+export function forLevel(values: PerLevel, levelId: string | null): number | null {
+  if (levelId !== null && Number.isFinite(values[levelId])) return values[levelId];
+  if (Number.isFinite(values.all)) return values.all;
+  const first = Object.values(values).find((v) => Number.isFinite(v));
+  return first ?? null;
+}
+
+/** Mistakes in a routine: empty text, missing levels, numbers that make no sense. */
+function routineErrors(tree: Tree, id: string, r: Routine): string[] {
+  const errors: string[] = [];
+  const keys = levelKeys(tree);
+  const perLevel = (where: string, values: PerLevel | undefined, min: number, max: number) => {
+    if (!values) return;
+    const missing = keys.filter((k) => !(k in values));
+    if (missing.length) errors.push(`${id}: routine ${where} has no value for ${missing.join(", ")}`);
+    const extra = Object.keys(values).filter((k) => !keys.includes(k));
+    if (extra.length) errors.push(`${id}: routine ${where} has unknown level ${extra.join(", ")}`);
+    for (const k of keys) {
+      const v = values[k];
+      if (k in values && !(Number.isFinite(v) && v >= min && v <= max)) errors.push(`${id}: routine ${where} for ${k} must be from ${min} to ${max}`);
+    }
+  };
+  if (!r.warmUp?.trim()) errors.push(`${id}: routine warm-up is empty`);
+  if (!r.coolDown?.trim()) errors.push(`${id}: routine cool-down is empty`);
+  if (!Number.isInteger(r.sessionsPerWeek) || r.sessionsPerWeek < 1 || r.sessionsPerWeek > 7) {
+    errors.push(`${id}: routine sessions per week must be a whole number from 1 to 7`);
+  }
+  perLevel("minutes", r.minutes, 5, 180);
+  if (!r.exercises?.length) errors.push(`${id}: routine has no exercises`);
+  (r.exercises ?? []).forEach((e, i) => {
+    const where = `exercise ${i + 1}`;
+    if (!e.name?.trim()) errors.push(`${id}: routine ${where} has no name`);
+    if (!e.howTo?.trim()) errors.push(`${id}: routine ${where} has no how-to`);
+    if ((e.reps === undefined) === (e.seconds === undefined)) errors.push(`${id}: routine ${where} needs reps or seconds, not both or neither`);
+    perLevel(`${where} sets`, e.sets, 1, 20);
+    perLevel(`${where} reps`, e.reps, 1, 200);
+    perLevel(`${where} seconds`, e.seconds, 5, 3600);
+    if (!(Number.isFinite(e.restSeconds) && e.restSeconds >= 0 && e.restSeconds <= 600)) errors.push(`${id}: routine ${where} rest must be from 0 to 600 seconds`);
+  });
   return errors;
 }

@@ -33,6 +33,8 @@ export interface Skill {
   test: string;
   /** How the test is checked at the pitch, so the app can count or time it (idea 4 in #17). */
   check?: TestCheck;
+  /** How to train this skill week to week (#80): warm-up, exercises, cool-down, sessions and length. */
+  routine?: Routine;
   tip: string;
   /**
    * Per-level targets for this skill's test. When set, the player sees only the target
@@ -41,6 +43,39 @@ export interface Skill {
   targets?: Targets;
   /** Draw as a large round node (used for the final skill). */
   big?: boolean;
+}
+
+/**
+ * A number for each player level, keyed by PlayerLevel id ("beginner", ...), like Targets.values.
+ * Trees without player levels use the single key "all".
+ */
+export type PerLevel = Record<string, number>;
+
+/** One exercise in a routine. It has either `reps` or `seconds` per set, not both. */
+export interface RoutineExercise {
+  name: string;
+  /** How to do it, in a sentence or two. */
+  howTo: string;
+  sets: PerLevel;
+  /** Repetitions per set. */
+  reps?: PerLevel;
+  /** Length of each set in seconds, for timed work like juggling for a minute. */
+  seconds?: PerLevel;
+  /** Rest between sets, in seconds. */
+  restSeconds: number;
+}
+
+/** A skill's training routine (#80). The weekly plan (src/lib/plan.ts) is built from these. */
+export interface Routine {
+  warmUp: string;
+  exercises: RoutineExercise[];
+  coolDown: string;
+  /** How many sessions a week this skill needs, 1 to 7. */
+  sessionsPerWeek: number;
+  /** One session's length in minutes, for each level. */
+  minutes: PerLevel;
+  /** Hard on the legs and lungs (sprints, runs). The plan never puts two heavy sessions on back-to-back days. */
+  heavy?: boolean;
 }
 
 /**
