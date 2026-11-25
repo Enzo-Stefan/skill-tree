@@ -129,7 +129,7 @@ export const footballRoutinesEs: Record<string, RoutineText> = {
   ]),
   ft2: run([
     { name: "Salidas de 10 m", howTo: "Esprinta 10 m desde parado y vuelve caminando." },
-    { name: "Sprints de 30 m", howTo: "Esprinta 30 m a máxima velocidad y vuelve caminando despacio." },
+    { name: "Esprints de 30 m", howTo: "Esprinta 30 m a máxima velocidad y vuelve caminando despacio." },
   ]),
   ft3: run([
     { name: "Carreras del test en T", howTo: "Conos en forma de T: 10 m hacia delante y 5 m a cada lado. Esprinta, desplázate a la izquierda, a la derecha y vuelve." },
