@@ -143,3 +143,42 @@ export interface Tree {
 }
 
 export type SkillState = "done" | "available" | "locked";
+
+// --- Leaderboard (#96) ---
+
+/** Where a ranking looks: everyone, or only players who share something with the viewer. */
+export type LeaderboardScope = "global" | "continent" | "hemisphere" | "country";
+
+/** AF Africa, AS Asia, EU Europe, NA North America, SA South America, OC Oceania. */
+export type Continent = "AF" | "AS" | "EU" | "NA" | "SA" | "OC";
+
+export type Hemisphere = "N" | "S";
+
+/** What a player tells the leaderboard about themselves. Every field but the name is optional. */
+export interface LeaderboardProfile {
+  /** 3 to 20 characters, shown on other people's screens. Never the Google name or email. */
+  displayName: string;
+  /** ISO 3166-1 alpha-2, e.g. "AL". */
+  countryCode: string | null;
+  /** Free text, up to 60 characters. Stored for a later local board; never read by the ranking, never shown to others. */
+  city: string | null;
+  /** Picked by the player only for countries that cross the equator; otherwise worked out. */
+  hemisphere: Hemisphere | null;
+  /** Off by default. Only opted-in players appear. */
+  leaderboardOptIn: boolean;
+}
+
+/** One line of a ranking. Everything another player is allowed to see, and nothing more. */
+export interface LeaderboardRow {
+  rank: number;
+  /** A random key for the row, not the user id. Passed to report_row() to report the player on it. */
+  rowKey: string;
+  displayName: string;
+  countryCode: string | null;
+  skills: number;
+  levelStep: number;
+  /** Best 30 m sprint in seconds, or null if none. */
+  bestSprint: number | null;
+  /** True for the viewer's own row, which is returned even outside the top 50. */
+  isMe: boolean;
+}
