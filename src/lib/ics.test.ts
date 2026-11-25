@@ -58,7 +58,7 @@ describe("trainingIcs", () => {
   });
 
   it("uses the given start time and length", () => {
-    const text = trainingIcs(input({ startHour: 7, durationMinutes: 90 }));
+    const text = trainingIcs(input({ startHour: 7, durationMinutes: 90, now: new Date(2026, 10, 25, 6, 0) }));
     expect(field(text, "DTSTART")).toBe("20261125T070000");
     expect(field(text, "DTEND")).toBe("20261125T083000");
   });
