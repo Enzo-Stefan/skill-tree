@@ -60,7 +60,7 @@ export function normalizeCity(city: string | null | undefined): string | null {
 // --- Display names ---
 
 // A short English and Spanish list, checked here and in the database. It is a first line of defence,
-// not a complete filter: a fluent reader should extend it before launch, and reports catch the rest.
+// not a complete filter: a fluent reader should extend it before launch.
 // Strong stems are blocked anywhere in the name ("xXfuckXx"). Short words are blocked only as a whole
 // word, so "grape", "economy" and "computadora" stay fine.
 export const BLOCKED_STEMS = ["fuck", "shit", "bitch", "cunt", "nigg", "whore", "hitler", "mierda", "pendejo", "cabron"];

@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { LeaderboardProfile, LeaderboardRow, LeaderboardScope, Tree } from "../types";
 import type { Auth } from "../auth/useAuth";
 import { loadSupabase } from "../auth/client";
-import { fetchLeaderboard, flagEmoji, LEADERBOARD_TREE, levelStepName, reportRow, scopeAvailable, type LeaderboardResult, type ReportReason } from "../lib/leaderboardApi";
+import { fetchLeaderboard, flagEmoji, LEADERBOARD_TREE, levelStepName, scopeAvailable, type LeaderboardResult } from "../lib/leaderboardApi";
 import { formatNumber } from "../lib/progress";
-import { useModalFocus } from "./useModalFocus";
 import { language, t } from "../i18n";
 
 const SCOPES: LeaderboardScope[] = ["global", "continent", "hemisphere", "country", "local"];
@@ -22,17 +21,15 @@ interface Props {
   /** Opens the profile dialog to join or to add the missing place. */
   onEditProfile: () => void;
   onSignIn: () => void;
-  onMessage: (text: string) => void;
 }
 
 /** The ranked leaderboard: five scope tabs, an optional single-test filter, the top 50 and your own row. */
-export function LeaderboardScreen({ tree, auth, profile, profileLoading, profileError, onRetryProfile, onBack, onEditProfile, onSignIn, onMessage }: Props) {
+export function LeaderboardScreen({ tree, auth, profile, profileLoading, profileError, onRetryProfile, onBack, onEditProfile, onSignIn }: Props) {
   const [scope, setScope] = useState<LeaderboardScope>("global");
   const [sprintOnly, setSprintOnly] = useState(false);
   const [result, setResult] = useState<LeaderboardResult | null>(null);
   const [failed, setFailed] = useState(false);
   const [reload, setReload] = useState(0);
-  const [reporting, setReporting] = useState<LeaderboardRow | null>(null);
 
   const supported = tree.id === LEADERBOARD_TREE;
   const signedIn = auth.configured && Boolean(auth.account);
@@ -159,14 +156,14 @@ export function LeaderboardScreen({ tree, auth, profile, profileLoading, profile
             {result && result.top.length > 0 && (
               <ol className="lb-list">
                 {result.top.map((row) => (
-                  <Row key={`${row.rank}-${row.displayName}`} row={row} tree={tree} sprintOnly={sprintOnly} onReport={setReporting} />
+                  <Row key={`${row.rank}-${row.displayName}`} row={row} tree={tree} sprintOnly={sprintOnly} />
                 ))}
                 {result.me && (
                   <>
                     <li className="lb-gap" aria-hidden="true">
                       …
                     </li>
-                    <Row row={result.me} tree={tree} sprintOnly={sprintOnly} onReport={setReporting} />
+                    <Row row={result.me} tree={tree} sprintOnly={sprintOnly} />
                   </>
                 )}
               </ol>
@@ -175,22 +172,12 @@ export function LeaderboardScreen({ tree, auth, profile, profileLoading, profile
         </>
       )}
 
-      {reporting && (
-        <ReportDialog
-          row={reporting}
-          onClose={() => setReporting(null)}
-          onDone={(ok) => {
-            setReporting(null);
-            onMessage(ok ? t.leaderboard.reportSent : t.leaderboard.reportFailed);
-          }}
-        />
-      )}
     </div>
   );
 }
 
-/** One player: rank, flag and name, and the score. Your own row is marked and has no Report button. */
-function Row({ row, tree, sprintOnly, onReport }: { row: LeaderboardRow; tree: Tree; sprintOnly: boolean; onReport: (row: LeaderboardRow) => void }) {
+/** One player: rank, flag and name, and the score. Your own row is marked. */
+function Row({ row, tree, sprintOnly }: { row: LeaderboardRow; tree: Tree; sprintOnly: boolean }) {
   const flag = flagEmoji(row.countryCode);
   const sprint = row.bestSprint !== null ? t.leaderboard.sprint(formatNumber(row.bestSprint, language)) : null;
   const score = sprintOnly
@@ -207,55 +194,6 @@ function Row({ row, tree, sprintOnly, onReport }: { row: LeaderboardRow; tree: T
         {row.isMe && <em className="lb-you"> {t.leaderboard.you}</em>}
       </span>
       <span className="lb-score">{score}</span>
-      {!row.isMe && (
-        <button className="lb-report" type="button" onClick={() => onReport(row)} aria-label={t.leaderboard.reportTitle(row.displayName)}>
-          {t.leaderboard.report}
-        </button>
-      )}
     </li>
-  );
-}
-
-function ReportDialog({ row, onClose, onDone }: { row: LeaderboardRow; onClose: () => void; onDone: (ok: boolean) => void }) {
-  const dialog = useRef<HTMLDivElement>(null);
-  const [reason, setReason] = useState<ReportReason>("name");
-  const [busy, setBusy] = useState(false);
-  useModalFocus(dialog, busy ? () => {} : onClose);
-
-  const send = useCallback(async () => {
-    setBusy(true);
-    try {
-      const client = await loadSupabase();
-      if (!client) throw new Error("no client");
-      await reportRow(client, row.displayName, reason);
-      onDone(true);
-    } catch {
-      onDone(false);
-    }
-  }, [row.displayName, reason, onDone]);
-
-  return (
-    <div className="overlay" onClick={busy ? undefined : onClose}>
-      <div ref={dialog} className="dialog" role="dialog" aria-modal="true" aria-labelledby="lb-report-title" onClick={(e) => e.stopPropagation()}>
-        <h2 id="lb-report-title">{t.leaderboard.reportTitle(row.displayName)}</h2>
-        <p>{t.leaderboard.reportBody}</p>
-        <fieldset className="field">
-          {(["name", "cheating", "other"] as const).map((r) => (
-            <label key={r} className="radio">
-              <input type="radio" name="lb-reason" checked={reason === r} onChange={() => setReason(r)} />
-              {t.leaderboard.reasons[r]}
-            </label>
-          ))}
-        </fieldset>
-        <div className="dialog-actions">
-          <button className="btn primary" type="button" onClick={send} disabled={busy}>
-            {t.leaderboard.reportSend}
-          </button>
-          <button className="btn" type="button" onClick={onClose} disabled={busy}>
-            {t.leaderboard.cancel}
-          </button>
-        </div>
-      </div>
-    </div>
   );
 }

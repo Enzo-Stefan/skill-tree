@@ -165,11 +165,3 @@ export async function fetchLeaderboard(
   if (error) throw new LeaderboardError("failed", error.message);
   return toResult((data ?? []) as BoardRow[]);
 }
-
-export type ReportReason = "name" | "cheating" | "other";
-
-/** Reports a row for a person to look at, by its display name. Reporting the same player twice is ignored. */
-export async function reportRow(client: SupabaseClient, displayName: string, reason: ReportReason): Promise<void> {
-  const { error } = await client.rpc("report_row", { reported_name: displayName, reason });
-  if (error) throw new LeaderboardError("failed", error.message);
-}

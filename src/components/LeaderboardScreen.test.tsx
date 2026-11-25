@@ -31,7 +31,6 @@ function renderScreen(onRetryProfile = vi.fn()) {
       onBack={vi.fn()}
       onEditProfile={vi.fn()}
       onSignIn={vi.fn()}
-      onMessage={vi.fn()}
     />,
   );
   return onRetryProfile;

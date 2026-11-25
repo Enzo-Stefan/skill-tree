@@ -44,7 +44,7 @@ Players delete their own account from the app (tap their name, then **Delete acc
 
 ## Leaderboard (005)
 
-`profiles` (display name, country, continent, city, hemisphere, opt-in), `leaderboard_scores` (filled by a trigger on `progress`, never by the app) and `leaderboard_reports`. Players read only their own profile; nobody reads scores or reports directly. The ranking comes from `public.leaderboard(...)`, which returns opted-in players only and never the city. Read reports in the dashboard under **Table Editor → leaderboard_reports**. Run 005 before the app version that uses it ships. The SQL is tested with `npm test` (`supabase/tests/`), which runs the migrations in an in-memory Postgres.
+`profiles` (display name, country, continent, city, hemisphere, opt-in), `leaderboard_scores` (filled by a trigger on `progress`, never by the app) and `leaderboard_reports`. Players read only their own profile; nobody reads scores or reports directly. The ranking comes from `public.leaderboard(...)`, which returns opted-in players only and never the city. `leaderboard_reports` and `report_row` exist in the database, but no app UI writes to them yet. Run 005 before the app version that uses it ships. The SQL is tested with `npm test` (`supabase/tests/`), which runs the migrations in an in-memory Postgres.
 
 ## Free plan
 
