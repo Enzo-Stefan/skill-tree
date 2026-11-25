@@ -255,9 +255,14 @@ function Connectors({ tree, done, effects, colorOf, container }: ConnectorsProps
 function useScrollTo(tree: HTMLElement | null, request: ScrollRequest | null) {
   useEffect(() => {
     if (!request) return;
-    const skill = tree?.querySelector<HTMLElement>(`[data-skill-id="${CSS.escape(request.id)}"]`);
-    const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    skill?.scrollIntoView({ block: "center", inline: "nearest", behavior: calm ? "auto" : "smooth" });
+    // Wait a frame: when Train was hidden until this render (coming back from Areas), Chrome drops
+    // a smooth scroll that starts in the same frame it becomes visible.
+    const frame = requestAnimationFrame(() => {
+      const skill = tree?.querySelector<HTMLElement>(`[data-skill-id="${CSS.escape(request.id)}"]`);
+      const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      skill?.scrollIntoView({ block: "center", inline: "nearest", behavior: calm ? "auto" : "smooth" });
+    });
+    return () => cancelAnimationFrame(frame);
   }, [request, tree]);
 }
 

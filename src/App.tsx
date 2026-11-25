@@ -528,6 +528,8 @@ export default function App() {
             branchId={branchId}
             onSwitchTree={switchToTree}
             onPickBranch={(id) => {
+              // Forget Train's saved scroll: restoring it runs after SkillTree's scroll to the branch and would undo it.
+              trainScroll.current = [];
               goTo("train");
               chooseBranch(id);
             }}
