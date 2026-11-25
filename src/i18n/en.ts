@@ -55,11 +55,11 @@ export const en = {
     /** "3 × 20 min": several sets of something. */
     setsOf: (sets: number, what: string) => `${sets} × ${what}`,
     /** Sets of a single rep, e.g. rounds of a circuit: "2 sets". */
-    setsOnly: (sets: number) => `${sets} ${sets === 1 ? "set" : "sets"}`,
+    setsOnly: (sets: number) => `${sets} sets`,
     /** One set: "8 reps". */
     repsOnly: (reps: number) => `${reps} ${reps === 1 ? "rep" : "reps"}`,
-    rest: (seconds: number) => `Rest ${seconds} s`,
-    startRest: (seconds: number) => `Start ${seconds} s rest`,
+    rest: (duration: string) => `Rest ${duration}`,
+    startRest: (duration: string) => `Start ${duration} rest`,
     restRunning: (left: number) => `Rest: ${left} s`,
     restOver: "Rest over. Next set.",
     skipRest: "Skip rest",
