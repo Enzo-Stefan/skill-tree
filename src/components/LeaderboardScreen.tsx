@@ -171,7 +171,6 @@ export function LeaderboardScreen({ tree, auth, profile, profileLoading, profile
           </div>
         </>
       )}
-
     </div>
   );
 }
