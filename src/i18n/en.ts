@@ -394,6 +394,8 @@ export const en = {
     edit: "Name and place",
     leave: "Leave the leaderboard",
     leaveSub: "Your row disappears right away",
+    loadFailed: "Failed to load your leaderboard profile. Check your connection and try again.",
+    retry: "Retry",
     needAccount: "Sign in to join the leaderboard.",
     title: "Your leaderboard profile",
     intro: "Others only see your display name, rank, score and country flag. Your Google name and email are never shown, and neither is your city.",

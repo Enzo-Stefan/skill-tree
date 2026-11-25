@@ -74,7 +74,7 @@ describe("score order", () => {
     await addPlayer({ n: 4, name: "AdvancedFaster", skills: 9, level: "advanced", step: 2, sprint: 5 });
     await addPlayer({ n: 5, name: "AdvancedNoSprint", skills: 9, level: "advanced", step: 2 });
     const rows = await board(1);
-    expect(rows.map((r) => r.display_name)).toEqual(["AdvancedFaster", "AdvancedSlower", "AdvancedNoSprint", "BeginnerMoreSkills", "FewSkillsHighLevel"].filter((n) => n !== "AdvancedSlower" || true));
+    expect(rows.map((r) => r.display_name)).toEqual(["AdvancedFaster", "AdvancedSlower", "AdvancedNoSprint", "BeginnerMoreSkills", "FewSkillsHighLevel"]);
   });
 
   it("gives tied players the same rank and skips the next one", async () => {
@@ -278,6 +278,23 @@ describe("who can read what", () => {
       await expect(db.query("select * from public.leaderboard('global','football')")).rejects.toThrow(/permission denied/);
     } finally {
       await db.exec("reset role");
+    }
+  });
+});
+
+describe("display name blocklist", () => {
+  const blocked = async (name: string) =>
+    (await db.query<{ b: boolean }>("select public.display_name_blocked($1) as b", [name])).rows[0].b;
+
+  it("blocks the Spanish words, their plurals and spaced-out spellings", async () => {
+    for (const name of ["culo", "Marica", "maricon", "CHINGA", "putas", "Pijas", "culos", "maricones", "nazis", "big culo", "c.u.l.o", "m a r i c a"]) {
+      expect(await blocked(name), name).toBe(true);
+    }
+  });
+
+  it("keeps innocent names that merely contain a short word", async () => {
+    for (const name of ["Chingachgook", "Maricarmen", "Cumulo", "Culottes", "Computadora", "Grape", "Raptor", "Putamen", "Puton"]) {
+      expect(await blocked(name), name).toBe(false);
     }
   });
 });

@@ -51,7 +51,7 @@ create policy "delete own profile" on public.profiles
   for delete to authenticated using (auth.uid() = user_id);
 
 -- A short English and Spanish blocklist, a first line of defence. Strong stems are blocked anywhere in the
--- name; short words only as a whole word, so "grape" and "computadora" stay fine. Extend it before launch.
+-- name; short words only as a whole word (with an optional plural "s" or "es"), so "grape" and "computadora" stay fine. Extend it before launch.
 create or replace function public.display_name_blocked(name text) returns boolean
 language plpgsql
 immutable
@@ -71,11 +71,11 @@ begin
     end if;
   end loop;
   -- Spelled out letter by letter ("p u t a") also counts as the whole word.
-  if regexp_replace(folded, '[^a-zñ]', '', 'g') = any (array['fag','slut','rape','nazi','puta','puto','joder','coño','verga','pija','violar']) then
+  if regexp_replace(folded, '[^a-zñ]', '', 'g') ~ '^(fag|slut|rape|nazi|puta|puto|joder|coño|verga|pija|violar|culo|marica|maricon|chinga)(s|es)?$' then
     return true;
   end if;
   foreach word in array regexp_split_to_array(folded, '[\s._-]+') loop
-    if regexp_replace(word, '[^a-zñ]', '', 'g') = any (array['fag','slut','rape','nazi','puta','puto','joder','coño','verga','pija','violar']) then
+    if regexp_replace(word, '[^a-zñ]', '', 'g') ~ '^(fag|slut|rape|nazi|puta|puto|joder|coño|verga|pija|violar|culo|marica|maricon|chinga)(s|es)?$' then
       return true;
     end if;
   end loop;

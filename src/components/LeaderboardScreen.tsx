@@ -15,6 +15,9 @@ interface Props {
   /** The player's leaderboard settings, or null if they haven't made any. */
   profile: LeaderboardProfile | null;
   profileLoading: boolean;
+  /** Loading the profile failed; show a retry instead of the Join flow. */
+  profileError: boolean;
+  onRetryProfile: () => void;
   onBack: () => void;
   /** Opens the profile dialog to join or to add the missing place. */
   onEditProfile: () => void;
@@ -23,7 +26,7 @@ interface Props {
 }
 
 /** The ranked leaderboard: five scope tabs, an optional single-test filter, the top 50 and your own row. */
-export function LeaderboardScreen({ tree, auth, profile, profileLoading, onBack, onEditProfile, onSignIn, onMessage }: Props) {
+export function LeaderboardScreen({ tree, auth, profile, profileLoading, profileError, onRetryProfile, onBack, onEditProfile, onSignIn, onMessage }: Props) {
   const [scope, setScope] = useState<LeaderboardScope>("global");
   const [sprintOnly, setSprintOnly] = useState(false);
   const [result, setResult] = useState<LeaderboardResult | null>(null);
@@ -85,7 +88,16 @@ export function LeaderboardScreen({ tree, auth, profile, profileLoading, onBack,
         </section>
       )}
 
-      {signedIn && !profileLoading && !profile?.leaderboardOptIn && (
+      {signedIn && !profileLoading && profileError && (
+        <section className="card">
+          <p className="card-note" role="alert">{t.leaderboardProfile.loadFailed}</p>
+          <button className="btn primary" type="button" onClick={onRetryProfile}>
+            {t.leaderboardProfile.retry}
+          </button>
+        </section>
+      )}
+
+      {signedIn && !profileLoading && !profileError && !profile?.leaderboardOptIn && (
         <section className="card">
           <p className="card-note">{t.leaderboard.notJoined}</p>
           <button className="btn primary" type="button" onClick={onEditProfile}>

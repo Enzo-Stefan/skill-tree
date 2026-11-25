@@ -160,6 +160,9 @@ export default function App() {
   const hasLeaderboard = tree.id === LEADERBOARD_TREE;
   const [boardOpen, setBoardOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
+  useEffect(() => {
+    if (!hasLeaderboard) setBoardOpen(false);
+  }, [hasLeaderboard]);
   const cloud = useCloudSync({ tree, userId: auth.account?.id ?? null, progress, apply: applySaved, onMessage: showToast });
   const accountAuth = {
     ...auth,
@@ -558,6 +561,8 @@ export default function App() {
             auth={auth}
             profile={leaderboard.profile}
             profileLoading={leaderboard.loading}
+            profileError={leaderboard.error}
+            onRetryProfile={leaderboard.retry}
             onBack={() => setBoardOpen(false)}
             onEditProfile={() => setProfileOpen(true)}
             onSignIn={() => void auth.signInWithGoogle()}
@@ -658,7 +663,7 @@ export default function App() {
           }}
         />
       )}
-      {profileOpen && (
+      {profileOpen && !leaderboard.error && (
         <LeaderboardProfileDialog
           initial={leaderboard.profile}
           onClose={() => setProfileOpen(false)}

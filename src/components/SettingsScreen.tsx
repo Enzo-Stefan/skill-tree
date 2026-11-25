@@ -63,6 +63,9 @@ export function SettingsScreen({ auth, treeName, playerLevelName, onChangeLevel,
 
       {showAccount && account && leaderboard && onEditProfile && (
         <Group title={t.leaderboardProfile.group}>
+          {leaderboard.error ? (
+            <Row label={t.leaderboardProfile.loadFailed} sub={t.leaderboardProfile.retry} chevron onClick={leaderboard.retry} />
+          ) : (
           <Row
             label={leaderboard.profile?.leaderboardOptIn ? t.leaderboardProfile.status.on : t.leaderboardProfile.status.off}
             sub={leaderboard.profile?.leaderboardOptIn ? t.leaderboardProfile.statusSub.on : t.leaderboardProfile.statusSub.off}
@@ -70,7 +73,8 @@ export function SettingsScreen({ auth, treeName, playerLevelName, onChangeLevel,
             chevron
             onClick={onEditProfile}
           />
-          {leaderboard.profile?.leaderboardOptIn && (
+          )}
+          {!leaderboard.error && leaderboard.profile?.leaderboardOptIn && (
             <Row
               label={t.leaderboardProfile.leave}
               sub={t.leaderboardProfile.leaveSub}

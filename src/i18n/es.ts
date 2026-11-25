@@ -379,6 +379,8 @@ export const es: Strings = {
     edit: "Nombre y lugar",
     leave: "Salir de la clasificación",
     leaveSub: "Tu fila desaparece enseguida",
+    loadFailed: "No se pudo cargar tu perfil de la clasificación. Revisa tu conexión e inténtalo de nuevo.",
+    retry: "Reintentar",
     needAccount: "Inicia sesión para unirte a la clasificación.",
     title: "Tu perfil de la clasificación",
     intro: "Los demás solo ven tu nombre público, tu puesto, tu puntaje y la bandera de tu país. Tu nombre de Google y tu correo nunca se muestran, ni tampoco tu ciudad.",

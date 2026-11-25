@@ -8,6 +8,10 @@ export interface LeaderboardProfileState {
   profile: LeaderboardProfile | null;
   /** True while the profile is being loaded after sign-in. */
   loading: boolean;
+  /** True when loading the profile failed; the player may well have one, so never offer Join or save. */
+  error: boolean;
+  /** Tries loading the profile again. */
+  retry: () => void;
   /** Saves the profile. Resolves to the problem code, or null when it worked. */
   save: (next: LeaderboardProfile) => Promise<LeaderboardError["code"] | null>;
   /** Takes the player off the leaderboard. Their other settings stay for next time. */
@@ -18,9 +22,13 @@ export interface LeaderboardProfileState {
 export function useLeaderboardProfile(userId: string | null): LeaderboardProfileState {
   const [profile, setProfile] = useState<LeaderboardProfile | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const retry = useCallback(() => setAttempt((n) => n + 1), []);
 
   useEffect(() => {
     setProfile(null);
+    setError(false);
     if (!userId) {
       setLoading(false);
       return;
@@ -33,7 +41,7 @@ export function useLeaderboardProfile(userId: string | null): LeaderboardProfile
         if (active) setProfile(p);
       })
       .catch(() => {
-        // A failed load looks like no profile; saving one later still works.
+        if (active) setError(true);
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -41,11 +49,11 @@ export function useLeaderboardProfile(userId: string | null): LeaderboardProfile
     return () => {
       active = false;
     };
-  }, [userId]);
+  }, [userId, attempt]);
 
   const save = useCallback(
     async (next: LeaderboardProfile) => {
-      if (!userId) return "failed" as const;
+      if (!userId || error) return "failed" as const;
       try {
         const client = await loadSupabase();
         if (!client) return "failed" as const;
@@ -56,7 +64,7 @@ export function useLeaderboardProfile(userId: string | null): LeaderboardProfile
         return e instanceof LeaderboardError ? e.code : ("failed" as const);
       }
     },
-    [userId],
+    [userId, error],
   );
 
   const leave = useCallback(async () => {
@@ -64,5 +72,5 @@ export function useLeaderboardProfile(userId: string | null): LeaderboardProfile
     return (await save({ ...profile, leaderboardOptIn: false })) === null;
   }, [profile, save]);
 
-  return { profile, loading, save, leave };
+  return { profile, loading, error, retry, save, leave };
 }
