@@ -9,7 +9,7 @@ import type { Continent, Hemisphere, LeaderboardRow, LeaderboardScope } from "..
 // best 30 m sprint (lower is better, no time ranks last). Skills come first because players pick their
 // own level, so level alone would let anyone claim the top by choosing Expert.
 
-/** Most rows a ranking returns, before the viewer's own row is added. */
+/** The last rank a board shows. Everyone tied at this rank is shown too, then the viewer's own row. */
 export const LEADERBOARD_LIMIT = 50;
 
 /** The skill whose result is the 30 m sprint. */
@@ -54,23 +54,45 @@ export function hemisphereFor(countryCode: string | null, picked: Hemisphere | n
 
 // A short English and Spanish list, checked here and in the database. It is a first line of defence,
 // not a complete filter: a fluent reader should extend it before launch, and reports catch the rest.
-// Strong stems are blocked anywhere in the name ("xXfuckXx"). Short words are blocked only as a whole
-// word, so "grape", "economy" and "computadora" stay fine. Known innocent words that hold a stem
-// ("Scunthorpe", "snigger", "Yamashita") are taken out before the stem check; they are whole words, not
-// fragments, so "snigga" is still caught. All lists are written folded (see foldWord).
+// Each word of a name is checked on its own, so "Mac Untermann" and "Josh Italia" stay fine; runs of
+// one- and two-letter words are joined first, so "p u t a" and "f.u.c.k" are still caught.
+// Strong stems are blocked anywhere in a word ("xXfuckXx"). Short words are blocked only as a whole word,
+// so "grape", "economy" and "computadora" stay fine, but digits and a plural "s" or "es" don't hide them
+// ("Puta10", "Nazis"). Every check also runs with repeated letters squeezed ("fuuck"). A word that is a
+// known innocent word ("Scunthorpe", "Yamashita", "Putto", a painted cherub) is let through: compared with
+// digits dropped (so "Pu7to" is not "putto"), squeezed or not ("Shiitake"), plural "s" or "es" allowed.
+// Only the whole word counts, so "Sniggle" and "Niggler" are still caught although they hold "niggle".
+// All lists are written folded (see foldLetters).
 export const BLOCKED_STEMS = ["fuck", "shit", "bitch", "cunt", "nigg", "whore", "hitler", "mierda", "pendejo", "cabron", "faggot"];
 export const BLOCKED_WORDS = ["fag", "slut", "rape", "nazi", "puta", "puto", "joder", "coño", "verga", "pija", "violar"];
 export const ALLOWED_WORDS = [
-  "scunthorpe", "snigger", "sniggle", "niggle", "niggling", "niggard",
-  "shitake", "yamashita", "matsushita", "kinoshita", "morishita", "mishit", "pushit",
+  "scunthorpe", "niggle", "niggling", "niggemann",
+  "shitake", "yamashita", "matsushita", "kinoshita", "morishita", "ishita", "kshitij", "yoshitaka", "mishit", "pushit", "pushitup",
+  "putto", "rappe",
 ];
 
-// Cyrillic and Greek letters that look like Latin ones, character for character (same length). Upper case
-// is listed too so the database gets it right even where its lower() only knows ASCII; here it is inert.
-export const HOMOGLYPH_FROM = "авеёіїјкмнорстухѕһӏАВЕЁІЇЈКМНОРСТУХЅҺӀαβεηικνορτυχάέήίόύΑΒΕΗΙΚΝΟΡΤΥΧΆΈΉΊΌΎζΖ";
-export const HOMOGLYPH_TO = "abeeiijkmhopctyxshlabeeiijkmhopctyxshlabenikvoptuxaeniouabehiknoptyxaehioyzz";
-export const LOOKALIKE_FROM = "013457$@!";
-export const LOOKALIKE_TO = "oieastsai";
+// Cyrillic and Greek letters that look like Latin ones, character for character (same length), and the
+// Turkish dotless ı. Upper case is listed too so the database gets it right even where its lower() only
+// knows ASCII; here it is inert.
+export const HOMOGLYPH_FROM = "авеёіїјкмнорстухѕһӏАВЕЁІЇЈКМНОРСТУХЅҺӀαβεηικνορτυχάέήίόύΑΒΕΗΙΚΝΟΡΤΥΧΆΈΉΊΌΎζΖı";
+export const HOMOGLYPH_TO = "abeeiijkmhopctyxshlabeeiijkmhopctyxshlabenikvoptuxaeniouabehiknoptyxaehioyzzi";
+export const LOOKALIKE_FROM = "013457";
+export const LOOKALIKE_TO = "oieast";
+
+/**
+ * The letters a name may use, after NFKC: Latin (A-Z, Latin-1, Extended-A and -B, and Extended Additional
+ * for Vietnamese) without × and ÷, Greek and Cyrillic without the signs and combining marks in their
+ * blocks. Anything else is refused, so small capitals ("ꜰᴜᴄᴋ"), other scripts, emoji and stray accents
+ * can't be used to dodge the list. Written as explicit ranges, the same in the database.
+ */
+export const NAME_LETTERS =
+  "A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u024F\u1E00-\u1EFF\u0386\u0388-\u038A\u038C\u038E-\u03A1\u03A3-\u03CE\u0400-\u0481\u048A-\u04FF";
+
+/** A letter or digit first, then letters, digits 0-9, spaces, dots, dashes and underscores. No "@", so no email addresses. */
+export const NAME_PATTERN = `^[0-9${NAME_LETTERS}][0-9${NAME_LETTERS} ._-]*$`;
+
+/** Latin, Cyrillic and Greek letters, as regex classes. The database constraint uses the same ones. */
+export const SCRIPT_CLASSES = ["[A-Za-z\u00C0-\u024F\u1E00-\u1EFF]", "[\u0400-\u04FF]", "[\u0370-\u03FF]"];
 
 /** Like SQL translate(): each character in `from` becomes the one at the same place in `to`. */
 function translateChars(text: string, from: string, to: string): string {
@@ -82,41 +104,80 @@ function translateChars(text: string, from: string, to: string): string {
   }).join("");
 }
 
-/** Lower case, Cyrillic/Greek and symbol look-alikes turned into Latin letters, accents off (but ñ kept), everything else dropped. */
-function foldWord(word: string): string {
-  // Look-alikes before and after lower case, so capital Greek Ν reads as n (as in the database).
-  const lower = translateChars(translateChars(word, HOMOGLYPH_FROM, HOMOGLYPH_TO).toLowerCase(), HOMOGLYPH_FROM, HOMOGLYPH_TO);
-  return translateChars(
-    lower.replace(/ñ/g, "n~").normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/n~/g, "ñ"),
-    LOOKALIKE_FROM,
-    LOOKALIKE_TO,
-  ).replace(/[^a-zñ]/g, "");
+/**
+ * The name as it is stored: NFKC, so fullwidth "ｆｕｃｋ", maths letters "𝐟𝐮𝐜𝐤" and the long s in "ſhit" become
+ * plain letters, and spaces trimmed from both ends. The database trigger does the same; send this.
+ */
+export function normalizeDisplayName(name: string): string {
+  return name.normalize("NFKC").replace(/^ +| +$/g, "");
 }
 
-/** Latin, Cyrillic and Greek letters, as regex classes. The database constraint uses the same ones. */
-export const SCRIPT_CLASSES = ["[A-Za-z\u00C0-\u024F]", "[\u0400-\u04FF]", "[\u0370-\u03FF]"];
+/**
+ * What must be unique: lower case with Cyrillic and Greek look-alikes turned into Latin letters, so an
+ * all-Cyrillic "Сосо" can't stand in for "Coco". Same as public.display_name_key() in the database.
+ */
+export function displayNameKey(name: string): string {
+  // Look-alikes before and after lower case, so capital Greek Ν reads as n (as in the database).
+  return translateChars(translateChars(name, HOMOGLYPH_FROM, HOMOGLYPH_TO).toLowerCase(), HOMOGLYPH_FROM, HOMOGLYPH_TO);
+}
 
-/** Letters from more than one of Latin, Cyrillic and Greek: the usual look-alike trick. Same ranges as the database. */
-function mixesScripts(name: string): boolean {
-  return SCRIPT_CLASSES.filter((c) => new RegExp(c).test(name)).length > 1;
+/** A word in lower case, look-alikes turned into Latin letters, accents off (but ñ kept). Digits and the rest are left in. */
+function foldLetters(word: string): string {
+  const lower = displayNameKey(word).replace(/[ñÑ]/g, "n~");
+  return lower.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/n~/g, "ñ");
+}
+
+/** Repeated letters squeezed to one: "fuuck" to "fuck". */
+function squeeze(word: string): string {
+  return word.replace(/(.)\1+/gu, "$1");
+}
+
+/**
+ * The words to check, each folded two ways: `mapped` turns look-alike digits into letters ("sh1t" to "shit"),
+ * `bare` drops digits ("Puta10" to "puta"). Runs of one- and two-letter words are joined into one.
+ */
+function nameWords(name: string): { mapped: string; bare: string }[] {
+  const words: { mapped: string; bare: string }[] = [];
+  let run = { mapped: "", bare: "" };
+  for (const raw of name.split(/[\s._-]+/)) {
+    const letters = foldLetters(raw);
+    const mapped = translateChars(letters, LOOKALIKE_FROM, LOOKALIKE_TO).replace(/[^a-zñ]/g, "");
+    const bare = letters.replace(/[^a-zñ]/g, "");
+    if (!mapped) continue;
+    if ([...mapped].length <= 2) {
+      run = { mapped: run.mapped + mapped, bare: run.bare + bare };
+      continue;
+    }
+    if (run.mapped) words.push(run);
+    run = { mapped: "", bare: "" };
+    words.push({ mapped, bare });
+  }
+  if (run.mapped) words.push(run);
+  return words;
 }
 
 function isBlockedName(name: string): boolean {
-  const words = name.split(/[\s._-]+/).map(foldWord).filter(Boolean);
-  const joined = words.join("");
-  const withoutAllowed = ALLOWED_WORDS.reduce((s, ok) => s.split(ok).join(""), joined);
-  if (BLOCKED_STEMS.some((stem) => withoutAllowed.includes(stem))) return true;
-  // Spelled out letter by letter ("p u t a") also counts as the whole word.
-  return BLOCKED_WORDS.includes(joined) || words.some((w) => BLOCKED_WORDS.includes(w));
+  return nameWords(normalizeDisplayName(name)).some(({ mapped, bare }) => {
+    const forms = [mapped, squeeze(mapped), bare, squeeze(bare)];
+    const endings = (form: string) => [form, form.replace(/s$/, ""), form.replace(/es$/, "")];
+    if ([bare, squeeze(bare)].some((form) => endings(form).some((w) => ALLOWED_WORDS.includes(w)))) return false;
+    if (forms.some((form) => BLOCKED_STEMS.some((stem) => form.includes(stem)))) return true;
+    return forms.some((form) => endings(form).some((w) => BLOCKED_WORDS.includes(w)));
+  });
 }
 
-/** Null if the name is fine, otherwise a short reason code the screen can translate. */
+/** Letters from more than one of Latin, Cyrillic and Greek: the usual look-alike trick. Same ranges as the database. */
+function mixesScripts(name: string): boolean {
+  return SCRIPT_CLASSES.filter((c) => new RegExp(c, "u").test(name)).length > 1;
+}
+
+/** Null if the name is fine, otherwise a short reason code the screen can translate. Checks the name as it will be stored (see normalizeDisplayName). */
 export function displayNameError(name: string): "too-short" | "too-long" | "characters" | "blocked" | null {
-  const clean = name.trim();
-  if (clean.length < NAME_MIN) return "too-short";
-  if (clean.length > NAME_MAX) return "too-long";
-  // Letters (any language), digits, spaces, dots, dashes and underscores. No "@", so no email addresses.
-  if (!/^[\p{L}\p{N}][\p{L}\p{N} ._-]*$/u.test(clean)) return "characters";
+  const clean = normalizeDisplayName(name);
+  const length = [...clean].length; // code points, as the database's char_length counts them
+  if (length < NAME_MIN) return "too-short";
+  if (length > NAME_MAX) return "too-long";
+  if (!new RegExp(NAME_PATTERN, "u").test(clean)) return "characters";
   if (mixesScripts(clean)) return "characters";
   if (isBlockedName(clean)) return "blocked";
   return null;
@@ -124,11 +185,21 @@ export function displayNameError(name: string): "too-short" | "too-long" | "char
 
 // --- Cheating limits ---
 
+/** The stored skills count can rise by at most this much per 24 hours (and on the first save). */
+export const SKILLS_PER_DAY = 3;
+
+/** The first sprint time a player saves counts as no faster than this (seconds). */
+export const FIRST_SPRINT_FLOOR = 4.5;
+
+/** An accepted faster sprint is at most this fraction of the record (5% faster), rounded to 0.01 s. */
+export const SPRINT_STEP = 0.95;
+
 /**
- * What the database keeps per player and tree. Times are when the value last changed.
+ * What the database keeps per player and tree. Times are when the value last rose (or got faster).
  * `bestSprint` is shown and ranked, and is cleared when the player clears their 30 m results.
  * `sprintRecord` is the fastest time ever accepted and is never cleared, so clearing results can't
- * reset the once-per-24-hours limit on getting faster.
+ * reset the once-per-24-hours limit on getting faster. Opting out of the leaderboard only hides the
+ * row; the snapshot and its timers are kept, so opting out and back in resets nothing.
  */
 export interface ScoreSnapshot {
   skills: number;
@@ -137,6 +208,7 @@ export interface ScoreSnapshot {
   sprintRecord: number | null;
   sprintImprovedAt: number | null;
   levelStepRaisedAt: number | null;
+  skillsRaisedAt: number | null;
 }
 
 /** What the player's progress says now. */
@@ -161,39 +233,69 @@ export function sprintIsPossible(seconds: number): boolean {
   return Number.isFinite(seconds) && seconds >= MIN_SPRINT_SECONDS && seconds <= MAX_SPRINT_SECONDS;
 }
 
-/** The fastest possible time in a list of 30 m results, or null. Impossible times can't hide a real one. */
+/**
+ * Rounds a time to 0.01 s, half up, like the database's round(x, 2) on numeric. Plain
+ * Math.round(x * 100) / 100 gets some halves wrong (4.005 * 100 is 400.49999...), so the float noise is
+ * trimmed first. Only for positive times; the tests check it against exact decimal rounding.
+ */
+export function roundSprint(seconds: number): number {
+  return Math.round(Number((seconds * 100).toPrecision(12))) / 100;
+}
+
+/**
+ * The fastest possible time in a list of 30 m results, rounded to 0.01 s, or null. Impossible times can't
+ * hide a real one. The range is checked on the raw time, then the fastest is rounded, so 4.996 counts as
+ * 5.00 and is not faster than a 5.00 record.
+ */
 export function bestPossibleSprint(times: number[]): number | null {
   const possible = times.filter(sprintIsPossible);
-  return possible.length ? Math.min(...possible) : null;
+  return possible.length ? roundSprint(Math.min(...possible)) : null;
 }
 
 /**
  * The stored score after the player's progress changed, with the cheating limits applied. The database
  * trigger in migration 005 follows the same steps one for one.
- * - The first save is taken as it is, but starts both 24-hour timers (when it has a level step or a sprint).
+ * - First save (no stored score yet): skills at most SKILLS_PER_DAY (3), level step at most 1, and a sprint
+ *   no faster than FIRST_SPRINT_FLOOR (4.5 s). Each 24-hour timer starts when its value is above zero or set.
+ * - Skills can always go down (the timer is left alone); they can rise by at most 3, once per 24 hours.
+ *   One timer: a raise of 1 uses up the day, so a second skill finished later that day counts the next day.
  * - The level step can always go down; it can rise by 1, once per 24 hours.
- * - Sprint (impossible times, under 3.6 s or over 15 s, are ignored):
+ * - Sprint (impossible times, under 3.6 s or over 15 s, are ignored; the fastest is rounded to 0.01 s):
  *   - no 30 m results at all: the best is cleared (off the sprint board); the record and timer are kept;
  *   - only impossible times: nothing changes;
- *   - no record yet, or faster than the record with 24 hours since the last improvement: a new record;
+ *   - no record yet: the time, but no faster than 4.5 s, becomes the record;
+ *   - faster than the record with 24 hours since the last improvement: a new record, but at most 5% faster
+ *     (no faster than the record times SPRINT_STEP, rounded to 0.01 s);
  *   - as fast as the record or slower: taken as it is;
  *   - faster than the record too soon: the previous best stays, or the record if the best was cleared.
  */
 export function applyScoreUpdate(prev: ScoreSnapshot | null, input: ScoreInput, now: number): ScoreSnapshot {
-  const skills = Math.max(0, Math.floor(input.skills));
+  const skillCount = Math.max(0, Math.floor(input.skills));
   const wanted = Math.max(0, Math.min(16, Math.floor(input.levelStep)));
   const hasSprint = input.sprintTimes.length > 0;
   const sprint = bestPossibleSprint(input.sprintTimes);
 
   if (!prev) {
+    const skills = Math.min(skillCount, SKILLS_PER_DAY);
+    const levelStep = Math.min(wanted, 1);
+    const first = sprint === null ? null : Math.max(sprint, FIRST_SPRINT_FLOOR);
     return {
       skills,
-      levelStep: wanted,
-      levelStepRaisedAt: wanted > 0 ? now : null,
-      bestSprint: sprint,
-      sprintRecord: sprint,
-      sprintImprovedAt: sprint === null ? null : now,
+      skillsRaisedAt: skills > 0 ? now : null,
+      levelStep,
+      levelStepRaisedAt: levelStep > 0 ? now : null,
+      bestSprint: first,
+      sprintRecord: first,
+      sprintImprovedAt: first === null ? null : now,
     };
+  }
+
+  let { skills, skillsRaisedAt } = prev;
+  if (skillCount <= prev.skills) {
+    skills = skillCount;
+  } else if (prev.skillsRaisedAt === null || now - prev.skillsRaisedAt >= IMPROVE_EVERY_MS) {
+    skills = Math.min(skillCount, prev.skills + SKILLS_PER_DAY);
+    skillsRaisedAt = now;
   }
 
   let { levelStep, levelStepRaisedAt } = prev;
@@ -209,12 +311,16 @@ export function applyScoreUpdate(prev: ScoreSnapshot | null, input: ScoreInput, 
     bestSprint = null;
   } else if (sprint === null) {
     // Only impossible times: nothing changes.
+  } else if (prev.sprintRecord === null) {
+    bestSprint = Math.max(sprint, FIRST_SPRINT_FLOOR);
+    sprintRecord = bestSprint;
+    sprintImprovedAt = now;
   } else if (
-    prev.sprintRecord === null ||
-    (sprint < prev.sprintRecord && (prev.sprintImprovedAt === null || now - prev.sprintImprovedAt >= IMPROVE_EVERY_MS))
+    sprint < prev.sprintRecord &&
+    (prev.sprintImprovedAt === null || now - prev.sprintImprovedAt >= IMPROVE_EVERY_MS)
   ) {
-    bestSprint = sprint;
-    sprintRecord = sprint;
+    bestSprint = Math.max(sprint, roundSprint(prev.sprintRecord * SPRINT_STEP));
+    sprintRecord = bestSprint;
     sprintImprovedAt = now;
   } else if (sprint >= prev.sprintRecord) {
     bestSprint = sprint;
@@ -222,7 +328,7 @@ export function applyScoreUpdate(prev: ScoreSnapshot | null, input: ScoreInput, 
     bestSprint = prev.bestSprint ?? prev.sprintRecord;
   }
 
-  return { skills, levelStep, levelStepRaisedAt, bestSprint, sprintRecord, sprintImprovedAt };
+  return { skills, skillsRaisedAt, levelStep, levelStepRaisedAt, bestSprint, sprintRecord, sprintImprovedAt };
 }
 
 // --- Ranking ---
@@ -230,6 +336,8 @@ export function applyScoreUpdate(prev: ScoreSnapshot | null, input: ScoreInput, 
 /** One opted-in player on a board. `testValue` is the value of a single test when ranking by one. */
 export interface BoardEntry {
   userId: string;
+  /** The random key the database gives the row instead of the user id (leaderboard_keys), for reports. */
+  rowKey: string;
   displayName: string;
   countryCode: string | null;
   hemisphere: Hemisphere | null;
@@ -288,8 +396,23 @@ export function compareByTest(better: "lower" | "higher") {
 }
 
 /**
+ * Plain Unicode code-point order, like the database's `collate "C"` (UTF-8 bytes sort in code-point
+ * order). Not localeCompare, which follows the browser's language, and not `<`, which compares UTF-16 units.
+ */
+export function compareCodePoints(a: string, b: string): number {
+  const x = [...a];
+  const y = [...b];
+  for (let i = 0; i < Math.min(x.length, y.length); i++) {
+    const d = x[i].codePointAt(0)! - y[i].codePointAt(0)!;
+    if (d !== 0) return d;
+  }
+  return x.length - y.length;
+}
+
+/**
  * Ranks the entries and gives each a rank. Entries that tie on every ranked field share a rank and the
- * next rank is skipped (1, 2, 2, 4), as in sport. Entries without a value in a single-test ranking are left out.
+ * next rank is skipped (1, 2, 2, 4), as in sport. Ties are listed by display name in code-point order,
+ * as the database does. Entries without a value in a single-test ranking are left out.
  */
 export function rankEntries(
   entries: BoardEntry[],
@@ -297,7 +420,10 @@ export function rankEntries(
 ): { entry: BoardEntry; rank: number }[] {
   const compare = byTest ? compareByTest(byTest.better) : compareOverall;
   const pool = byTest ? entries.filter((e) => e.testValue !== null && e.testValue !== undefined) : entries;
-  const sorted = [...pool].sort((a, b) => compare(a, b) || a.userId.localeCompare(b.userId));
+  // Names are unique in the database; the user id only settles test data that repeats a name.
+  const sorted = [...pool].sort(
+    (a, b) => compare(a, b) || compareCodePoints(a.displayName, b.displayName) || compareCodePoints(a.userId, b.userId),
+  );
   const out: { entry: BoardEntry; rank: number }[] = [];
   sorted.forEach((entry, i) => {
     const rank = i > 0 && compare(sorted[i - 1], entry) === 0 ? out[i - 1].rank : i + 1;
@@ -307,8 +433,9 @@ export function rankEntries(
 }
 
 /**
- * The board a viewer sees: the top 50 in their scope, plus their own row when they are on the board but
- * further down. Only what other players may see is returned: no user id.
+ * The board a viewer sees: everyone ranked 50 or better in their scope (so all players tied at 50 are
+ * shown, as in the database), plus their own row when they are on the board but further down. Only what
+ * other players may see is returned: no user id, only the row key for reports.
  */
 export function boardFor(
   entries: BoardEntry[],
@@ -321,9 +448,10 @@ export function boardFor(
     entries.filter((e) => inScope(viewer, e, scope)),
     options.byTest,
   );
-  const shown = ranked.filter((r, i) => i < limit || r.entry.userId === viewer.userId);
+  const shown = ranked.filter((r) => r.rank <= limit || r.entry.userId === viewer.userId);
   return shown.map(({ entry, rank }) => ({
     rank,
+    rowKey: entry.rowKey,
     displayName: entry.displayName,
     countryCode: entry.countryCode,
     skills: entry.skills,

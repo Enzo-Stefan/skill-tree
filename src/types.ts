@@ -171,6 +171,8 @@ export interface LeaderboardProfile {
 /** One line of a ranking. Everything another player is allowed to see, and nothing more. */
 export interface LeaderboardRow {
   rank: number;
+  /** A random key for the row, not the user id. Passed to report_row() to report the player on it. */
+  rowKey: string;
   displayName: string;
   countryCode: string | null;
   skills: number;

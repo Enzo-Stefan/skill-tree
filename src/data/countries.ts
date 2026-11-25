@@ -72,9 +72,31 @@ const ROWS: Row[] = [
   ["PE", "Peru", "SA", -12.0], ["SR", "Suriname", "SA", 5.9], ["UY", "Uruguay", "SA", -34.9], ["VE", "Venezuela", "SA", 10.5],
   // Oceania
   ["AU", "Australia", "OC", -35.3], ["FJ", "Fiji", "OC", -18.1], ["KI", "Kiribati", "OC", 1.4, 1], ["MH", "Marshall Islands", "OC", 7.1],
-  ["FM", "Micronesia", "OC", 6.9], ["NR", "Nauru", "OC", -0.5, 1], ["NZ", "New Zealand", "OC", -41.3], ["PW", "Palau", "OC", 7.5],
+  ["FM", "Micronesia", "OC", 6.9], ["NR", "Nauru", "OC", -0.5], ["NZ", "New Zealand", "OC", -41.3], ["PW", "Palau", "OC", 7.5],
   ["PG", "Papua New Guinea", "OC", -9.4], ["WS", "Samoa", "OC", -13.8], ["SB", "Solomon Islands", "OC", -9.4], ["TO", "Tonga", "OC", -21.1],
   ["TV", "Tuvalu", "OC", -8.5], ["VU", "Vanuatu", "OC", -17.7],
+  // Territories and dependencies with their own ISO code, which players pick as their country.
+  // Europe
+  ["AX", "Åland Islands", "EU", 60.1], ["FO", "Faroe Islands", "EU", 62.0], ["GI", "Gibraltar", "EU", 36.1], ["GG", "Guernsey", "EU", 49.5],
+  ["IM", "Isle of Man", "EU", 54.2], ["JE", "Jersey", "EU", 49.2], ["SJ", "Svalbard and Jan Mayen", "EU", 78.2],
+  // Asia
+  ["HK", "Hong Kong", "AS", 22.3], ["MO", "Macao", "AS", 22.2],
+  // Africa
+  ["RE", "Réunion", "AF", -20.9], ["YT", "Mayotte", "AF", -12.8], ["SH", "Saint Helena, Ascension and Tristan da Cunha", "AF", -15.9],
+  ["EH", "Western Sahara", "AF", 27.2],
+  // North America, with Central America and the Caribbean
+  ["AI", "Anguilla", "NA", 18.2], ["AW", "Aruba", "NA", 12.5], ["BM", "Bermuda", "NA", 32.3], ["BQ", "Caribbean Netherlands", "NA", 12.2],
+  ["VG", "British Virgin Islands", "NA", 18.4], ["KY", "Cayman Islands", "NA", 19.3], ["CW", "Curaçao", "NA", 12.1], ["GL", "Greenland", "NA", 64.2],
+  ["GP", "Guadeloupe", "NA", 16.0], ["MQ", "Martinique", "NA", 14.6], ["MS", "Montserrat", "NA", 16.8], ["PR", "Puerto Rico", "NA", 18.5],
+  ["BL", "Saint Barthélemy", "NA", 17.9], ["MF", "Saint Martin", "NA", 18.1], ["PM", "Saint Pierre and Miquelon", "NA", 46.8],
+  ["SX", "Sint Maarten", "NA", 18.0], ["TC", "Turks and Caicos Islands", "NA", 21.5], ["VI", "U.S. Virgin Islands", "NA", 18.3],
+  // South America
+  ["FK", "Falkland Islands", "SA", -51.7], ["GF", "French Guiana", "SA", 4.9],
+  // Oceania (Christmas Island and the Cocos Islands are Australian territories, filed under Oceania as the UN does)
+  ["AS", "American Samoa", "OC", -14.3], ["CX", "Christmas Island", "OC", -10.4], ["CC", "Cocos (Keeling) Islands", "OC", -12.2],
+  ["CK", "Cook Islands", "OC", -21.2], ["PF", "French Polynesia", "OC", -17.5], ["GU", "Guam", "OC", 13.5], ["NC", "New Caledonia", "OC", -22.3],
+  ["NU", "Niue", "OC", -19.1], ["NF", "Norfolk Island", "OC", -29.1], ["MP", "Northern Mariana Islands", "OC", 15.2], ["PN", "Pitcairn Islands", "OC", -25.1],
+  ["TK", "Tokelau", "OC", -9.2], ["WF", "Wallis and Futuna", "OC", -13.3],
 ];
 
 export const countries: Country[] = ROWS.map(([code, name, continent, capitalLat, crosses]) => ({
