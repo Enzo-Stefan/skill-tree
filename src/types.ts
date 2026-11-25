@@ -147,7 +147,7 @@ export type SkillState = "done" | "available" | "locked";
 // --- Leaderboard (#96) ---
 
 /** Where a ranking looks: everyone, or only players who share something with the viewer. */
-export type LeaderboardScope = "global" | "continent" | "hemisphere" | "country" | "local";
+export type LeaderboardScope = "global" | "continent" | "hemisphere" | "country";
 
 /** AF Africa, AS Asia, EU Europe, NA North America, SA South America, OC Oceania. */
 export type Continent = "AF" | "AS" | "EU" | "NA" | "SA" | "OC";
@@ -160,7 +160,7 @@ export interface LeaderboardProfile {
   displayName: string;
   /** ISO 3166-1 alpha-2, e.g. "AL". */
   countryCode: string | null;
-  /** Free text, up to 60 characters. Only used to match the Local scope; never shown to others. */
+  /** Free text, up to 60 characters. Stored for a later local board; never read by the ranking, never shown to others. */
   city: string | null;
   /** Picked by the player only for countries that cross the equator; otherwise worked out. */
   hemisphere: Hemisphere | null;
