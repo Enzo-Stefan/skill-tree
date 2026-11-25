@@ -16,6 +16,8 @@ import { useToday } from "./components/useToday";
 import { ShareDialog } from "./components/ShareDialog";
 import { shareStats, type ShareStats } from "./components/shareImage";
 import { TabBar, type Tab } from "./components/TabBar";
+import { TrainingScreen } from "./components/TrainingScreen";
+import { usePlan } from "./components/usePlan";
 import { ProgressScreen } from "./components/ProgressScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { useAuth } from "./auth/useAuth";
@@ -133,6 +135,7 @@ export default function App() {
   const [sharing, setSharing] = useState<ShareStats | null>(null);
   const today = useToday();
   const trainedToday = practiceDays.includes(today);
+  const planState = usePlan(tree, done, playerLevelId, today);
   const nextUp = pickerOpen || testOpen || placementId ? null : levelUpDue(tree, rung, practiceDays, today, streakState);
   const nextForTest = levelUpDue(tree, rung, practiceDays, today, streakState);
   const testItems = testTargets(tree, nextForTest, language);
@@ -214,6 +217,12 @@ export default function App() {
     if (next === practiceDays) return;
     setPracticeDays(next);
     savePracticeDays(tree.id, next);
+  }
+
+  /** "Finish session" on the Training tab: a finished planned session counts as a training day. */
+  function finishSession() {
+    markTrainedToday();
+    showToast(t.training.finished);
   }
 
   function askLater() {
@@ -487,12 +496,18 @@ export default function App() {
                 lifts={lifts}
                 timeLimit={timeLimit(tree, selectedSkill, rung)}
                 results={results}
+                levelId={playerLevelId}
+                planAdded={planState.added.includes(selectedId)}
+                onTogglePlan={() => planState.toggleAdded(selectedId)}
                 // One sheet at a time: on phones the skill sheet steps aside while a level dialog is open.
                 hidden={isPhone && (pickerOpen || testOpen || placementId !== null)}
               />
             )}
           </main>
         </div>
+        {tab === "plan" && (
+          <TrainingScreen tree={tree} state={planState} levelId={playerLevelId} today={today} practiceDays={practiceDays} onFinish={finishSession} />
+        )}
         {tab === "progress" && (
           <ProgressScreen
             tree={tree}

@@ -1,4 +1,4 @@
-import type { Tree } from "../types";
+import type { Routine, Tree } from "../types";
 
 // Skill content in other languages (step 7 of #19).
 //
@@ -6,6 +6,17 @@ import type { Tree } from "../types";
 // src/data/<tree>.ts. Each other language adds one translation file per tree with only the words,
 // keyed by id. Anything a translation leaves out shows in English, so a half-done language still
 // works. translationErrors() is run by the tests, so a typo'd id or a missing piece fails the build.
+
+/**
+ * The words of a skill's training routine (#80). Only text: every number (sets, reps, seconds, rest,
+ * sessions, minutes) stays in the English tree's routine, so a translation can't change the training.
+ */
+export interface RoutineText {
+  warmUp: string;
+  coolDown: string;
+  /** In the same order as the English routine's exercises. */
+  exercises: { name: string; howTo: string }[];
+}
 
 /** The words of one skill. */
 export interface SkillText {
@@ -15,6 +26,8 @@ export interface SkillText {
   tip: string;
   /** The level target sentence, with `{n}` where the number goes. Only for skills with targets. */
   targetText?: string;
+  /** The routine's words. Needed for every skill that has a routine. */
+  routine?: RoutineText;
 }
 
 /** The words of one tree in one language. */
@@ -53,8 +66,23 @@ export function translateTree(tree: Tree, tr: TreeTranslation | undefined): Tree
         test: text.test,
         tip: text.tip,
         targets: s.targets && text.targetText ? { ...s.targets, text: text.targetText } : s.targets,
+        routine: s.routine && text.routine ? translateRoutine(s.routine, text.routine) : s.routine,
       };
     }),
+  };
+}
+
+/** The routine with the translation's words, and every number from the English one. Missing exercise text stays English. */
+function translateRoutine(routine: Routine, text: RoutineText): Routine {
+  return {
+    ...routine,
+    warmUp: text.warmUp || routine.warmUp,
+    coolDown: text.coolDown || routine.coolDown,
+    exercises: routine.exercises.map((e, i) => ({
+      ...e,
+      name: text.exercises[i]?.name || e.name,
+      howTo: text.exercises[i]?.howTo || e.howTo,
+    })),
   };
 }
 
@@ -110,6 +138,28 @@ export function translationErrors(tree: Tree, tr: TreeTranslation): string[] {
     } else if (text.targetText) {
       errors.push(`${tree.id}: ${s.id} has a targetText but the skill has no targets`);
     }
+    if (s.routine) {
+      if (!text.routine) errors.push(`${tree.id}: ${s.id} has a routine but no routine translation`);
+      else errors.push(...routineTextErrors(tree.id, s.id, s.routine, text.routine));
+    } else if (text.routine) {
+      errors.push(`${tree.id}: ${s.id} has a routine translation but the skill has no routine`);
+    }
   }
+  return errors;
+}
+
+/** Mistakes in a skill's routine text: empty text, or a different number of exercises than the English routine. */
+function routineTextErrors(treeId: string, skillId: string, routine: Routine, text: RoutineText): string[] {
+  const errors: string[] = [];
+  const where = `${treeId}: ${skillId} routine`;
+  if (!text.warmUp?.trim()) errors.push(`${where} warm-up is empty`);
+  if (!text.coolDown?.trim()) errors.push(`${where} cool-down is empty`);
+  if (text.exercises.length !== routine.exercises.length) {
+    errors.push(`${where} has ${text.exercises.length} exercises for ${routine.exercises.length} in the original`);
+  }
+  text.exercises.forEach((e, i) => {
+    if (!e.name?.trim()) errors.push(`${where} exercise ${i + 1} has no name`);
+    if (!e.howTo?.trim()) errors.push(`${where} exercise ${i + 1} has no how-to`);
+  });
   return errors;
 }
