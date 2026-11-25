@@ -28,7 +28,7 @@ describe("amounts as people say them", () => {
   it("drops the × 1 for a single set or a single rep", () => {
     expect(exerciseAmount(ex({ reps: { all: 8 } }), null)).toBe("8 reps");
     expect(exerciseAmount(ex({ sets: { all: 2 }, reps: { all: 1 } }), null)).toBe("2 sets");
-    expect(exerciseAmount(ex({ reps: { all: 1 } }), null)).toBe("1 set");
+    expect(exerciseAmount(ex({ reps: { all: 1 } }), null)).toBe("1 rep");
   });
 
   it("leaves out the rest when there isn't any", () => {

@@ -52,8 +52,6 @@ export const en = {
     coolDown: "Cool-down",
     exercises: "Exercises",
     setsReps: (sets: number, reps: number) => `${sets} × ${reps} reps`,
-    /** A length of time for an exercise: "45 s", "20 min", "1 min 30 s". */
-    duration: (s: number) => (s < 60 ? `${s} s` : s % 60 === 0 ? `${s / 60} min` : `${Math.floor(s / 60)} min ${s % 60} s`),
     /** "3 × 20 min": several sets of something. */
     setsOf: (sets: number, what: string) => `${sets} × ${what}`,
     /** Sets of a single rep, e.g. rounds of a circuit: "2 sets". */
