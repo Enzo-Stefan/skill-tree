@@ -1,10 +1,11 @@
 import type { TreeTranslation } from "../../lib/translate";
+import { weightsRoutinesEs } from "./routines-weights";
 
 // Spanish for the strength tree. A FIRST DRAFT: someone fluent should check it before the app
 // shows it to players (#19). Gym names that Spanish speakers usually say in English (goblet,
 // kettlebell, dead bug, Pallof, Copenhague) stay close to the English. Numbers stay exactly as in English.
 
-export const weightsEs: TreeTranslation = {
+const weightsContent: TreeTranslation = {
   title: "Fuerza para el fútbol",
   shortName: "Fuerza",
   tagline: "Más fuerte, más rápido y más difícil de lesionar. Primero la técnica, luego el peso.",
@@ -149,4 +150,12 @@ export const weightsEs: TreeTranslation = {
       tip: "La fuerza se pierde en pocas semanas si no entrenas. Mantén 2 sesiones cortas por semana durante la temporada.",
     },
   },
+};
+
+/** The Spanish strength tree, with each skill's routine words (#80) from routines-weights.ts. */
+export const weightsEs: TreeTranslation = {
+  ...weightsContent,
+  skills: Object.fromEntries(
+    Object.entries(weightsContent.skills).map(([id, text]) => [id, { ...text, routine: weightsRoutinesEs[id] }]),
+  ),
 };

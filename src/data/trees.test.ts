@@ -7,3 +7,15 @@ describe.each(trees)("$id tree", (tree) => {
     expect(validateTree(tree)).toEqual([]);
   });
 });
+
+describe("strength tree routines", () => {
+  const weights = trees.find((t) => t.id === "weights")!;
+
+  it("gives every skill a routine, so the Training tab has something for each", () => {
+    expect(weights.skills.filter((s) => !s.routine).map((s) => s.id)).toEqual([]);
+  });
+
+  it("keeps each routine under the plan's default day limit of 60 minutes", () => {
+    for (const s of weights.skills) expect(s.routine!.minutes.all, s.id).toBeLessThanOrEqual(60);
+  });
+});

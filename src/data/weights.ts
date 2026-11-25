@@ -1,4 +1,5 @@
 import type { Tree } from "../types";
+import { weightsRoutines } from "./routines-weights";
 
 // Weight training for football (#18). A FIRST DRAFT: lifts and reps are open for discussion.
 //
@@ -8,7 +9,7 @@ import type { Tree } from "../types";
 //
 // Layout: 4 branches, two columns each (x 0 to 7). Start at x 3.5 on row 0, final at row 5.
 
-export const weights: Tree = {
+const weightsContent: Tree = {
   id: "weights",
   title: "Football Strength",
   shortName: "Strength",
@@ -314,4 +315,10 @@ export const weights: Tree = {
     { at: 19, name: "Athlete" },
     { at: 22, name: "Iron" },
   ],
+};
+
+/** The strength tree, with each skill's training routine (#80) from routines-weights.ts. */
+export const weights: Tree = {
+  ...weightsContent,
+  skills: weightsContent.skills.map((s) => ({ ...s, routine: weightsRoutines[s.id] })),
 };
