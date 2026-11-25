@@ -9,7 +9,7 @@ const STRENGTH_ID = "weights";
 
 interface Props {
   trees: TreeSummary[];
-  /** Switch to this tree. Resolves only if the switch failed; on success the page reloads. */
+  /** Switch to this tree. Resolves once the switch has been started: on success the page reloads right after, so the panel is only usable again for that moment. */
   onSwitch: (treeId: string) => Promise<void>;
 }
 
@@ -21,14 +21,15 @@ interface Props {
 export function StrengthPanel({ trees, onSwitch }: Props) {
   const strength = trees.find((tr) => tr.id === STRENGTH_ID && !tr.active && !tr.soon);
   const [open, setOpen] = useState(false);
+  const handle = useRef<HTMLButtonElement | null>(null);
   if (!strength) return null;
   return (
     <>
-      <button type="button" className="strength-handle" aria-label={t.strengthPanel.handleLabel} aria-haspopup="dialog" onClick={() => setOpen(true)}>
+      <button ref={handle} type="button" className="strength-handle" aria-label={t.strengthPanel.handleLabel} aria-haspopup="dialog" onClick={() => setOpen(true)}>
         {t.strengthPanel.handle}
       </button>
       {/* Portalled to <body>: inside the sticky, backdrop-filtered .switcher on phones, position:fixed would size to the strip. */}
-      {open && createPortal(<Panel tree={strength} onSwitch={onSwitch} onClose={() => setOpen(false)} />, document.body)}
+      {open && createPortal(<Panel tree={strength} onSwitch={onSwitch} onClose={() => { setOpen(false); handle.current?.focus(); }} />, document.body)}
     </>
   );
 }
@@ -45,7 +46,10 @@ function Panel({ tree, onSwitch, onClose }: { tree: TreeSummary; onSwitch: Props
     setClosing(true);
     panelOut(dialog.current, onClose);
   }
-  useModalFocus(dialog, close);
+  // Focus goes back to the handle (the parent does it on close), not to whatever was active on mount:
+  // Safari doesn't focus a button on click, so that would be <body>.
+  const skipRestore = useRef(false);
+  useModalFocus(dialog, close, skipRestore);
 
   async function pick() {
     if (switching) return;

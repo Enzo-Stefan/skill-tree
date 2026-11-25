@@ -45,6 +45,38 @@ describe("StrengthPanel", () => {
     expect(document.activeElement).toBe(handle());
   });
 
+  it("gives focus back to the handle even when a click never focused it (Safari)", () => {
+    render(<StrengthPanel trees={[football, strength]} onSwitch={vi.fn()} />);
+    expect(document.activeElement).toBe(document.body);
+    fireEvent.click(handle());
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(handle());
+  });
+
+  it("renders the panel on document.body, outside the header", () => {
+    const { container } = render(<StrengthPanel trees={[football, strength]} onSwitch={vi.fn()} />);
+    fireEvent.click(handle());
+    expect(container.querySelector(".overlay")).toBeNull();
+    expect(screen.getByRole("dialog").closest(".overlay")?.parentElement).toBe(document.body);
+  });
+
+  it("slides in once, not again when the parent re-renders", () => {
+    const animate = vi.fn(() => ({}));
+    Object.defineProperty(HTMLElement.prototype, "animate", { value: animate, configurable: true });
+    vi.stubGlobal("matchMedia", () => ({ matches: false }));
+    try {
+      const { rerender } = render(<StrengthPanel trees={[football, strength]} onSwitch={vi.fn()} />);
+      fireEvent.click(handle());
+      expect(animate).toHaveBeenCalledTimes(1);
+      rerender(<StrengthPanel trees={[football, { ...strength, done: 3 }]} onSwitch={vi.fn()} />);
+      expect(animate).toHaveBeenCalledTimes(1);
+    } finally {
+      Reflect.deleteProperty(HTMLElement.prototype, "animate");
+      vi.stubGlobal("matchMedia", () => ({ matches: true }));
+    }
+  });
+
   it("closes on a backdrop tap", () => {
     const { container } = render(<StrengthPanel trees={[football, strength]} onSwitch={vi.fn()} />);
     fireEvent.click(handle());
@@ -62,5 +94,19 @@ describe("StrengthPanel", () => {
     expect(onSwitch).toHaveBeenCalledTimes(1);
     expect(onSwitch).toHaveBeenCalledWith("weights");
     expect(screen.getByRole("button", { name: t.strengthPanel.opening }).getAttribute("aria-busy")).toBe("true");
+  });
+
+  it("lets the panel be used again when the switch resolves", async () => {
+    const onSwitch = vi.fn(() => Promise.resolve());
+    render(<StrengthPanel trees={[football, strength]} onSwitch={onSwitch} />);
+    fireEvent.click(handle());
+    const open = screen.getByRole("button", { name: t.strengthPanel.open });
+    fireEvent.click(open);
+    fireEvent.click(open);
+    expect(onSwitch).toHaveBeenCalledTimes(1);
+    const again = await screen.findByRole("button", { name: t.strengthPanel.open });
+    expect(again.hasAttribute("disabled")).toBe(false);
+    fireEvent.click(again);
+    expect(onSwitch).toHaveBeenCalledTimes(2);
   });
 });
