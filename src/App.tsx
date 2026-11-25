@@ -275,7 +275,7 @@ export default function App() {
   }, [link]);
 
   function copySkillLink(id: string) {
-    const url = skillUrl(window.location.href, id);
+    const url = skillUrl(window.location.href, id, tree.id);
     Promise.resolve()
       .then(() => navigator.clipboard.writeText(url))
       .then(() => showToast(t.app.linkCopied))
