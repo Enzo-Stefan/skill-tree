@@ -29,7 +29,7 @@ describe("mergeProgress (first sign-in on a device)", () => {
 
   it("uses the browser's progress when the account is new", () => {
     const local = { done: ["root"], playerLevel: "advanced", playerStep: 3, practiceDays: ["2026-11-20"], streak: { since: "2026-11-16", askedWeek: null } };
-    expect(mergeProgress(football, local, null)).toEqual({ ...local, liftLog: [], results: [] });
+    expect(mergeProgress(football, local, null)).toEqual({ ...local, liftLog: [], results: [], sessions: [] });
   });
 
   it("keeps the account's level and streak over the browser's", () => {
@@ -111,6 +111,7 @@ describe("loading and saving", () => {
       streak: { since: "2026-11-02", askedWeek: null },
       liftLog: [],
       results: [],
+      sessions: [],
     });
   });
 
@@ -281,5 +282,22 @@ describe("test results in the account", () => {
     const merged = await syncOnSignIn(client, "u1", football, { ...empty, results: [sprint("2026-11-20", 5.7)] });
     expect(merged.results).toEqual([sprint("2026-11-19", 5.9), sprint("2026-11-20", 5.7)]);
     expect(upserts[0]).toMatchObject({ results: [sprint("2026-11-19", 5.9), sprint("2026-11-20", 5.7)] });
+  });
+});
+
+describe("training sessions in the account", () => {
+  const trained = (date: string, skillId: string) => ({ date, skillId });
+
+  it("reads sessions from the row, and none when the column is missing", async () => {
+    const row = await fetchCloudProgress(fakeClient({ ...savedRow, sessions: [trained("2026-11-20", "bc1")] }).client, "u1", "football");
+    expect(row?.sessions).toEqual([trained("2026-11-20", "bc1")]);
+    expect((await fetchCloudProgress(fakeClient(savedRow).client, "u1", "football"))?.sessions).toEqual([]);
+  });
+
+  it("on first sign-in keeps sessions from both, and saves them", async () => {
+    const { client, upserts } = fakeClient({ ...savedRow, done: [], player_level: null, sessions: [trained("2026-11-19", "ps1")] });
+    const merged = await syncOnSignIn(client, "u1", football, { ...empty, sessions: [trained("2026-11-20", "bc1")] });
+    expect(merged.sessions).toEqual([trained("2026-11-19", "ps1"), trained("2026-11-20", "bc1")]);
+    expect(upserts[0]).toMatchObject({ sessions: [trained("2026-11-19", "ps1"), trained("2026-11-20", "bc1")] });
   });
 });

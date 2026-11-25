@@ -12,6 +12,8 @@ Signing in with Google syncs progress across devices. Plan: issue #5.
    Then do the same with `migrations/002_delete_account.sql`, which lets players delete their own account in the app,
    and `migrations/003_lift_log_and_results.sql`, which saves the lift log and test results to the account.
    Run 003 before the app version that uses it goes live, or loading and saving progress fails.
+   Then `migrations/004_sessions.sql`, which saves which skills were trained each day. Same rule: run it before
+   merging the code that uses it, because `main` deploys itself.
 3. **Google sign-in.**
    - In Google Cloud Console, create an OAuth client (type: Web application).
      Authorised redirect URI: the callback URL Supabase shows under

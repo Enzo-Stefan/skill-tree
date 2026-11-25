@@ -3,6 +3,7 @@ import type { Tree } from "../types";
 import { cleanProgress, fetchCloudProgress, saveCloudProgress, syncOnSignIn, type SavedProgress } from "./cloud";
 import { replayLiftLog } from "./lifts";
 import { replayResults, resultKeys } from "./results";
+import { replaySessions, sessionKeys } from "./sessions";
 
 // When a signed-in player opens the app, which copy of their progress wins.
 //
@@ -116,8 +117,8 @@ export function saveAccountCopy(treeId: string, userId: string, p: SavedProgress
  * Unlike mergeProgress, skills and training days removed here since `base` stay removed, so an
  * un-tick or a reset made offline sticks, while changes from other devices are kept. If the
  * level, step or streak changed here, all three come from this browser (they belong together);
- * otherwise from the account. Lift log entries and test results work like skills: added here is
- * added, undone or reset here is removed, and entries from other devices stay.
+ * otherwise from the account. Lift log entries, test results and training sessions work like
+ * skills: added here is added, undone or reset here is removed, and entries from other devices stay.
  */
 export function rebaseProgress(tree: Tree, account: SavedProgress | null, base: SavedProgress, local: SavedProgress): SavedProgress {
   const l = cleanProgress(tree, local);
@@ -146,6 +147,7 @@ export function rebaseProgress(tree: Tree, account: SavedProgress | null, base: 
     streak: rung.streak,
     liftLog: replayLiftLog(tree, a.liftLog ?? [], b.liftLog ?? [], l.liftLog ?? []),
     results: replayResults(tree, a.results ?? [], b.results ?? [], l.results ?? []),
+    sessions: replaySessions(tree, a.sessions ?? [], b.sessions ?? [], l.sessions ?? []),
   };
 }
 
@@ -208,6 +210,7 @@ export function sameProgress(a: SavedProgress, b: SavedProgress): boolean {
       practiceDays: [...p.practiceDays].sort(),
       liftLog: (p.liftLog ?? []).map((e) => `${e.skillId}|${e.date}|${e.kg}`).sort(),
       results: resultKeys(p.results ?? []),
+      sessions: sessionKeys(p.sessions ?? []),
     });
   return key(a) === key(b);
 }

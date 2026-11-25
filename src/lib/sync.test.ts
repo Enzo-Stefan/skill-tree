@@ -308,3 +308,19 @@ describe("test results when syncing", () => {
     expect(shouldMerge("football", "u1")).toBe(false);
   });
 });
+
+describe("training sessions when syncing", () => {
+  const trained = (date: string, skillId: string) => ({ date, skillId });
+
+  it("rebases sessions like skills", () => {
+    const base = { ...empty, sessions: [trained("2026-11-20", "bc1"), trained("2026-11-20", "ps1")] };
+    const account = { ...base, sessions: [...base.sessions, trained("2026-11-21", "dr1")] };
+    const local = { ...base, sessions: [trained("2026-11-20", "bc1")] };
+    expect(rebaseProgress(football, account, base, local).sessions).toEqual([trained("2026-11-20", "bc1"), trained("2026-11-21", "dr1")]);
+  });
+
+  it("sees a missing sessions list and an empty one as the same, and notices a change", () => {
+    expect(sameProgress(empty, { ...empty, sessions: [] })).toBe(true);
+    expect(sameProgress({ ...empty, sessions: [trained("2026-11-20", "bc1")] }, empty)).toBe(false);
+  });
+});

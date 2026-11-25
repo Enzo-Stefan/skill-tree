@@ -3,6 +3,7 @@ import type { Tree } from "../types";
 import { cleanStep } from "./progress";
 import { cleanLiftLog, mergeLiftLogs, type LiftEntry } from "./lifts";
 import { cleanResults, mergeResults, type TestResult } from "./results";
+import { cleanSessions, mergeSessions, type SessionEntry } from "./sessions";
 
 // Saving progress to a player's account. The table and its security rules live in
 // supabase/migrations/001_progress.sql. The Supabase client itself comes from
@@ -25,6 +26,8 @@ export interface SavedProgress {
   liftLog?: LiftEntry[];
   /** Numbers saved from test mode (src/lib/results.ts). Missing means none, like liftLog. */
   results?: TestResult[];
+  /** Which skills were trained on which day (src/lib/sessions.ts). Missing means none, like liftLog. */
+  sessions?: SessionEntry[];
 }
 
 const TABLE = "progress";
@@ -38,6 +41,7 @@ interface Row {
   streak_asked_week: string | null;
   lift_log: unknown;
   results: unknown;
+  sessions: unknown;
 }
 
 /** True for a real calendar date written YYYY-MM-DD. "2026-02-31" is rejected, which the database would refuse. */
@@ -67,6 +71,7 @@ export function cleanProgress(tree: Tree, p: SavedProgress): SavedProgress {
       : { since: null, askedWeek: null },
     liftLog: cleanLiftLog(tree, p.liftLog ?? []),
     results: cleanResults(tree, p.results ?? []),
+    sessions: cleanSessions(tree, p.sessions ?? []),
   };
 }
 
@@ -90,6 +95,7 @@ export function mergeProgress(tree: Tree, local: SavedProgress, cloud: SavedProg
     streak: fromCloud ? c.streak : l.streak,
     liftLog: mergeLiftLogs(tree, c.liftLog ?? [], l.liftLog ?? []),
     results: mergeResults(tree, c.results ?? [], l.results ?? []),
+    sessions: mergeSessions(tree, c.sessions ?? [], l.sessions ?? []),
   };
 }
 
@@ -101,7 +107,7 @@ export async function fetchCloudProgress(
 ): Promise<SavedProgress | null> {
   const { data, error } = await client
     .from(TABLE)
-    .select("done, player_level, player_step, practice_days, streak_since, streak_asked_week, lift_log, results")
+    .select("done, player_level, player_step, practice_days, streak_since, streak_asked_week, lift_log, results, sessions")
     .eq("user_id", userId)
     .eq("tree_id", treeId)
     .maybeSingle<Row>();
@@ -116,6 +122,7 @@ export async function fetchCloudProgress(
     // Cleaned against the tree later (cleanProgress), like the rest.
     liftLog: Array.isArray(data.lift_log) ? (data.lift_log as LiftEntry[]) : [],
     results: Array.isArray(data.results) ? (data.results as TestResult[]) : [],
+    sessions: Array.isArray(data.sessions) ? (data.sessions as SessionEntry[]) : [],
   };
 }
 
@@ -137,6 +144,7 @@ export async function saveCloudProgress(
       streak_asked_week: p.streak.askedWeek,
       lift_log: p.liftLog ?? [],
       results: p.results ?? [],
+      sessions: p.sessions ?? [],
     },
     { onConflict: "user_id,tree_id" },
   );
