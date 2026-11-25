@@ -52,7 +52,6 @@ export const es: Strings = {
     coolDown: "Vuelta a la calma",
     exercises: "Ejercicios",
     setsReps: (sets: number, reps: number) => `${sets} × ${reps} repeticiones`,
-    duration: (s: number) => (s < 60 ? `${s} s` : s % 60 === 0 ? `${s / 60} min` : `${Math.floor(s / 60)} min ${s % 60} s`),
     setsOf: (sets: number, what: string) => `${sets} × ${what}`,
     setsOnly: (sets: number) => `${sets} ${sets === 1 ? "serie" : "series"}`,
     repsOnly: (reps: number) => `${reps} ${reps === 1 ? "repetición" : "repeticiones"}`,
