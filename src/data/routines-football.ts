@@ -54,7 +54,7 @@ export const footballRoutines: Record<string, Routine> = {
     warmUp: WARM_BALL,
     exercises: [
       { name: "Alternating juggles", howTo: "Juggle switching feet on every touch.", sets: all(4), seconds: lv(60, 90, 90, 120), restSeconds: 45 },
-      { name: "Thigh and head add-ins", howTo: "Juggle with your feet and add a thigh touch every fifth touch, then a header.", sets: lv(3, 3, 4, 4), seconds: lv(60, 60, 90, 90), restSeconds: 45 },
+      { name: "Thigh add-ins", howTo: "Juggle with your feet and add a thigh touch every fifth touch. No headers here: heading practice is capped in its own skill.", sets: lv(3, 3, 4, 4), seconds: lv(60, 60, 90, 90), restSeconds: 45 },
     ],
     coolDown: COOL_BALL,
     sessionsPerWeek: 4,

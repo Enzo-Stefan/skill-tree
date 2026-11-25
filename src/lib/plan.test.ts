@@ -132,6 +132,25 @@ describe("the week plan", () => {
   });
 });
 
+describe("fairness and spreading", () => {
+  it("gives every skill a session before any skill gets a second", () => {
+    // Six training days with room for one 50-minute session each. "many" wants all six, so if it
+    // went first "few" would get nothing; round by round, "few" gets its one session.
+    const plan = buildWeekPlan([fake("many", 6, 50), fake("few", 1, 50)], null, WEDNESDAY, 60);
+    const placed = plan.days.flatMap((d) => d.items.map((it) => it.skillId));
+    expect(placed.filter((id) => id === "few")).toHaveLength(1);
+    expect(placed.filter((id) => id === "many")).toHaveLength(5);
+    expect(plan.unplaced.map((u) => u.skillId)).toEqual(["many"]);
+  });
+
+  it("spreads a skill's sessions even when the daily limit is high", () => {
+    // A heavy day early in the week shouldn't pull a light skill's sessions next to each other.
+    const plan = buildWeekPlan([fake("long", 1, 170), fake("a", 2, 10)], null, WEDNESDAY, 180);
+    const daysWithA = plan.days.flatMap((d, i) => (d.items.some((it) => it.skillId === "a") ? [i] : []));
+    expect(daysWithA[1] - daysWithA[0]).toBeGreaterThanOrEqual(3);
+  });
+});
+
 describe("rest days", () => {
   it("keeps Sunday free by default, even when skills want every day", () => {
     const plan = buildWeekPlan([fake("a", 7, 10), fake("b", 7, 10)], null, WEDNESDAY);

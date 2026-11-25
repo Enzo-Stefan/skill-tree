@@ -275,6 +275,9 @@ export function validateTree(tree: Tree): string[] {
     errors.push(...checkErrors(s));
     if (s.routine) errors.push(...routineErrors(tree, s.id, s.routine));
   }
+  if ((tree.playerLevels ?? []).some((l) => l.id === "all")) {
+    errors.push(`player level id "all" is reserved for trees without levels; pick another id`);
+  }
   const withRoutine = tree.skills.filter((s) => s.routine).length;
   if (withRoutine > 0 && withRoutine < tree.skills.length) {
     for (const s of tree.skills) if (!s.routine) errors.push(`${s.id}: has no routine, but other skills in this tree do`);
