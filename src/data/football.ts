@@ -1,9 +1,10 @@
 import type { Tree } from "../types";
+import { footballRoutines } from "./routines-football";
 
 // Football tree content. Edit drills, tests and tips here.
 // Run `npm run check-trees` after editing.
 
-export const football: Tree = {
+const footballContent: Tree = {
   "id": "football",
   "title": "hapi skill",
   "shortName": "Football",
@@ -571,4 +572,10 @@ export const football: Tree = {
       "name": "Legend"
     }
   ]
+};
+
+/** The football tree, with each skill's training routine (#80) from routines-football.ts. */
+export const football: Tree = {
+  ...footballContent,
+  skills: footballContent.skills.map((s) => ({ ...s, routine: footballRoutines[s.id] })),
 };

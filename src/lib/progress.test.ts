@@ -316,3 +316,10 @@ describe("numbers in the reader's language", () => {
     expect(text.split("\n")[1]).toBe("Control: 0/5");
   });
 });
+
+describe("reserved level id", () => {
+  it("rejects a player level called \"all\"", () => {
+    const levels = football.playerLevels!.map((l, i) => (i === 0 ? { ...l, id: "all" } : l));
+    expect(validateTree({ ...football, playerLevels: levels })).toContain('player level id "all" is reserved for trees without levels; pick another id');
+  });
+});
