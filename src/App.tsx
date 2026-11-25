@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { treesIn, upcomingTrees } from "./data";
-import { activeBranch, activeTree, saveActiveBranch, switchTree, treeSummaries } from "./lib/activeTree";
+import { activeBranch, activeTree, saveActiveBranch, saveActiveTree, switchTree, treeSummaries } from "./lib/activeTree";
 import { Header } from "./components/Header";
 import { SkillTree, type ScrollRequest } from "./components/SkillTree";
 import { branchFocusSkill, revealTarget } from "./components/treeView";
@@ -269,13 +269,15 @@ export default function App() {
 
   // Take ?skill= out of the address bar once it's been read, so a reload or a tree switch doesn't reopen it.
   useEffect(() => {
-    if (link) window.history.replaceState(window.history.state, "", withoutSkillParam(window.location.href));
+    if (!link) return;
+    saveActiveTree(link.tree.id);
+    window.history.replaceState(window.history.state, "", withoutSkillParam(window.location.href));
   }, [link]);
 
   function copySkillLink(id: string) {
     const url = skillUrl(window.location.href, id);
-    navigator.clipboard
-      .writeText(url)
+    Promise.resolve()
+      .then(() => navigator.clipboard.writeText(url))
       .then(() => showToast(t.app.linkCopied))
       .catch(() => window.prompt(t.panel.copyLink, url));
   }
@@ -300,6 +302,12 @@ export default function App() {
     setSheetOpen(false);
     focusSkill(id);
   }
+
+  // The history entry only means something while the sheet is open. After a reload it would be an empty step
+  // that Back appears to do nothing on, so drop its mark.
+  useEffect(() => {
+    if (window.history.state?.skillSheet) window.history.replaceState({ ...window.history.state, skillSheet: false }, "");
+  }, []);
 
   // The phone's back gesture (Android) closes the sheet instead of leaving the app: an open sheet
   // adds a history entry, and every other way of closing it takes that entry off again.
@@ -329,11 +337,6 @@ export default function App() {
     return () => window.removeEventListener("popstate", onPop);
   }, [sheetShown]);
 
-  // The history entry only means something while the sheet is open. After a reload it would be an empty step
-  // that Back appears to do nothing on, so drop its mark.
-  useEffect(() => {
-    if (window.history.state?.skillSheet) window.history.replaceState({ ...window.history.state, skillSheet: false }, "");
-  }, []);
   // Forward onto the sheet's entry (after Back closed it) opens the sheet again, so history and sheet agree.
   useEffect(() => {
     if (!isPhone) return;
