@@ -63,9 +63,12 @@ export type LeaderboardErrorCode = "taken" | "blocked" | "failed";
 
 export class LeaderboardError extends Error {
   readonly code: LeaderboardErrorCode;
-  constructor(code: LeaderboardErrorCode, message: string) {
+  /** The database's own error code (SQLSTATE, as PostgREST reports it), when there is one. */
+  readonly dbCode?: string;
+  constructor(code: LeaderboardErrorCode, message: string, dbCode?: string) {
     super(message);
     this.code = code;
+    this.dbCode = dbCode;
   }
 }
 
@@ -163,8 +166,11 @@ export async function fetchLeaderboard(
   return toResult((data ?? []) as BoardRow[]);
 }
 
+/** SQLSTATE 28000 (invalid authorization): report_row() raises it when the player is not signed in. */
+export const DB_NOT_SIGNED_IN = "28000";
+
 /** Reports the player behind a row. The database keeps the reason as free text (blank is stored as "unspecified"). */
 export async function reportRow(client: SupabaseClient, rowKey: string, reason: string): Promise<void> {
   const { error } = await client.rpc("report_row", { row_key: rowKey, reason });
-  if (error) throw new LeaderboardError("failed", error.message);
+  if (error) throw new LeaderboardError("failed", error.message, error.code);
 }

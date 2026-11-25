@@ -1,6 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { LeaderboardProfile, Tree } from "../types";
-import { flagEmoji, levelStepName, nameProblem, needsHemispherePick, profileToRow, scopeAvailable, toResult } from "./leaderboardApi";
+import { flagEmoji, LeaderboardError, levelStepName, nameProblem, needsHemispherePick, profileToRow, reportRow, scopeAvailable, toResult } from "./leaderboardApi";
 import { LEADERBOARD_LIMIT } from "./leaderboard";
 
 const profile = (over: Partial<LeaderboardProfile> = {}): LeaderboardProfile => ({
@@ -9,6 +10,24 @@ const profile = (over: Partial<LeaderboardProfile> = {}): LeaderboardProfile => 
   hemisphere: null,
   leaderboardOptIn: true,
   ...over,
+});
+
+describe("reporting a row", () => {
+  const fakeClient = (rpc: ReturnType<typeof vi.fn>) => ({ rpc }) as unknown as SupabaseClient;
+
+  it("calls report_row with the row key and reason", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: null });
+    await reportRow(fakeClient(rpc), "row-1", "looks fake");
+    expect(rpc).toHaveBeenCalledWith("report_row", { row_key: "row-1", reason: "looks fake" });
+  });
+
+  it("turns a database error into a LeaderboardError and keeps its SQLSTATE", async () => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: { code: "28000", message: "Sign in to report a row." } });
+    const error = await reportRow(fakeClient(rpc), "row-1", "spam").catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(LeaderboardError);
+    expect((error as LeaderboardError).message).toBe("Sign in to report a row.");
+    expect((error as LeaderboardError).dbCode).toBe("28000");
+  });
 });
 
 describe("name problems for the screen", () => {

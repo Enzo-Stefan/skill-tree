@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { Auth } from "../auth/useAuth";
 import type { LeaderboardRow, Tree } from "../types";
 import { t } from "../i18n";
@@ -10,6 +10,7 @@ vi.mock("../auth/client", () => ({ loadSupabase: vi.fn(async () => ({ rpc: vi.fn
 vi.mock("../lib/leaderboardApi", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/leaderboardApi")>()),
   fetchLeaderboard: vi.fn(),
+  reportRow: vi.fn(),
 }));
 
 afterEach(cleanup);
@@ -85,5 +86,32 @@ describe("LeaderboardScreen report buttons", () => {
     expect(screen.getByRole("button", { name: t.leaderboard.reportTitle("Ana") })).toBeTruthy();
     expect(screen.queryByRole("button", { name: t.leaderboard.reportTitle("Sam") })).toBeNull();
     expect(screen.getByText(t.leaderboard.you).closest("li")?.querySelector("button")).toBeNull();
+  });
+
+  it("closes the dialog after a send and passes the thanks message up", async () => {
+    const { fetchLeaderboard, reportRow } = await import("../lib/leaderboardApi");
+    vi.mocked(fetchLeaderboard).mockResolvedValue({ top: [others], me: null });
+    vi.mocked(reportRow).mockResolvedValue();
+    const onMessage = vi.fn();
+    render(
+      <LeaderboardScreen
+        tree={board}
+        auth={auth}
+        profile={null}
+        profileLoading={false}
+        profileError={false}
+        onRetryProfile={vi.fn()}
+        onBack={vi.fn()}
+        onEditProfile={vi.fn()}
+        onSignIn={vi.fn()}
+        onMessage={onMessage}
+      />,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: t.leaderboard.reportTitle("Ana") }));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "looks fake" } });
+    fireEvent.click(screen.getByRole("button", { name: t.leaderboard.reportSend }));
+    await waitFor(() => expect(onMessage).toHaveBeenCalledWith(t.leaderboard.reportSent));
+    expect(reportRow).toHaveBeenCalledWith(expect.anything(), "row-other", "looks fake");
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });

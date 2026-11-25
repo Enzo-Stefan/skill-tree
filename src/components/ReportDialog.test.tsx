@@ -68,8 +68,40 @@ describe("ReportDialog", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
+  it("focuses the reason box when it opens", () => {
+    renderDialog();
+    expect(document.activeElement).toBe(reasonBox());
+  });
+
+  it("links the character count to the reason box", () => {
+    renderDialog();
+    const countId = reasonBox().getAttribute("aria-describedby");
+    expect(countId).toBeTruthy();
+    expect(document.getElementById(countId!)?.textContent).toBe(t.leaderboard.reportCount(0, 300));
+  });
+
+  it("sends only once when Send is pressed again while the report is going", async () => {
+    vi.mocked(reportRow).mockReturnValue(new Promise(() => {}));
+    renderDialog();
+    fireEvent.change(reasonBox(), { target: { value: "spam" } });
+    fireEvent.click(sendButton());
+    fireEvent.click(sendButton());
+    await waitFor(() => expect(reportRow).toHaveBeenCalledTimes(1));
+    expect(reasonBox().disabled).toBe(true);
+  });
+
+  it("returns focus to the reason box after a failed send", async () => {
+    vi.mocked(reportRow).mockRejectedValue(new LeaderboardError("failed", "connection reset"));
+    renderDialog();
+    fireEvent.change(reasonBox(), { target: { value: "spam" } });
+    sendButton().focus();
+    fireEvent.click(sendButton());
+    await screen.findByRole("alert");
+    expect(document.activeElement).toBe(reasonBox());
+  });
+
   it("shows the database's sign-in message and offers Close instead of Cancel", async () => {
-    vi.mocked(reportRow).mockRejectedValue(new LeaderboardError("failed", "Sign in to report a row."));
+    vi.mocked(reportRow).mockRejectedValue(new LeaderboardError("failed", "Sign in to report a row.", "28000"));
     renderDialog();
     fireEvent.change(reasonBox(), { target: { value: "spam" } });
     fireEvent.click(sendButton());

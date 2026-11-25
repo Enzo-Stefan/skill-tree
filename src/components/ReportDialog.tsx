@@ -1,15 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import type { LeaderboardRow } from "../types";
 import { loadSupabase } from "../auth/client";
-import { LeaderboardError, reportRow } from "../lib/leaderboardApi";
+import { DB_NOT_SIGNED_IN, LeaderboardError, reportRow } from "../lib/leaderboardApi";
 import { t } from "../i18n";
 import { useModalFocus } from "./useModalFocus";
 
 /** The longest reason the database keeps (migration 006 cuts anything longer). */
 export const REASON_MAX = 300;
 
-// The database's own messages (migration 006). They reach the client as error code "failed", so they are matched by text.
-const SIGN_IN_MESSAGE = "Sign in to report a row.";
+// The daily limit in migration 006 is a plain RAISE with no SQLSTATE, so the database reports it as P0001 like any
+// other plain RAISE. It is the one case still matched by its message text.
 const TOO_MANY_MESSAGE = "Too many reports today.";
 
 interface Props {
@@ -23,6 +23,8 @@ interface Props {
 export function ReportDialog({ row, onClose, onSent }: Props) {
   const dialog = useRef<HTMLDivElement>(null);
   const field = useRef<HTMLTextAreaElement>(null);
+  const sending = useRef(false);
+  const countId = useId();
   const [reason, setReason] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -30,12 +32,17 @@ export function ReportDialog({ row, onClose, onSent }: Props) {
   useModalFocus(dialog, busy ? () => {} : onClose);
   // Declared after useModalFocus, so this runs after the hook's own focus and the textarea wins.
   useEffect(() => field.current?.focus(), []);
+  // The textarea is disabled while sending, so focus can only land in it after the render that shows the error.
+  useEffect(() => {
+    if (error) field.current?.focus();
+  }, [error]);
 
   const trimmed = reason.trim();
   const canSend = trimmed.length > 0 && !busy && !signedOut;
 
   async function send() {
-    if (!canSend) return;
+    if (!canSend || sending.current) return;
+    sending.current = true;
     setBusy(true);
     setError(null);
     try {
@@ -44,16 +51,16 @@ export function ReportDialog({ row, onClose, onSent }: Props) {
       await reportRow(client, row.rowKey, trimmed);
       onSent();
     } catch (e) {
-      const message = e instanceof LeaderboardError ? e.message : "";
-      if (message === SIGN_IN_MESSAGE) {
+      if (e instanceof LeaderboardError && e.dbCode === DB_NOT_SIGNED_IN) {
         setSignedOut(true);
         setError(t.leaderboard.reportSignIn);
-      } else if (message === TOO_MANY_MESSAGE) {
+      } else if (e instanceof LeaderboardError && e.message === TOO_MANY_MESSAGE) {
         setError(t.leaderboard.reportTooMany);
       } else {
         setError(t.leaderboard.reportFailed);
       }
     } finally {
+      sending.current = false;
       setBusy(false);
     }
   }
@@ -71,9 +78,10 @@ export function ReportDialog({ row, onClose, onSent }: Props) {
             value={reason}
             maxLength={REASON_MAX}
             disabled={busy}
+            aria-describedby={countId}
             onChange={(e) => setReason(e.target.value.slice(0, REASON_MAX))}
           />
-          <small>{t.leaderboard.reportCount(reason.length, REASON_MAX)}</small>
+          <small id={countId}>{t.leaderboard.reportCount(reason.length, REASON_MAX)}</small>
         </label>
         {error && (
           <p className="card-note" role="alert">
