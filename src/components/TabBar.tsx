@@ -1,6 +1,6 @@
 import { t } from "../i18n";
 
-export type Tab = "train" | "plan" | "progress" | "settings";
+export type Tab = "train" | "areas" | "plan" | "progress" | "settings";
 
 interface Props {
   active: Tab;
@@ -10,7 +10,7 @@ interface Props {
   summary: string[];
 }
 
-const TABS: Tab[] = ["train", "plan", "progress", "settings"];
+const TABS: Tab[] = ["train", "areas", "plan", "progress", "settings"];
 
 /** The app's main navigation: a bar at the bottom on phones, a sidebar on wider screens. */
 export function TabBar({ active, onChange, rank, summary }: Props) {
@@ -55,6 +55,16 @@ function TabIcon({ tab }: { tab: Tab }) {
         <circle cx="12" cy="12" r="10" />
         <circle cx="12" cy="12" r="6" />
         <circle cx="12" cy="12" r="2" fill="currentColor" />
+      </svg>
+    );
+  }
+  if (tab === "areas") {
+    return (
+      <svg {...common}>
+        <rect x="3" y="3" width="7" height="7" rx="1.5" />
+        <rect x="14" y="3" width="7" height="7" rx="1.5" />
+        <rect x="3" y="14" width="7" height="7" rx="1.5" />
+        <rect x="14" y="14" width="7" height="7" rx="1.5" />
       </svg>
     );
   }

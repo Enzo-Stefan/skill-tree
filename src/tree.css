@@ -104,11 +104,11 @@
 }
 
 /* On the wide tree: circle above the name. The names are small so the longest words fit one slot. */
-.skill.card { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 2px; text-align: center; }
+.skill.card { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0; text-align: center; }
 .skill.card .skill-name {
-  /* Scales with the tree's width (a container query unit), so the longest words fit one slot: about 11px
+  /* Scales with the tree's width (a container query unit), so the longest words fit one slot: about 10px
      when the tree is as narrow as it gets, 13px when there is plenty of room. */
-  font-size: clamp(0.6875rem, 1.2cqw, 0.8125rem);
+  font-size: clamp(0.6rem, 1.1cqw, 0.8125rem);
   hyphens: auto;
   /* Lines run behind the names: a soft halo in the page colour keeps the words readable where they cross. */
   text-shadow: 0 0 3px var(--grass), 0 0 3px var(--grass), 0 0 6px var(--grass);

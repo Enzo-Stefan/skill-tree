@@ -37,6 +37,7 @@ export const en = {
     label: "Main",
     brand: "hapi skill",
     train: "Train",
+    areas: "Areas",
     plan: "Training",
     progress: "Progress",
     settings: "Settings",
@@ -157,6 +158,13 @@ export const en = {
     copy: "Copy my progress",
     resetConfirm: "Tap again to reset all",
     privacy: "Privacy",
+  },
+  areas: {
+    title: "Areas",
+    hint: "Pick what to train. Choosing one opens its skills.",
+    branches: (name: string) => `${name} branches`,
+    /** The small pill at the top of Train that opens this page. */
+    change: (name: string) => `${name}. Change area`,
   },
   treeSwitch: {
     label: "Skill tree",

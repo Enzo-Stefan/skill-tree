@@ -2,12 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { treesIn, upcomingTrees } from "./data";
 import { activeBranch, activeTree, saveActiveBranch, switchTree, treeSummaries } from "./lib/activeTree";
 import { Header } from "./components/Header";
-import { TreeSwitch } from "./components/TreeSwitch";
 import { SkillTree, type ScrollRequest } from "./components/SkillTree";
 import { branchFocusSkill, revealTarget } from "./components/treeView";
 import { NextUpCard } from "./components/NextUpCard";
 import { SkillPanel } from "./components/SkillPanel";
-import { BranchTabs } from "./components/BranchTabs";
 import { useMediaQuery } from "./components/useMediaQuery";
 import { LevelPicker } from "./components/LevelPicker";
 import { LevelUpBanner } from "./components/LevelUpBanner";
@@ -16,6 +14,7 @@ import { PracticeBar } from "./components/PracticeBar";
 import { useToday } from "./components/useToday";
 import { ShareDialog } from "./components/ShareDialog";
 import { shareStats, type ShareStats } from "./components/shareImage";
+import { AreasScreen } from "./components/AreasScreen";
 import { TabBar, type Tab } from "./components/TabBar";
 import { TrainingScreen } from "./components/TrainingScreen";
 import { usePlan } from "./components/usePlan";
@@ -432,15 +431,19 @@ export default function App() {
     trainScrollers().forEach((e, i) => (e.scrollTop = trainScroll.current[i] ?? e.scrollTop));
   }, [tab]);
 
+  const treeName = tree.shortName ?? tree.title;
+
+  function goTo(next: Tab) {
+    if (tab === "train") trainScroll.current = trainScrollers().map((e) => e.scrollTop);
+    setTab(next);
+    setSheetOpen(false);
+  }
+
   return (
     <div className="app">
       <TabBar
         active={tab}
-        onChange={(next) => {
-          if (tab === "train") trainScroll.current = trainScrollers().map((e) => e.scrollTop);
-          setTab(next);
-          setSheetOpen(false);
-        }}
+        onChange={goTo}
         rank={levelInfo(tree.levels, done.size).current.name}
         summary={[t.header.skillsCount(done.size, tree.skills.length), ...(playerRungName ? [playerRungName] : [])]}
       />
@@ -453,8 +456,10 @@ export default function App() {
             onChangeLevel={hasLevels ? openPicker : undefined}
           />
           <div className="switcher">
-            <TreeSwitch trees={treeChoices} onSwitch={switchToTree} />
-            <BranchTabs tree={tree} done={done} activeId={branchId} onChange={chooseBranch} />
+            <button type="button" className="area-pill" aria-label={t.areas.change(treeName)} onClick={() => goTo("areas")}>
+              {treeName}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+            </button>
           </div>
           {hasLevels && playerLevelId && (
             <PracticeBar
@@ -515,6 +520,19 @@ export default function App() {
             )}
           </main>
         </div>
+        {tab === "areas" && (
+          <AreasScreen
+            tree={tree}
+            done={done}
+            trees={treeChoices}
+            branchId={branchId}
+            onSwitchTree={switchToTree}
+            onPickBranch={(id) => {
+              goTo("train");
+              chooseBranch(id);
+            }}
+          />
+        )}
         {tab === "plan" && (
           <TrainingScreen tree={tree} state={planState} levelId={playerLevelId} today={today} practiceDays={practiceDays} onFinish={finishSession} />
         )}

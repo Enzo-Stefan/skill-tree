@@ -37,6 +37,7 @@ export const es: Strings = {
     label: "Principal",
     brand: "hapi skill",
     train: "Entrenar",
+    areas: "Áreas",
     plan: "Plan",
     progress: "Progreso",
     settings: "Ajustes",
@@ -152,6 +153,12 @@ export const es: Strings = {
     copy: "Copiar mi progreso",
     resetConfirm: "Toca otra vez para borrarlo todo",
     privacy: "Privacidad",
+  },
+  areas: {
+    title: "Áreas",
+    hint: "Elige qué entrenar. Al elegir, se abren sus habilidades.",
+    branches: (name: string) => `Ramas de ${name}`,
+    change: (name: string) => `${name}. Cambiar de área`,
   },
   treeSwitch: {
     label: "Árbol de habilidades",

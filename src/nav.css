@@ -105,7 +105,7 @@
 .card .level { font-size: 2rem; line-height: 1.1; letter-spacing: -0.03em; }
 .card .count { font-weight: 600; }
 .card .next-level { font-size: 0.9375rem; }
-.step-bars { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+.step-bars { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
 .step-bars span { height: 6px; border-radius: var(--radius-pill); background: var(--glass-border); }
 .step-bars span.on { background: var(--chalk); }
 
@@ -180,7 +180,7 @@
     order: 1;
     width: auto;
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 0;
     padding: 6px max(16px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
     border-width: 1px 0 0;
@@ -283,3 +283,38 @@
 .rest-days { display: inline-flex; gap: 4px; }
 .rest-day { min-width: 40px; min-height: 40px; padding: 0; border: 1.5px solid var(--chalk-faint); }
 .rest-day[aria-pressed="true"] { border-color: var(--gold-text); color: var(--gold-text); }
+
+/* Laptops (701-1499px): the sidebar shrinks to icons and the skill panel narrows, so the tree keeps its grid down to about 1100px. */
+@media (min-width: 701px) and (max-width: 1499px) {
+  .tabbar { width: 72px; padding-inline: 10px; align-items: stretch; }
+  .tabbar-brand, .tabbar-summary { display: none; }
+  .tabbar-item { justify-content: center; padding: 0; }
+  .tabbar-item span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+}
+@media (min-width: 861px) and (max-width: 1499px) { .panel { width: 280px; padding: 20px; } }
+
+/* Train's header pill: the area you are in (Football / Strength). Small and regular weight; tapping it opens Areas. */
+.area-pill {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 32px;
+  padding: 4px 10px 4px 14px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  background: var(--glass);
+  color: var(--fg);
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+.area-pill svg { width: 14px; height: 14px; color: var(--text-2); }
+.area-pill:hover { border-color: var(--btn-border-hover); }
+@media (pointer: coarse) { .area-pill { min-height: 44px; } }
+
+/* Areas tab: the area pills, then the branch pills, each on its own row. */
+.areas-screen { gap: 14px; }
+.areas-hint { margin: 0; color: var(--text-2); }
+.areas-sub { margin: 10px 0 0; font-size: 1rem; font-weight: 600; }
+.areas-screen .tree-switch { max-width: 100%; }
+.areas-screen .branch-tabs { flex-wrap: wrap; overflow: visible; border: 0; background: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; padding: 0; margin: 0; }

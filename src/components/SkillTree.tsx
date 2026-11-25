@@ -44,7 +44,7 @@ export function SkillTree({ tree, done, selectedId, onSelect, branchId, phone, n
   const nameOf = (id: string) => tree.skills.find((s) => s.id === id)?.name ?? id;
   const grid = useMemo(() => treeGrid(tree), [tree]);
   const room = useWidth(wrapEl);
-  // Names need about 4.5rem a slot (two columns) to fit on a line. Before the first measure, the page's width stands in.
+  // Names need about 58px a slot (two columns) to fit on a line. Before the first measure, the page's width stands in.
   const stacked = phone || (room ?? window.innerWidth) < (grid.columns / 2) * SLOT_PX + WRAP_PADDING_PX;
   const layout = stacked ? "row" : "card";
 
@@ -293,7 +293,7 @@ function useWidth(el: HTMLElement | null): number | null {
 }
 
 /** Room one slot (two grid columns) of the wide tree needs, and the tree area's side padding. Keep in sync with tree.css. */
-const SLOT_PX = 72;
+const SLOT_PX = 58;
 const WRAP_PADDING_PX = 48;
 
 interface ItemProps {
