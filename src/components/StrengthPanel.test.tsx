@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { TreeSummary } from "../lib/activeTree";
 import { t } from "../i18n";
 import { StrengthPanel } from "./StrengthPanel";
@@ -105,7 +105,7 @@ describe("StrengthPanel", () => {
     fireEvent.click(open);
     expect(onSwitch).toHaveBeenCalledTimes(1);
     const again = await screen.findByRole("button", { name: t.strengthPanel.open });
-    expect(again.hasAttribute("disabled")).toBe(false);
+    await waitFor(() => expect(again.hasAttribute("disabled")).toBe(false));
     fireEvent.click(again);
     expect(onSwitch).toHaveBeenCalledTimes(2);
   });
@@ -117,7 +117,7 @@ describe("StrengthPanel", () => {
     fireEvent.click(handle());
     fireEvent.click(screen.getByRole("button", { name: t.strengthPanel.open }));
     const again = await screen.findByRole("button", { name: t.strengthPanel.open });
-    expect(again.hasAttribute("disabled")).toBe(false);
+    await waitFor(() => expect(again.hasAttribute("disabled")).toBe(false));
     expect(error).toHaveBeenCalled();
     fireEvent.keyDown(window, { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull();
