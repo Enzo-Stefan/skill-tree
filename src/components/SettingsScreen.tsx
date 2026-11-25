@@ -19,7 +19,7 @@ interface Props {
   onDeleted: () => void;
 }
 
-/** Level, account, copy and reset, and the privacy page: everything that isn't training. */
+/** Level, account, copy and reset, language, and About: everything that isn't training. */
 export function SettingsScreen({ auth, treeName, playerLevelName, onChangeLevel, onCopy, onReset, onLanguage, onDeleted }: Props) {
   const [signInOpen, setSignInOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
@@ -70,6 +70,25 @@ export function SettingsScreen({ auth, treeName, playerLevelName, onChangeLevel,
           </span>
           <Chevron />
         </a>
+        <a className="settings-row" href={feedbackLink()}>
+          <span className="settings-row-text">
+            <span>{t.settings.feedback}</span>
+            <span className="settings-row-sub">{t.settings.feedbackSub}</span>
+          </span>
+          <Chevron />
+        </a>
+        <div className="settings-row static">
+          <span className="settings-row-text">
+            <span>{t.settings.videos}</span>
+            <span className="settings-row-sub">{t.settings.videosSub}</span>
+          </span>
+        </div>
+        <div className="settings-row static">
+          <span className="settings-row-text">
+            <span>{t.settings.version}</span>
+          </span>
+          <span className="settings-row-value">{__APP_VERSION__}</span>
+        </div>
       </Group>
 
       <p className="settings-note">{t.settings.followsPhone}</p>
@@ -91,6 +110,13 @@ export function SettingsScreen({ auth, treeName, playerLevelName, onChangeLevel,
       )}
     </div>
   );
+}
+
+/** An email to both of us, with the build in the body so a bug report says which version it's about. */
+function feedbackLink(): string {
+  const subject = encodeURIComponent(t.settings.feedbackSubject);
+  const body = encodeURIComponent(`\n\n${t.settings.version}: ${__APP_VERSION__}`);
+  return `mailto:enzo.abuliak@gmail.com,gjinistefan00@gmail.com?subject=${subject}&body=${body}`;
 }
 
 function Group({ title, children }: { title: string; children: ReactNode }) {
