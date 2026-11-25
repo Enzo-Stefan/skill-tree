@@ -36,7 +36,6 @@ interface Player {
   sprint?: number;
   country?: string | null;
   hemisphere?: string | null;
-  city?: string | null;
   optIn?: boolean;
   results?: { skillId: string; date: string; value: number }[];
 }
@@ -44,15 +43,23 @@ interface Player {
 async function addPlayer(p: Player) {
   await db.query("insert into auth.users (id) values ($1)", [id(p.n)]);
   await db.query(
-    `insert into public.profiles (user_id, display_name, country_code, city, hemisphere, leaderboard_opt_in)
-     values ($1, $2, $3, $4, $5, $6)`,
-    [id(p.n), p.name, p.country ?? null, p.city ?? null, p.hemisphere ?? null, p.optIn ?? true],
+    `insert into public.profiles (user_id, display_name, country_code, hemisphere, leaderboard_opt_in)
+     values ($1, $2, $3, $4, $5)`,
+    [id(p.n), p.name, p.country ?? null, p.hemisphere ?? null, p.optIn ?? true],
   );
   const results = p.results ?? (p.sprint ? [{ skillId: "ft2", date: "2026-11-01", value: p.sprint }] : []);
   await db.query(
     `insert into public.progress (user_id, tree_id, done, player_level, player_step, results)
      values ($1, 'football', $2, $3, $4, $5)`,
     [id(p.n), football.skills.slice(0, p.skills ?? 0).map((sk) => sk.id), p.level ?? "beginner", p.step ?? 1, JSON.stringify(results)],
+  );
+  // The trigger caps a first save (3 skills, level step 1, sprint no faster than 4.5 s), so the score the
+  // test wants is written straight to the table, as the superuser. The cheating limits are tested below.
+  if (p.skills === undefined && p.level === undefined && p.step === undefined && p.sprint === undefined) return;
+  const levelStep = ["beginner", "intermediate", "advanced", "expert"].indexOf(p.level ?? "beginner") * 4 + (p.step ?? 1);
+  await db.query(
+    "update public.leaderboard_scores set skills = $2, level_step = $3, best_sprint = $4, sprint_record = $4 where user_id = $1",
+    [id(p.n), p.skills ?? 0, levelStep, p.sprint ?? null],
   );
 }
 
@@ -86,12 +93,15 @@ describe("score order", () => {
     expect(rows.map((r) => [r.display_name, r.place])).toEqual([["Ana", 1], ["Bea", 1], ["Cleo", 3]]);
   });
 
-  it("computes the level step from level and step (1 to 16)", async () => {
-    await addPlayer({ n: 1, name: "Top", level: "expert", step: 4 });
-    await addPlayer({ n: 2, name: "Bottom", level: "beginner", step: 1 });
-    await addPlayer({ n: 3, name: "Mid", level: "intermediate", step: 2 });
-    const r = await db.query<{ level_step: number }>("select level_step from public.leaderboard_scores order by user_id");
-    expect(r.rows.map((x) => x.level_step)).toEqual([16, 1, 6]);
+  it("caps a first save at 3 skills, level step 1 and a 4.5 s sprint", async () => {
+    await db.query("insert into auth.users (id) values ($1)", [id(1)]);
+    await db.query("insert into public.profiles (user_id, display_name) values ($1, 'Eager')", [id(1)]);
+    await db.query(
+      "insert into public.progress (user_id, tree_id, done, player_level, player_step, results) values ($1, 'football', $2, 'expert', 4, $3)",
+      [id(1), football.skills.slice(0, 20).map((sk) => sk.id), JSON.stringify([{ skillId: "ft2", date: "2026-11-01", value: 3.8 }])],
+    );
+    const r = await db.query<{ skills: number; level_step: number; best_sprint: string }>("select skills, level_step, best_sprint from public.leaderboard_scores");
+    expect(r.rows.map((x) => [x.skills, x.level_step, Number(x.best_sprint)])).toEqual([[3, 1, 4.5]]);
   });
 });
 
@@ -136,11 +146,11 @@ describe("who appears", () => {
 
 describe("scopes", () => {
   beforeEach(async () => {
-    await addPlayer({ n: 1, name: "MadridMe", country: "ES", hemisphere: "N", city: "Madrid", skills: 5 });
-    await addPlayer({ n: 2, name: "MadridMate", country: "ES", hemisphere: "N", city: " madrid ", skills: 4 });
-    await addPlayer({ n: 3, name: "BarcelonaPal", country: "ES", hemisphere: "N", city: "Barcelona", skills: 3 });
-    await addPlayer({ n: 4, name: "ParisPal", country: "FR", hemisphere: "N", city: "Paris", skills: 2 });
-    await addPlayer({ n: 5, name: "LimaPal", country: "PE", hemisphere: "S", city: "Lima", skills: 1 });
+    await addPlayer({ n: 1, name: "MadridMe", country: "ES", hemisphere: "N", skills: 5 });
+    await addPlayer({ n: 2, name: "MadridMate", country: "ES", hemisphere: "N", skills: 4 });
+    await addPlayer({ n: 3, name: "BarcelonaPal", country: "ES", hemisphere: "N", skills: 3 });
+    await addPlayer({ n: 4, name: "ParisPal", country: "FR", hemisphere: "N", skills: 2 });
+    await addPlayer({ n: 5, name: "LimaPal", country: "PE", hemisphere: "S", skills: 1 });
     await addPlayer({ n: 6, name: "Nowhere", skills: 0 });
   });
   const names = async (scope: string, as = 1) => (await board(as, scope)).map((r) => r.display_name);
@@ -198,9 +208,9 @@ describe("cheating limits", () => {
     expect(await sprint(1)).toBe(8); // the first time counted as today's improvement
     await db.query("update public.leaderboard_scores set sprint_improved_at = now() - interval '25 hours'");
     await save(1, [time(8), time(7)]);
-    expect(await sprint(1)).toBe(7);
+    expect(await sprint(1)).toBe(7.6); // a new record is at most 5% faster than the old one: 8 * 0.95
     await save(1, [time(8), time(7), time(6)]);
-    expect(await sprint(1)).toBe(7); // a second improvement inside a day is held back
+    expect(await sprint(1)).toBe(7.6); // a second improvement inside a day is held back
     await save(1, [time(8)]);
     expect(await sprint(1)).toBe(8); // deleting the best result can't keep an old record
   });
@@ -232,20 +242,22 @@ describe("names and reports", () => {
     await expect(insert(1, "Put4")).rejects.toThrow();
     await expect(insert(1, "ab")).rejects.toThrow();
     await expect(insert(1, "bad<name")).rejects.toThrow();
-    await expect(insert(1, " Leo ")).rejects.toThrow();
-    await insert(1, "Leo");
+    await insert(1, " Leo "); // spaces are trimmed by the trigger
+    expect((await db.query("select display_name from public.profiles")).rows).toEqual([{ display_name: "Leo" }]);
     await expect(insert(2, "LEO")).rejects.toThrow(/unique/i);
     await insert(2, "Calculo");
   });
 
-  it("lets a player report another by name once, and not themselves", async () => {
+  it("lets a player report another by row key once, and not themselves", async () => {
     await addPlayer({ n: 1, name: "Reporter" });
     await addPlayer({ n: 2, name: "Target" });
     await db.query(`select set_config('test.uid', $1, false)`, [id(1)]);
-    await db.query("select public.report_row('target', 'cheating')");
-    await db.query("select public.report_row('Target', 'name')");
-    await db.query("select public.report_row('Reporter', 'other')");
-    await db.query("select public.report_row('Nobody', 'other')");
+    const rows = await db.query<{ row_key: string; display_name: string }>("select * from public.leaderboard('global', 'football')");
+    const keyOf = (name: string) => rows.rows.find((r) => r.display_name === name)!.row_key;
+    await db.query("select public.report_row($1, 'cheating')", [keyOf("Target")]);
+    await db.query("select public.report_row($1, 'name')", [keyOf("Target")]);
+    await db.query("select public.report_row($1, 'other')", [keyOf("Reporter")]);
+    await db.query("select public.report_row('11111111-1111-1111-1111-111111111111', 'other')");
     const r = await db.query<{ reason: string }>("select reason from public.leaderboard_reports");
     expect(r.rows).toEqual([{ reason: "cheating" }]);
   });

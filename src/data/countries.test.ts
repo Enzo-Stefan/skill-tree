@@ -40,7 +40,29 @@ describe("country table", () => {
 
   it("marks the countries that cross the equator", () => {
     const crossing = countries.filter((c) => c.crossesEquator).map((c) => c.code).sort();
-    expect(crossing).toEqual(["BR", "CD", "CG", "CO", "EC", "GA", "GQ", "ID", "KE", "KI", "MV", "NR", "SO", "ST", "UG"]);
+    expect(crossing).toEqual(["BR", "CD", "CG", "CO", "EC", "GA", "GQ", "ID", "KE", "KI", "MV", "SO", "ST", "UG"]);
+  });
+
+  it("has Nauru wholly in the south", () => {
+    expect(countryByCode("NR")?.continent).toBe("OC");
+    expect(countryByCode("NR")?.crossesEquator).toBeFalsy();
+    expect(countryByCode("NR")!.capitalLat).toBeLessThan(0);
+    expect(hemisphereFor("NR", "N")).toBe("S");
+  });
+
+  it("has the territories and dependencies players pick", () => {
+    const territories = [
+      "PR", "HK", "MO", "GU", "VI", "AS", "MP", "GL", "FO", "GI", "IM", "JE", "GG", "AW", "CW", "SX", "BM", "KY", "TC", "VG", "AI", "MS", "GP",
+      "MQ", "RE", "YT", "GF", "PF", "NC", "WF", "PM", "BL", "MF", "FK", "CK", "NU", "TK", "NF", "CX", "CC", "PN", "SH", "BQ", "EH", "AX", "SJ",
+    ];
+    for (const code of territories) expect(countryByCode(code), code).toBeDefined();
+    const expected: Record<string, [string, "N" | "S"]> = {
+      PR: ["NA", "N"], HK: ["AS", "N"], GL: ["NA", "N"], FO: ["EU", "N"], RE: ["AF", "S"], FK: ["SA", "S"], GF: ["SA", "N"], NC: ["OC", "S"], GU: ["OC", "N"],
+    };
+    for (const [code, [continent, hemi]] of Object.entries(expected)) {
+      expect(continentOf(code), code).toBe(continent);
+      expect(hemisphereFor(code, null), code).toBe(hemi);
+    }
   });
 });
 
@@ -59,6 +81,19 @@ describe("the database lists match the table", () => {
     expect(sqlCodes("country_hemisphere", "picked").sort()).toEqual(countries.filter((c) => c.crossesEquator).map((c) => c.code).sort());
     const south = countries.filter((c) => !c.crossesEquator && c.capitalLat < 0).map((c) => c.code).sort();
     expect(sqlCodes("country_hemisphere", "'S'").sort()).toEqual(south);
+  });
+
+  it("country_hemisphere is null for a code not in the list, as hemisphereFor is", () => {
+    const body = sql.slice(sql.indexOf("function public.country_hemisphere"));
+    expect(body).toMatch(/when public\.country_continent\(code\) is null then null/);
+    // Checked before the equator and south lists, so an unknown code never falls through to 'N'.
+    expect(body.indexOf("country_continent(code) is null")).toBeLessThan(body.indexOf("then picked"));
+  });
+
+  it("profiles only accept codes from the list", () => {
+    expect(sql).toMatch(/add constraint profiles_country_code_known\s+check \(country_code is null or public\.country_continent\(country_code\) is not null\) not valid;/);
+    // After section 6, so the function it calls already exists.
+    expect(sql.indexOf("add constraint profiles_country_code_known")).toBeGreaterThan(sql.indexOf("function public.country_continent"));
   });
 });
 

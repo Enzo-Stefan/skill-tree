@@ -20,6 +20,7 @@ export const en = {
   app: {
     train: "Train",
     showingTargets: (rung: string) => `Showing ${rung} targets.`,
+    linkCopied: "Link copied.",
     newRank: (rank: string) => `New rank: ${rank}.`,
     skillCompleteUnlocked: (skill: string, unlocked: string[]) => `${skill} complete. Unlocked: ${unlocked.join(", ")}.`,
     skillComplete: (skill: string) => `${skill} complete.`,
@@ -81,6 +82,12 @@ export const en = {
     addToPlan: "Add to my plan",
     removeFromPlan: "Remove from my plan",
     inPlan: "In your plan: it's unlocked and not passed yet.",
+    addToCalendar: "Add training days to my calendar",
+    calendarSummary: "Training",
+    calendarDescription: "Your weekly training days in hapi skill. Open the app to see today's session:",
+    calendarNote: (reminderMinutes: number) =>
+      `Events are 17:00 to 18:00 with a reminder ${reminderMinutes} minutes before. You can edit the time in your calendar. Importing the file twice, or again after your plan changes, can create a duplicate repeating event, so delete the old one first.`,
+    calendarSaved: "Calendar file downloaded. Open it to add your training days.",
   },
   lifts: {
     title: "Your weights",
@@ -198,6 +205,7 @@ export const en = {
   panel: {
     status: { done: "Completed", available: "Ready to train", locked: "Locked" },
     startHere: "Start here",
+    copyLink: "Copy link to this skill",
     finalSkill: "Final skill",
     close: "Close",
     closeLabel: "Close skill details",
@@ -278,6 +286,14 @@ export const en = {
     undoSave: "Undo",
     /** In the skill sheet, above the saved best time. */
     bestTime: "Your best time",
+    challenge: "Challenge a mate",
+  },
+  challenge: {
+    lower: (skill: string, time: string) => `I did ${skill} in ${time}. Beat it?`,
+    higher: (skill: string, time: string) => `I got ${time} on ${skill}. Beat it?`,
+    title: (skill: string) => `hapi skill challenge: ${skill}`,
+    copied: "Challenge copied. Paste it to a mate.",
+    copyPrompt: "Copy this challenge to send to a mate",
   },
   video: {
     offlineTitle: "Video needs internet",

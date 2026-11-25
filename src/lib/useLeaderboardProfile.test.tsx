@@ -12,7 +12,7 @@ vi.mock("./leaderboardApi", async (importOriginal) => ({
   saveProfile: vi.fn(),
 }));
 
-const profile: LeaderboardProfile = { displayName: "Sam", countryCode: "AL", city: null, hemisphere: null, leaderboardOptIn: true };
+const profile: LeaderboardProfile = { displayName: "Sam", countryCode: "AL", hemisphere: null, leaderboardOptIn: true };
 
 beforeEach(() => vi.mocked(fetchProfile).mockReset().mockRejectedValueOnce(new Error("offline")));
 afterEach(() => {

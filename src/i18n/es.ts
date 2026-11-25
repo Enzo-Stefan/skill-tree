@@ -19,6 +19,7 @@ export const es: Strings = {
   app: {
     train: "Entrenar",
     showingTargets: (rung: string) => `Mostrando objetivos de ${rung}.`,
+    linkCopied: "Enlace copiado.",
     newRank: (rank: string) => `Nuevo rango: ${rank}.`,
     skillCompleteUnlocked: (skill: string, unlocked: string[]) =>
       `${skill} completada. Desbloqueadas: ${unlocked.join(", ")}.`,
@@ -78,6 +79,12 @@ export const es: Strings = {
     addToPlan: "Añadir a mi plan",
     removeFromPlan: "Quitar de mi plan",
     inPlan: "Está en tu plan: ya está desbloqueada y aún no la has pasado.",
+    addToCalendar: "Añadir mis días de entrenamiento al calendario",
+    calendarSummary: "Entrenamiento",
+    calendarDescription: "Tus días de entrenamiento semanales en hapi skill. Abre la app para ver la sesión de hoy:",
+    calendarNote: (reminderMinutes: number) =>
+      `Los eventos son de 17:00 a 18:00 con un aviso ${reminderMinutes} minutos antes. Puedes cambiar la hora en tu calendario. Si importas el archivo dos veces, o de nuevo tras cambiar tu plan, puede crearse un evento repetido duplicado: borra primero el anterior.`,
+    calendarSaved: "Archivo de calendario descargado. Ábrelo para añadir tus días de entrenamiento.",
   },
   lifts: {
     title: "Tus pesos",
@@ -190,6 +197,7 @@ export const es: Strings = {
   panel: {
     status: { done: "Completada", available: "Lista para entrenar", locked: "Bloqueada" },
     startHere: "Empieza aquí",
+    copyLink: "Copiar enlace a esta habilidad",
     finalSkill: "Habilidad final",
     close: "Cerrar",
     closeLabel: "Cerrar los detalles de la habilidad",
@@ -263,6 +271,14 @@ export const es: Strings = {
     newBest: (time: string) => `¡Nuevo mejor tiempo: ${time}!`,
     undoSave: "Deshacer",
     bestTime: "Tu mejor tiempo",
+    challenge: "Retar a un colega",
+  },
+  challenge: {
+    lower: (skill: string, time: string) => `He hecho ${skill} en ${time}. ¿Lo superas?`,
+    higher: (skill: string, time: string) => `He conseguido ${time} en ${skill}. ¿Lo superas?`,
+    title: (skill: string) => `Reto de hapi skill: ${skill}`,
+    copied: "Reto copiado. Pégaselo a un colega.",
+    copyPrompt: "Copia este reto para enviárselo a un colega",
   },
   video: {
     offlineTitle: "El vídeo necesita internet",

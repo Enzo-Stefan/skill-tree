@@ -34,7 +34,7 @@ function renderSettings(leaderboard: LeaderboardProfileState) {
 }
 
 describe("SettingsScreen leaderboard profile error", () => {
-  const profile = { displayName: "Sam", countryCode: null, city: null, hemisphere: null, leaderboardOptIn: true };
+  const profile = { displayName: "Sam", countryCode: null, hemisphere: null, leaderboardOptIn: true };
 
   it("shows the error row, hides Leave, and Retry calls retry", () => {
     const retry = vi.fn();

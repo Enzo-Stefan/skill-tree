@@ -6,12 +6,21 @@
 -- tests hold both to):
 --   * Rank by skills finished (more is better), then level step 1 to 16 (higher), then best 30 m sprint (faster).
 --   * Ties share a rank and the next rank is skipped (1, 2, 2, 4).
---   * Only opted-in players are ever returned, and only display name, country, rank and score. Never the city.
+--   * Only opted-in players are ever returned, and only display name, country, rank, score and a random
+--     per-player row key (for report_row(), never the user id). Never the city.
 --   * Skills count only distinct, real football skill ids, so duplicates or made-up ids add nothing.
---   * Sprint times under 3.6 s or over 15 s are ignored; a best sprint can get faster once per 24 hours;
---     the level step can rise by 1 once per 24 hours. A player's first save is taken as it is but starts
---     both 24-hour timers, and clearing the sprint results does not reset the sprint timer.
+--   * Sprint times under 3.6 s or over 15 s are ignored, and the fastest one is rounded to 0.01 s before it
+--     is compared, so 4.996 is not faster than 5.00.
+--   * First save: skills at most 3, level step at most 1, sprint no faster than 4.5 s. Each 24-hour timer
+--     starts then (when its value is above zero or set).
+--   * After that, once per 24 hours each: skills can rise by at most 3, the level step by 1, and the sprint
+--     record can get faster by at most 5% (to round(record * 0.95, 2)). Going down is always allowed and
+--     doesn't touch the timer. One timer per value: a raise of 1 skill uses up that day's skills raise.
+--   * Clearing the sprint results does not reset the sprint timer, and opting out only hides the row: the
+--     score and its timers are kept, so opting out and back in resets nothing.
 --   * A scoring error is logged as a warning and never blocks the player's progress save.
+--   * Display names are stored NFKC-normalised and trimmed, use Latin, Cyrillic or Greek letters (one alphabet per
+--     name), are unique ignoring case and look-alike letters, and pass a short blocklist (section 1).
 -- Only the football tree is ranked at launch.
 
 -- 1. Profiles: what a player tells the leaderboard about themselves. Only the owner can read or write a row.
@@ -26,23 +35,58 @@ create table if not exists public.profiles (
   updated_at          timestamptz not null default now()
 );
 
--- One display name per player, ignoring case.
-create unique index if not exists profiles_display_name_key on public.profiles (lower(display_name));
 create index if not exists profiles_country_idx on public.profiles (country_code) where leaderboard_opt_in;
 
--- Names: letters, digits, spaces, dots, dashes and underscores. No "@", so no email addresses.
-alter table public.profiles drop constraint if exists profiles_display_name_chars;
-alter table public.profiles add constraint profiles_display_name_chars
-  check (display_name ~ '^[[:alnum:]][[:alnum:] ._-]*$');
+-- Display names are stored NFKC-normalised with spaces trimmed from both ends (the trigger below does it, and
+-- the app sends normalizeDisplayName()), so fullwidth or maths letters arrive as plain ones. This needs a UTF-8
+-- database, which Supabase always is. The allowed letters are explicit ranges rather than [[:alnum:]], so they
+-- don't depend on the locale; lower() does (Supabase's en_US.UTF-8 or C.UTF-8 lowers every alphabet, a plain C
+-- locale only A-Z), which is why the look-alike maps list upper case too.
 
--- One alphabet per name: Latin, Cyrillic and Greek letters can't be mixed, so "fuсk" with a Cyrillic "с"
--- is refused. Names written wholly in Cyrillic or Greek are fine. The ranges are written as literal
--- characters: Latin A-Z a-z U+00C0-U+024F, Cyrillic U+0400-U+04FF, Greek U+0370-U+03FF.
+-- What must be unique: lower case with Cyrillic and Greek look-alikes (and the dotless ı) turned into Latin
+-- letters, so an all-Cyrillic "Сосо" can't stand in for "Coco". The same as displayNameKey() in
+-- src/lib/leaderboard.ts, and the first step of display_name_blocked() below.
+create or replace function public.display_name_key(name text) returns text
+language plpgsql
+immutable
+set search_path = ''
+as $$
+declare
+  -- Upper case look-alikes are listed too, so this works even where lower() only knows ASCII.
+  homoglyph_from text   := 'авеёіїјкмнорстухѕһӏАВЕЁІЇЈКМНОРСТУХЅҺӀαβεηικνορτυχάέήίόύΑΒΕΗΙΚΝΟΡΤΥΧΆΈΉΊΌΎζΖı';
+  homoglyph_to   text   := 'abeeiijkmhopctyxshlabeeiijkmhopctyxshlabenikvoptuxaeniouabehiknoptyxaehioyzzi';
+begin
+  -- Look-alikes before and after lower case, so capital Greek Ν reads as n, not ν.
+  return translate(lower(translate(name, homoglyph_from, homoglyph_to)), homoglyph_from, homoglyph_to);
+end;
+$$;
+
+-- One display name per player, ignoring case and look-alike letters. It replaces the older lower() index.
+drop index if exists public.profiles_display_name_key;
+create unique index if not exists profiles_display_name_unique on public.profiles (public.display_name_key(display_name));
+
+-- Names: a letter or digit first, then letters, digits 0-9, spaces, dots, dashes and underscores. No "@", so no
+-- email addresses. Letters are Latin (A-Z, Latin-1, Extended-A and -B, Extended Additional for Vietnamese)
+-- without × and ÷, Greek U+0386-U+03CE and Cyrillic U+0400-U+04FF without the signs and combining marks in
+-- those blocks; anything else (small capitals, other scripts, emoji, stray accents) is refused.
+-- One alphabet per name: Latin, Cyrillic and Greek letters can't be mixed, so "fuсk" with a Cyrillic "с" is
+-- refused. Names written wholly in Cyrillic or Greek are fine. The ranges are written as literal characters;
+-- they are NAME_PATTERN and SCRIPT_CLASSES in src/lib/leaderboard.ts, and the tests check they agree.
+create or replace function public.display_name_chars_ok(name text) returns boolean
+language sql
+immutable
+set search_path = ''
+as $$
+  select name ~ '^[0-9A-Za-zÀ-ÖØ-öø-ɏḀ-ỿΆΈ-ΊΌΎ-ΡΣ-ώЀ-ҁҊ-ӿ][0-9A-Za-zÀ-ÖØ-öø-ɏḀ-ỿΆΈ-ΊΌΎ-ΡΣ-ώЀ-ҁҊ-ӿ ._-]*$'
+     and (name ~ '[A-Za-zÀ-ɏḀ-ỿ]')::int
+       + (name ~ '[Ѐ-ӿ]')::int
+       + (name ~ '[Ͱ-Ͽ]')::int <= 1;
+$$;
+
+alter table public.profiles drop constraint if exists profiles_display_name_chars;
 alter table public.profiles drop constraint if exists profiles_display_name_one_script;
-alter table public.profiles add constraint profiles_display_name_one_script
-  check ((display_name ~ '[A-Za-zÀ-ɏ]')::int
-       + (display_name ~ '[Ѐ-ӿ]')::int
-       + (display_name ~ '[Ͱ-Ͽ]')::int <= 1);
+alter table public.profiles add constraint profiles_display_name_chars
+  check (public.display_name_chars_ok(display_name));
 
 alter table public.profiles enable row level security;
 -- "revoke all" first, so running this again also removes an older table-wide insert or update grant.
@@ -70,11 +114,16 @@ drop policy if exists "delete own profile" on public.profiles;
 create policy "delete own profile" on public.profiles
   for delete to authenticated using (auth.uid() = user_id);
 
--- A short English and Spanish blocklist, a first line of defence. Strong stems are blocked anywhere in the
--- name; short words only as a whole word (with an optional plural "s" or "es"), so "grape" and "computadora" stay fine. Known innocent words
--- that hold a stem ("Scunthorpe", "snigger", "Yamashita") are taken out before the stem check. Cyrillic
--- and Greek look-alikes ("ѕһіт") are turned into Latin letters first. Extend it before launch.
--- These lists are the same as in src/lib/leaderboard.ts; the tests check they agree.
+-- A short English and Spanish blocklist, a first line of defence. Each word is checked on its own (runs of
+-- one- and two-letter words joined, so "p u t a" counts), folded two ways: look-alike digits as letters
+-- ("sh1t") and digits dropped ("Puta10"). Strong stems are blocked anywhere in a word; short words only as a
+-- whole word, plural "s"/"es" included, so "grape" and "computadora" stay fine. Every check also runs with
+-- repeated letters squeezed ("fuuck"). A word that is a known innocent word ("Scunthorpe", "Yamashita",
+-- "Putto") is let through: compared with digits dropped (so "Pu7to" is not "putto"), squeezed or not,
+-- plural "s"/"es" allowed. Only the whole word counts, so "Sniggle" and "Niggler" are still caught. Cyrillic
+-- and Greek look-alikes are turned into Latin letters first (display_name_key) and accents taken off (ñ kept).
+-- Extend it before launch. These lists and steps are the same as in src/lib/leaderboard.ts; the tests check
+-- the lists agree, and src/lib/displayNameCases.json holds names both must judge alike.
 create or replace function public.display_name_blocked(name text) returns boolean
 language plpgsql
 immutable
@@ -83,53 +132,89 @@ as $$
 declare
   blocked_stems  text[] := array['fuck','shit','bitch','cunt','nigg','whore','hitler','mierda','pendejo','cabron','faggot'];
   blocked_words  text[] := array['fag','slut','rape','nazi','puta','puto','joder','coño','verga','pija','violar','culo','marica','maricon','chinga'];
-  allowed_words  text[] := array['scunthorpe','snigger','sniggle','niggle','niggling','niggard','shitake','yamashita','matsushita','kinoshita','morishita','mishit','pushit'];
-  -- Upper case look-alikes are listed too, so this works even where lower() only knows ASCII.
-  homoglyph_from text   := 'авеёіїјкмнорстухѕһӏАВЕЁІЇЈКМНОРСТУХЅҺӀαβεηικνορτυχάέήίόύΑΒΕΗΙΚΝΟΡΤΥΧΆΈΉΊΌΎζΖ';
-  homoglyph_to   text   := 'abeeiijkmhopctyxshlabeeiijkmhopctyxshlabenikvoptuxaeniouabehiknoptyxaehioyzz';
-  lookalike_from text   := '013457$@!';
-  lookalike_to   text   := 'oieastsai';
-  folded text;
-  joined text;
-  stem text;
-  word text;
-  allowed text;
-  words_re text;
+  allowed_words  text[] := array['scunthorpe','niggle','niggling','niggemann','shitake','yamashita','matsushita','kinoshita','morishita','ishita','kshitij','yoshitaka','mishit','pushit','pushitup','putto','rappe'];
+  lookalike_from text   := '013457';
+  lookalike_to   text   := 'oieast';
+  raw            text;
+  letters        text;
+  mapped         text;
+  bare           text;
+  run_mapped     text   := '';
+  run_bare       text   := '';
+  words_mapped   text[] := '{}';
+  words_bare     text[] := '{}';
+  forms          text[];
+  form           text;
+  exempt         boolean;
+  stem           text;
+  i              int;
 begin
-  -- Look-alike letters to Latin before and after lower case (so capital Greek Ν reads as n, not ν), then
-  -- symbols to letters, accents off.
-  folded := translate(lower(translate(name, homoglyph_from, homoglyph_to)), homoglyph_from, homoglyph_to);
-  folded := translate(folded, lookalike_from, lookalike_to);
-  folded := translate(folded, 'áàäâéèëêíìïîóòöôúùüû', 'aaaaeeeeiiiioooouuuu');
-  joined := regexp_replace(folded, '[^a-zñ]', '', 'g');
-  foreach allowed in array allowed_words loop
-    joined := replace(joined, allowed, '');
-  end loop;
-  foreach stem in array blocked_stems loop
-    if position(stem in joined) > 0 then
-      return true;
+  foreach raw in array regexp_split_to_array(btrim(normalize(name, NFKC), ' '), '[\s._-]+') loop
+    -- Lower case and look-alikes, then accents off (ñ kept, Ñ too where lower() only knows ASCII).
+    letters := replace(replace(public.display_name_key(raw), 'ñ', 'n~'), 'Ñ', 'n~');
+    letters := replace(lower(regexp_replace(normalize(letters, NFD), '[\u0300-\u036f]', '', 'g')), 'n~', 'ñ');
+    mapped := regexp_replace(translate(letters, lookalike_from, lookalike_to), '[^a-zñ]', '', 'g');
+    bare := regexp_replace(letters, '[^a-zñ]', '', 'g');
+    continue when mapped = '';
+    if char_length(mapped) <= 2 then
+      run_mapped := run_mapped || mapped;
+      run_bare := run_bare || bare;
+      continue;
     end if;
+    if run_mapped <> '' then
+      words_mapped := words_mapped || run_mapped;
+      words_bare := words_bare || run_bare;
+    end if;
+    run_mapped := '';
+    run_bare := '';
+    words_mapped := words_mapped || mapped;
+    words_bare := words_bare || bare;
   end loop;
-  -- Spelled out letter by letter ("p u t a") also counts as the whole word.
-  words_re := '^(' || array_to_string(blocked_words, '|') || ')(s|es)?$';
-  if regexp_replace(folded, '[^a-zñ]', '', 'g') ~ words_re then
-    return true;
+  if run_mapped <> '' then
+    words_mapped := words_mapped || run_mapped;
+    words_bare := words_bare || run_bare;
   end if;
-  foreach word in array regexp_split_to_array(folded, '[\s._-]+') loop
-    if regexp_replace(word, '[^a-zñ]', '', 'g') ~ words_re then
-      return true;
-    end if;
+
+  for i in 1 .. coalesce(array_length(words_mapped, 1), 0) loop
+    forms := array[words_mapped[i], regexp_replace(words_mapped[i], '(.)\1+', '\1', 'g'),
+                   words_bare[i], regexp_replace(words_bare[i], '(.)\1+', '\1', 'g')];
+    exempt := false;
+    foreach form in array forms[3:4] loop
+      if form = any (allowed_words) or regexp_replace(form, 's$', '') = any (allowed_words)
+         or regexp_replace(form, 'es$', '') = any (allowed_words) then
+        exempt := true;
+      end if;
+    end loop;
+    continue when exempt;
+    foreach form in array forms loop
+      foreach stem in array blocked_stems loop
+        if position(stem in form) > 0 then
+          return true;
+        end if;
+      end loop;
+    end loop;
+    foreach form in array forms loop
+      if form = any (blocked_words) or regexp_replace(form, 's$', '') = any (blocked_words)
+         or regexp_replace(form, 'es$', '') = any (blocked_words) then
+        return true;
+      end if;
+    end loop;
   end loop;
   return false;
 end;
 $$;
 
+-- Stores the name NFKC-normalised and trimmed, then refuses a blocked one. A name that breaks the length or
+-- character rules is left to the constraints, so it is refused for that reason, as displayNameError() does.
 create or replace function public.check_display_name() returns trigger
 language plpgsql
 set search_path = ''
 as $$
 begin
-  if public.display_name_blocked(new.display_name) then
+  new.display_name := btrim(normalize(new.display_name, NFKC), ' ');
+  if char_length(new.display_name) between 3 and 20
+     and public.display_name_chars_ok(new.display_name)
+     and public.display_name_blocked(new.display_name) then
     raise exception 'That display name is not allowed.' using errcode = '22023';
   end if;
   return new;
@@ -160,7 +245,9 @@ revoke all on function public.football_skill_ids() from public, anon, authentica
 
 -- best_sprint is what the boards show and rank, and is cleared when the player clears their 30 m results.
 -- sprint_record is the fastest time ever accepted and is never cleared, so clearing results can't reset the
--- once-per-24-hours limit on getting faster.
+-- once-per-24-hours limit on getting faster. The *_at columns are the 24-hour timers.
+-- Opting out of the leaderboard only hides the row (leaderboard() shows opted-in players only): the score
+-- row and its timers are kept, so opting out and back in can't reset any limit.
 create table if not exists public.leaderboard_scores (
   user_id                uuid        not null references auth.users (id) on delete cascade,
   tree_id                text        not null,
@@ -170,18 +257,49 @@ create table if not exists public.leaderboard_scores (
   sprint_record          numeric(5,2)         check (sprint_record between 3.6 and 15),
   sprint_improved_at     timestamptz,
   level_step_raised_at   timestamptz,
+  skills_raised_at       timestamptz,
   updated_at             timestamptz not null default now(),
   primary key (user_id, tree_id)
 );
 
--- For a database that already ran an earlier version of this file: add the record and recount skills.
+-- For a database that already ran an earlier version of this file: add the new columns and fix up the rows.
 alter table public.leaderboard_scores
   add column if not exists sprint_record numeric(5,2) check (sprint_record between 3.6 and 15);
+alter table public.leaderboard_scores
+  add column if not exists skills_raised_at timestamptz;
 update public.leaderboard_scores set sprint_record = best_sprint where sprint_record is null and best_sprint is not null;
+-- Recount skills as distinct real ids, but only ever lower them: a re-run must not lift a score past the
+-- 3-per-day limit. (Existing rows keep skills_raised_at null, so their next save may add up to 3 at once.)
 update public.leaderboard_scores s
-   set skills = (select count(distinct d) from unnest(p.done) d where d = any (public.football_skill_ids()))
+   set skills = least(s.skills, (select count(distinct d) from unnest(p.done) d where d = any (public.football_skill_ids())))
   from public.progress p
  where p.user_id = s.user_id and p.tree_id = s.tree_id and s.tree_id = 'football';
+
+-- Football progress saved before this ran (or before the trigger existed) and with no score row yet gets one,
+-- by the first-save rules of the trigger below: skills at most 3, level step at most 1, sprint rounded to
+-- 0.01 s and no faster than 4.5 s, timers starting now.
+insert into public.leaderboard_scores
+  (user_id, tree_id, skills, skills_raised_at, level_step, level_step_raised_at, best_sprint, sprint_record, sprint_improved_at)
+select p.user_id, p.tree_id,
+       f.skills, case when f.skills > 0 then now() end,
+       f.step, case when f.step > 0 then now() end,
+       case when f.sprint is not null then greatest(f.sprint, 4.5) end,
+       case when f.sprint is not null then greatest(f.sprint, 4.5) end,
+       case when f.sprint is not null then now() end
+  from public.progress p
+  cross join lateral (
+    select
+      least(3, (select count(distinct d) from unnest(p.done) d where d = any (public.football_skill_ids())))::integer as skills,
+      case when array_position(array['beginner', 'intermediate', 'advanced', 'expert'], p.player_level) is null
+           then 0 else 1 end as step,
+      (select round(min(v), 2) from (
+         select case when (r ->> 'value') ~ '^[0-9]+(\.[0-9]+)?$' then (r ->> 'value')::numeric end as v
+           from jsonb_array_elements(case when jsonb_typeof(p.results) = 'array' then p.results else '[]'::jsonb end) r
+          where r ->> 'skillId' = 'ft2'
+       ) t where v between 3.6 and 15) as sprint
+  ) f
+ where p.tree_id = 'football'
+on conflict (user_id, tree_id) do nothing;
 
 -- At most the number of football skills (32; the tests check it matches src/data/football.ts).
 alter table public.leaderboard_scores drop constraint if exists leaderboard_scores_skills_check;
@@ -208,6 +326,11 @@ declare
   has_sprint   boolean;
   sprint       numeric;
   prev         public.leaderboard_scores%rowtype;
+  first_skills integer;
+  first_step   integer;
+  first_sprint numeric;
+  new_skills   integer;
+  new_skills_raised timestamptz;
   new_step     integer;
   new_raised   timestamptz;
   new_best     numeric;
@@ -228,28 +351,52 @@ begin
     select count(distinct d) into skill_count from unnest(new.done) d where d = any (public.football_skill_ids());
 
     -- The 30 m sprint (skill ft2). has_sprint: are there any ft2 results at all, possible or not.
-    -- sprint: the fastest possible one. Impossible times (under 3.6 s or over 15 s) are left out, so one of
-    -- them can't hide a real time.
+    -- sprint: the fastest possible one, rounded to 0.01 s. Impossible times (under 3.6 s or over 15 s) are
+    -- left out first, so one of them can't hide a real time; rounding before the comparisons below means
+    -- 4.996 is 5.00, not faster than a 5.00 record.
     has_sprint := exists (select 1 from jsonb_array_elements(new.results) r where r ->> 'skillId' = 'ft2');
-    select min(v) into sprint from (
+    select round(min(v), 2) into sprint from (
       select case when (r ->> 'value') ~ '^[0-9]+(\.[0-9]+)?$' then (r ->> 'value')::numeric end as v
         from jsonb_array_elements(new.results) r
        where r ->> 'skillId' = 'ft2'
     ) t where v between 3.6 and 15;
 
-    select * into prev from public.leaderboard_scores where user_id = new.user_id and tree_id = new.tree_id;
+    -- "for update" so two saves at the same moment can't both take the same day's raise.
+    select * into prev from public.leaderboard_scores
+     where user_id = new.user_id and tree_id = new.tree_id for update;
 
-    -- First save: taken as it is, but both 24-hour timers start now.
+    -- First save: skills at most 3, level step at most 1, sprint no faster than 4.5 s. Each 24-hour timer
+    -- starts now when its value is above zero or set. If another save inserted the row first, nothing is
+    -- inserted here and this save goes down the normal path below against that row.
     if not found then
+      first_skills := least(skill_count, 3);
+      first_step := least(wanted, 1);
+      first_sprint := case when sprint is not null then greatest(sprint, 4.5) end;
       insert into public.leaderboard_scores
-        (user_id, tree_id, skills, level_step, level_step_raised_at, best_sprint, sprint_record, sprint_improved_at)
+        (user_id, tree_id, skills, skills_raised_at, level_step, level_step_raised_at, best_sprint, sprint_record, sprint_improved_at)
       values (
-        new.user_id, new.tree_id, skill_count, wanted,
-        case when wanted > 0 then now() end,
-        sprint, sprint,
-        case when sprint is not null then now() end
-      );
-      return new;
+        new.user_id, new.tree_id,
+        first_skills, case when first_skills > 0 then now() end,
+        first_step, case when first_step > 0 then now() end,
+        first_sprint, first_sprint,
+        case when first_sprint is not null then now() end
+      )
+      on conflict (user_id, tree_id) do nothing;
+      if found then
+        return new;
+      end if;
+      select * into prev from public.leaderboard_scores
+       where user_id = new.user_id and tree_id = new.tree_id for update;
+    end if;
+
+    -- Skills: down is always allowed and leaves the timer alone; up by at most 3, once per 24 hours.
+    new_skills := prev.skills;
+    new_skills_raised := prev.skills_raised_at;
+    if skill_count <= prev.skills then
+      new_skills := skill_count;
+    elsif prev.skills_raised_at is null or now() - prev.skills_raised_at >= interval '24 hours' then
+      new_skills := least(skill_count, prev.skills + 3);
+      new_skills_raised := now();
     end if;
 
     -- Level step: down is always allowed; up by 1, once per 24 hours.
@@ -273,12 +420,16 @@ begin
     elsif sprint is null then
       -- Only impossible times: nothing changes.
       null;
-    elsif prev.sprint_record is null
-       or (sprint < prev.sprint_record
-           and (prev.sprint_improved_at is null or now() - prev.sprint_improved_at >= interval '24 hours')) then
-      -- First real time, or a faster one after 24 hours: a new record.
-      new_best := sprint;
-      new_record := sprint;
+    elsif prev.sprint_record is null then
+      -- First real time: a new record, but no faster than 4.5 s.
+      new_best := greatest(sprint, 4.5);
+      new_record := new_best;
+      new_improved := now();
+    elsif sprint < prev.sprint_record
+      and (prev.sprint_improved_at is null or now() - prev.sprint_improved_at >= interval '24 hours') then
+      -- Faster after 24 hours: a new record, but at most 5% faster than the old one.
+      new_best := greatest(sprint, round(prev.sprint_record * 0.95, 2));
+      new_record := new_best;
       new_improved := now();
     elsif sprint >= prev.sprint_record then
       -- Not faster than the record: taken as it is.
@@ -289,7 +440,8 @@ begin
     end if;
 
     update public.leaderboard_scores
-       set skills = skill_count,
+       set skills = new_skills,
+           skills_raised_at = new_skills_raised,
            level_step = new_step,
            level_step_raised_at = new_raised,
            best_sprint = new_best,
@@ -321,41 +473,71 @@ create table if not exists public.leaderboard_reports (
 alter table public.leaderboard_reports enable row level security;
 revoke all on public.leaderboard_reports from anon, authenticated;
 -- Reports are written only through report_row(). Nobody reads them from the app.
+create index if not exists leaderboard_reports_reporter_idx on public.leaderboard_reports (reporter_id, created_at);
 
--- Players only ever see the leaderboard through this function, which holds the row ids back: it takes a
--- "rank key" instead of a user id. To report a row, the app passes the display name.
-create or replace function public.report_row(reported_name text, reason text) returns void
+-- Each player's row key: a random id that leaderboard() returns instead of the user id, so the app can
+-- report a row without ever seeing who it is. It never changes, so a report reaches the player who was on
+-- the row even after a rename. Keys are made by leaderboard() the first time a player is listed.
+create table if not exists public.leaderboard_keys (
+  user_id  uuid primary key references auth.users (id) on delete cascade,
+  row_key  uuid not null unique default gen_random_uuid()
+);
+
+alter table public.leaderboard_keys enable row level security;
+revoke all on public.leaderboard_keys from anon, authenticated;
+-- No policies and no grants: only leaderboard() and report_row() read or write this table.
+
+-- Report a row by the row key leaderboard() gave for it. At most 10 reports per player in 24 hours.
+-- An unknown key, a player who has left the board, or the caller's own row is ignored without an error, so
+-- keys can't be probed. One report per player and reported player; an empty reason is saved as 'unspecified'.
+drop function if exists public.report_row(text, text);
+create or replace function public.report_row(row_key uuid, reason text) returns void
 language plpgsql
 security definer
 set search_path = ''
 as $$
 declare
   target uuid;
+  why    text := left(coalesce(nullif(btrim(report_row.reason), ''), 'unspecified'), 300);
 begin
   if auth.uid() is null then
     raise exception 'Sign in to report a row.' using errcode = '28000';
   end if;
-  select p.user_id into target from public.profiles p
-   where lower(p.display_name) = lower(reported_name) and p.leaderboard_opt_in;
+  -- One report at a time per player, so two at once can't both slip under the limit.
+  perform pg_advisory_xact_lock(hashtextextended('report_row:' || auth.uid()::text, 0));
+  if (select count(*) from public.leaderboard_reports r
+       where r.reporter_id = auth.uid() and r.created_at > now() - interval '24 hours') >= 10 then
+    raise exception 'Too many reports today.';
+  end if;
+  select k.user_id into target
+    from public.leaderboard_keys k
+    join public.profiles p on p.user_id = k.user_id and p.leaderboard_opt_in
+   where k.row_key = report_row.row_key;
   if target is null or target = auth.uid() then
     return;
   end if;
   insert into public.leaderboard_reports (reporter_id, reported_id, reason)
-  values (auth.uid(), target, left(reason, 300))
+  values (auth.uid(), target, why)
   on conflict (reporter_id, reported_id) do nothing;
 end;
 $$;
 
-revoke all on function public.report_row(text, text) from public, anon;
-grant execute on function public.report_row(text, text) to authenticated;
+revoke all on function public.report_row(uuid, text) from public, anon;
+grant execute on function public.report_row(uuid, text) to authenticated;
 
--- 5. The leaderboard: top 50 in the scope, plus the caller's own row. Opted-in players only. Never the city.
+-- 5. The leaderboard: the top 50 in the scope (everyone tied at rank 50 too, so a board can be a little
+-- longer), plus the caller's own row. Opted-in players only; opted-out players are hidden. Never the city
+-- and never the user id: each row carries its row key instead, for report_row(). Rows are in rank order,
+-- then by display name in plain code-point order (collate "C"), the same as rankEntries() in TypeScript.
 -- scope: global | continent | hemisphere | country. test_id: rank by one test alone (ft2, the 30 m sprint,
 -- is the only one at launch); null ranks overall.
+-- Not "stable": it creates missing row keys, so it has to be called with POST (the supabase-js rpc default).
+-- The return columns changed (row_key), which "create or replace" can't do, so the old one is dropped first.
+drop function if exists public.leaderboard(text, text, text);
 create or replace function public.leaderboard(scope text, tree_id text default 'football', test_id text default null)
-returns table (rank bigint, display_name text, country_code text, skills integer, level_step integer, best_sprint numeric, is_me boolean)
+returns table (rank bigint, row_key uuid, display_name text, country_code text, skills integer, level_step integer, best_sprint numeric, is_me boolean)
 language plpgsql
-stable
+volatile
 security definer
 set search_path = ''
 as $$
@@ -375,6 +557,13 @@ begin
   end if;
 
   select * into me from public.profiles where user_id = auth.uid();
+
+  -- A row key for every listed player who has none yet.
+  insert into public.leaderboard_keys (user_id)
+  select p.user_id from public.profiles p
+   where p.leaderboard_opt_in
+     and not exists (select 1 from public.leaderboard_keys k where k.user_id = p.user_id)
+  on conflict do nothing;
 
   return query
   with board as (
@@ -405,10 +594,11 @@ begin
       from scoped sc
      where test_id is null or sc.best_sprint is not null
   )
-  select r.rk, r.dn, r.cc, r.sk, r.ls, r.bs, (r.user_id = auth.uid())
+  select r.rk, k.row_key, r.dn, r.cc, r.sk, r.ls, r.bs, (r.user_id = auth.uid())
     from ranked r
+    join public.leaderboard_keys k on k.user_id = r.user_id
    where r.rk <= 50 or r.user_id = auth.uid()
-   order by r.rk, r.dn;
+   order by r.rk, r.dn collate "C";
 end;
 $$;
 
@@ -424,12 +614,12 @@ immutable
 set search_path = ''
 as $$
   select case
-    when code = any (array['AL','AD','AT','BY','BE','BA','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IS','IE','IT','XK','LV','LI','LT','LU','MT','MD','MC','ME','NL','MK','NO','PL','PT','RO','RU','SM','RS','SK','SI','ES','SE','CH','UA','GB','VA']) then 'EU'
-    when code = any (array['AF','AM','AZ','BH','BD','BT','BN','KH','CN','GE','IN','ID','IR','IQ','IL','JP','JO','KZ','KW','KG','LA','LB','MY','MV','MN','MM','NP','KP','OM','PK','PS','PH','QA','SA','SG','KR','LK','SY','TW','TJ','TH','TL','TR','TM','AE','UZ','VN','YE']) then 'AS'
-    when code = any (array['DZ','AO','BJ','BW','BF','BI','CV','CM','CF','TD','KM','CG','CD','CI','DJ','EG','GQ','ER','SZ','ET','GA','GM','GH','GN','GW','KE','LS','LR','LY','MG','MW','ML','MR','MU','MA','MZ','NA','NE','NG','RW','ST','SN','SC','SL','SO','ZA','SS','SD','TZ','TG','TN','UG','ZM','ZW']) then 'AF'
-    when code = any (array['AG','BS','BB','BZ','CA','CR','CU','DM','DO','SV','GD','GT','HT','HN','JM','MX','NI','PA','KN','LC','VC','TT','US']) then 'NA'
-    when code = any (array['AR','BO','BR','CL','CO','EC','GY','PY','PE','SR','UY','VE']) then 'SA'
-    when code = any (array['AU','FJ','KI','MH','FM','NR','NZ','PW','PG','WS','SB','TO','TV','VU']) then 'OC'
+    when code = any (array['AL','AD','AT','BY','BE','BA','BG','HR','CY','CZ','DK','EE','FI','FR','DE','GR','HU','IS','IE','IT','XK','LV','LI','LT','LU','MT','MD','MC','ME','NL','MK','NO','PL','PT','RO','RU','SM','RS','SK','SI','ES','SE','CH','UA','GB','VA','AX','FO','GI','GG','IM','JE','SJ']) then 'EU'
+    when code = any (array['AF','AM','AZ','BH','BD','BT','BN','KH','CN','GE','IN','ID','IR','IQ','IL','JP','JO','KZ','KW','KG','LA','LB','MY','MV','MN','MM','NP','KP','OM','PK','PS','PH','QA','SA','SG','KR','LK','SY','TW','TJ','TH','TL','TR','TM','AE','UZ','VN','YE','HK','MO']) then 'AS'
+    when code = any (array['DZ','AO','BJ','BW','BF','BI','CV','CM','CF','TD','KM','CG','CD','CI','DJ','EG','GQ','ER','SZ','ET','GA','GM','GH','GN','GW','KE','LS','LR','LY','MG','MW','ML','MR','MU','MA','MZ','NA','NE','NG','RW','ST','SN','SC','SL','SO','ZA','SS','SD','TZ','TG','TN','UG','ZM','ZW','RE','YT','SH','EH']) then 'AF'
+    when code = any (array['AG','BS','BB','BZ','CA','CR','CU','DM','DO','SV','GD','GT','HT','HN','JM','MX','NI','PA','KN','LC','VC','TT','US','AI','AW','BM','BQ','VG','KY','CW','GL','GP','MQ','MS','PR','BL','MF','PM','SX','TC','VI']) then 'NA'
+    when code = any (array['AR','BO','BR','CL','CO','EC','GY','PY','PE','SR','UY','VE','FK','GF']) then 'SA'
+    when code = any (array['AU','FJ','KI','MH','FM','NR','NZ','PW','PG','WS','SB','TO','TV','VU','AS','CX','CC','CK','PF','GU','NC','NU','NF','MP','PN','TK','WF']) then 'OC'
   end;
 $$;
 
@@ -440,10 +630,12 @@ set search_path = ''
 as $$
   select case
     when code is null then null
+    -- Not in the country list: unknown, as in hemisphereFor().
+    when public.country_continent(code) is null then null
     -- Countries with land on both sides of the equator: the player's own pick.
-    when code = any (array['ID','MV','CG','CD','GQ','GA','KE','ST','SO','UG','BR','CO','EC','KI','NR']) then picked
+    when code = any (array['ID','MV','CG','CD','GQ','GA','KE','ST','SO','UG','BR','CO','EC','KI']) then picked
     -- Capital in the south.
-    when code = any (array['TL','AO','BW','BI','KM','SZ','LS','MG','MW','MU','MZ','NA','RW','SC','ZA','TZ','ZM','ZW','AR','BO','CL','PY','PE','UY','AU','FJ','NZ','PG','WS','SB','TO','TV','VU']) then 'S'
+    when code = any (array['TL','AO','BW','BI','KM','SZ','LS','MG','MW','MU','MZ','NA','RW','SC','ZA','TZ','ZM','ZW','AR','BO','CL','PY','PE','UY','AU','FJ','NR','NZ','PG','WS','SB','TO','TV','VU','RE','YT','SH','FK','AS','CX','CC','CK','PF','NC','NU','NF','PN','TK','WF']) then 'S'
     else 'N'
   end;
 $$;
@@ -451,5 +643,13 @@ $$;
 revoke all on function public.country_continent(text), public.country_hemisphere(text, text) from public, anon;
 grant execute on function public.country_continent(text), public.country_hemisphere(text, text) to authenticated;
 
--- 7. Leaving: turn the opt-in off. The row disappears from every ranking at once. (Deleting the account removes
--- everything, as in 002_delete_account.sql, because every table here cascades from auth.users.)
+-- 7. Leaving: turn the opt-in off. The row is hidden from every ranking at once; the score and its 24-hour
+-- limits are kept, so opting back in shows the same score. (Deleting the account removes everything, as in
+-- 002_delete_account.sql, because every table here cascades from auth.users.)
+
+-- Only country codes from the list above can be saved, so "ZZ" is refused. Added here, after section 6,
+-- because the check calls public.country_continent(). It is NOT VALID so rows saved before this check
+-- don't stop the migration; such a row has to get a known code (or none) the next time it is updated.
+alter table public.profiles drop constraint if exists profiles_country_code_known;
+alter table public.profiles add constraint profiles_country_code_known
+  check (country_code is null or public.country_continent(country_code) is not null) not valid;

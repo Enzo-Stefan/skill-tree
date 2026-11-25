@@ -23,7 +23,7 @@ interface Props {
   onSignIn: () => void;
 }
 
-/** The ranked leaderboard: five scope tabs, an optional single-test filter, the top 50 and your own row. */
+/** The ranked leaderboard: four scope tabs, an optional single-test filter, the top 50 and your own row. */
 export function LeaderboardScreen({ tree, auth, profile, profileLoading, profileError, onRetryProfile, onBack, onEditProfile, onSignIn }: Props) {
   const [scope, setScope] = useState<LeaderboardScope>("global");
   const [sprintOnly, setSprintOnly] = useState(false);

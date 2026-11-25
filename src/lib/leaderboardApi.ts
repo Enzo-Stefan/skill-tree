@@ -88,8 +88,6 @@ export async function fetchProfile(client: SupabaseClient, userId: string): Prom
   return {
     displayName: data.display_name,
     countryCode: data.country_code,
-    // The city column is kept for a later local board; the app neither reads nor writes it.
-    city: null,
     hemisphere: data.hemisphere,
     leaderboardOptIn: data.leaderboard_opt_in,
   };
@@ -119,6 +117,7 @@ export async function saveProfile(client: SupabaseClient, userId: string, profil
 
 interface BoardRow {
   rank: number | string;
+  row_key: string;
   display_name: string;
   country_code: string | null;
   skills: number | string;
@@ -137,6 +136,7 @@ export interface LeaderboardResult {
 export function toResult(rows: BoardRow[]): LeaderboardResult {
   const mapped: LeaderboardRow[] = rows.map((r) => ({
     rank: Number(r.rank),
+    rowKey: r.row_key,
     displayName: r.display_name,
     countryCode: r.country_code,
     skills: Number(r.skills),

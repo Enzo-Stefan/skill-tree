@@ -36,6 +36,10 @@ interface Props {
   /** The skill was added to the weekly plan by hand ("Add to my plan"). */
   planAdded?: boolean;
   onTogglePlan?: () => void;
+  /** Copies a link that opens this skill. When missing, the button is not shown. */
+  onCopyLink?: (id: string) => void;
+  /** Shares "beat my result" for a saved result, from test mode. */
+  onChallenge?: (skillId: string) => void;
   /** Hides the sheet while a dialog is open over it, so only one shows at a time (phones). */
   hidden?: boolean;
 }
@@ -56,6 +60,8 @@ export function SkillPanel({
   levelId = null,
   planAdded = false,
   onTogglePlan,
+  onCopyLink,
+  onChallenge,
   hidden = false,
 }: Props) {
   const skill = tree.skills.find((s) => s.id === skillId)!;
@@ -199,6 +205,11 @@ export function SkillPanel({
           {t.panel.watchYoutube}
         </a>
       )}
+      {onCopyLink && (
+        <button className="btn" type="button" onClick={() => onCopyLink(skill.id)}>
+          {t.panel.copyLink}
+        </button>
+      )}
     </>
   );
 
@@ -281,6 +292,7 @@ export function SkillPanel({
           }}
           onClose={() => setTestFor(null)}
           results={keepsTimes}
+          onChallenge={onChallenge}
         />
       )}
     </aside>

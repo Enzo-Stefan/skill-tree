@@ -160,8 +160,6 @@ export interface LeaderboardProfile {
   displayName: string;
   /** ISO 3166-1 alpha-2, e.g. "AL". */
   countryCode: string | null;
-  /** Free text, up to 60 characters. Stored for a later local board; never read by the ranking, never shown to others. */
-  city: string | null;
   /** Picked by the player only for countries that cross the equator; otherwise worked out. */
   hemisphere: Hemisphere | null;
   /** Off by default. Only opted-in players appear. */
@@ -171,6 +169,8 @@ export interface LeaderboardProfile {
 /** One line of a ranking. Everything another player is allowed to see, and nothing more. */
 export interface LeaderboardRow {
   rank: number;
+  /** A random key for the row, not the user id. Passed to report_row() to report the player on it. */
+  rowKey: string;
   displayName: string;
   countryCode: string | null;
   skills: number;

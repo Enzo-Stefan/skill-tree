@@ -6,7 +6,6 @@ import { LEADERBOARD_LIMIT } from "./leaderboard";
 const profile = (over: Partial<LeaderboardProfile> = {}): LeaderboardProfile => ({
   displayName: "Leo",
   countryCode: null,
-  city: null,
   hemisphere: null,
   leaderboardOptIn: true,
   ...over,
@@ -47,8 +46,8 @@ describe("places", () => {
 });
 
 describe("saving a profile", () => {
-  it("trims text, never sends a city and works out the hemisphere", () => {
-    expect(profileToRow("u1", profile({ displayName: " Leo ", countryCode: "es", city: "Madrid" }))).toEqual({
+  it("trims text and works out the hemisphere", () => {
+    expect(profileToRow("u1", profile({ displayName: " Leo ", countryCode: "es" }))).toEqual({
       user_id: "u1",
       display_name: "Leo",
       country_code: "ES",
@@ -63,10 +62,9 @@ describe("saving a profile", () => {
   });
 
   it("ignores a country that isn't in the table", () => {
-    const row = profileToRow("u1", profile({ countryCode: "ZZ", hemisphere: "S", city: "x".repeat(80) }));
+    const row = profileToRow("u1", profile({ countryCode: "ZZ", hemisphere: "S" }));
     expect(row.country_code).toBeNull();
     expect(row.hemisphere).toBeNull();
-    expect(row).not.toHaveProperty("city");
   });
 });
 
@@ -86,6 +84,7 @@ describe("level steps", () => {
 describe("the database's answer", () => {
   const row = (rank: number, name: string, isMe = false) => ({
     rank,
+    row_key: `key-${rank}`,
     display_name: name,
     country_code: "ES",
     skills: "12",
@@ -96,7 +95,7 @@ describe("the database's answer", () => {
 
   it("turns rows into camel-case fields and numbers", () => {
     const { top, me } = toResult([{ ...row(1, "a"), best_sprint: null }, row(2, "b")]);
-    expect(top[0]).toEqual({ rank: 1, displayName: "a", countryCode: "ES", skills: 12, levelStep: 5, bestSprint: null, isMe: false });
+    expect(top[0]).toEqual({ rank: 1, rowKey: "key-1", displayName: "a", countryCode: "ES", skills: 12, levelStep: 5, bestSprint: null, isMe: false });
     expect(top[1].bestSprint).toBe(5.61);
     expect(me).toBeNull();
   });

@@ -44,7 +44,6 @@ export function LeaderboardProfileDialog({ initial, onSave, onClose }: Props) {
     const result = await onSave({
       displayName: name.trim(),
       countryCode: country || null,
-      city: null,
       hemisphere: askHemisphere ? hemisphere : null,
       leaderboardOptIn: optIn,
     });
