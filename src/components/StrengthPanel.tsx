@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import type { TreeSummary } from "../lib/activeTree";
 import { panelIn, panelOut } from "../lib/areaSlide";
 import { useModalFocus } from "./useModalFocus";
@@ -26,7 +27,8 @@ export function StrengthPanel({ trees, onSwitch }: Props) {
       <button type="button" className="strength-handle" aria-label={t.strengthPanel.handleLabel} aria-haspopup="dialog" onClick={() => setOpen(true)}>
         {t.strengthPanel.handle}
       </button>
-      {open && <Panel tree={strength} onSwitch={onSwitch} onClose={() => setOpen(false)} />}
+      {/* Portalled to <body>: inside the sticky, backdrop-filtered .switcher on phones, position:fixed would size to the strip. */}
+      {open && createPortal(<Panel tree={strength} onSwitch={onSwitch} onClose={() => setOpen(false)} />, document.body)}
     </>
   );
 }

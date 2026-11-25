@@ -518,11 +518,13 @@ export default function App() {
             onChangeLevel={hasLevels ? openPicker : undefined}
           />
           <div className="switcher">
-            <button type="button" className="area-pill" aria-label={t.areas.change(treeName)} onClick={() => goTo("areas")}>
-              {treeName}
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
-            </button>
-            <StrengthPanel trees={treeChoices} onSwitch={switchToTree} />
+            <div className="area-row">
+              <button type="button" className="area-pill" aria-label={t.areas.change(treeName)} onClick={() => goTo("areas")}>
+                {treeName}
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6" /></svg>
+              </button>
+              <StrengthPanel trees={treeChoices} onSwitch={switchToTree} />
+            </div>
           </div>
           {hasLevels && playerLevelId && (
             <PracticeBar

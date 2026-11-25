@@ -321,6 +321,9 @@
 .areas-screen .tree-switch { max-width: 100%; }
 .areas-screen .branch-tabs { flex-wrap: wrap; overflow: visible; border: 0; background: none; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none; padding: 0; margin: 0; }
 
+/* The area pill and the Strength handle share one row in the Train header. */
+.area-row { align-self: flex-start; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+
 .strength-handle {
   display: inline-flex;
   align-items: center;
