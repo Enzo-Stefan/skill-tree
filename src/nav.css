@@ -346,4 +346,6 @@
   height: 100%;
   border-radius: var(--radius-card) 0 0 var(--radius-card);
   overflow-y: auto;
+  /* Flush with the screen edges, so the notch, home bar and landscape cutout are cleared inside the panel. */
+  padding: calc(24px + env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) 24px;
 }
