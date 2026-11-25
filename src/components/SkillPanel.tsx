@@ -39,7 +39,7 @@ interface Props {
   /** Copies a link that opens this skill. When missing, the button is not shown. */
   onCopyLink?: (id: string) => void;
   /** Shares "beat my result" for a saved result, from test mode. */
-  onChallenge?: (skillId: string, value: number) => void;
+  onChallenge?: (skillId: string) => void;
   /** Hides the sheet while a dialog is open over it, so only one shows at a time (phones). */
   hidden?: boolean;
 }

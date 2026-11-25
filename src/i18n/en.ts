@@ -285,7 +285,7 @@ export const en = {
   challenge: {
     lower: (skill: string, time: string) => `I did ${skill} in ${time}. Beat it?`,
     higher: (skill: string, time: string) => `I got ${time} on ${skill}. Beat it?`,
-    title: (skill: string) => `Skill Tree challenge: ${skill}`,
+    title: (skill: string) => `hapi skill challenge: ${skill}`,
     copied: "Challenge copied. Paste it to a mate.",
   },
   video: {

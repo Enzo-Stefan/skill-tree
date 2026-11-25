@@ -23,7 +23,7 @@ import { SettingsScreen } from "./components/SettingsScreen";
 import { useAuth } from "./auth/useAuth";
 import { SignInDialog } from "./components/SignInDialog";
 import { challengeText } from "./lib/challenge";
-import { resultDirection } from "./lib/results";
+import { bestResult, resultDirection } from "./lib/results";
 import { skillFromSearch, skillUrl, withoutSkillParam } from "./lib/skillLink";
 import { loadWelcomeSkipped, saveWelcomeSkipped } from "./lib/welcome";
 import {
@@ -285,11 +285,13 @@ export default function App() {
       .catch(() => window.prompt(t.panel.copyLink, url));
   }
 
-  // Shares "I did X in 13.2 s. Beat it?" plus the skill link: the share sheet where there is one, else the clipboard.
-  function challengeMate(skillId: string, value: number) {
+  // Shares "I did X in 13.2 s. Beat it?" with the player's best time for the skill (not the run that just ended)
+  // plus the skill link: the share sheet where there is one, else the clipboard.
+  function challengeMate(skillId: string) {
     const skill = tree.skills.find((s) => s.id === skillId);
     const better = skill ? resultDirection(tree, skill) : null;
-    if (!skill || !better) return;
+    const value = bestResult(tree, results.results, skillId)?.value;
+    if (!skill || !better || value === undefined) return;
     const url = skillUrl(window.location.href, skillId, tree.id);
     const text = challengeText(skill.name, t.testMode.seconds(value), better, url);
     const copy = () =>

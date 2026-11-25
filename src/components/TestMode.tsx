@@ -33,8 +33,8 @@ interface Props {
   onClose: () => void;
   /** Where a finished stopwatch test's time can be saved. Only for skills whose results the app can keep. */
   results?: Results;
-  /** Shares a challenge for a saved result ("beat my time"). Without it there is no challenge button. */
-  onChallenge?: (skillId: string, value: number) => void;
+  /** Shares a challenge with the skill's best saved result ("beat my time"). Without it there is no challenge button. */
+  onChallenge?: (skillId: string) => void;
 }
 
 /** How often the clock redraws while it runs. The time itself comes from timestamps, not from counting these. */
@@ -209,7 +209,7 @@ export function TestMode({ skill, check, limit, canPass, onPassed, onClose, resu
             </p>
           )}
           {saved && onChallenge && state.phase === "passed" && (
-            <button className="btn test-wide" type="button" onClick={() => onChallenge(skill.id, saved.result.value)}>
+            <button className="btn test-wide" type="button" onClick={() => onChallenge(skill.id)}>
               {t.testMode.challenge}
             </button>
           )}
