@@ -109,4 +109,25 @@ describe("StrengthPanel", () => {
     fireEvent.click(again);
     expect(onSwitch).toHaveBeenCalledTimes(2);
   });
+
+  it("re-enables Open and still closes when onSwitch rejects", async () => {
+    const error = vi.spyOn(console, "error").mockImplementation(() => {});
+    const onSwitch = vi.fn(() => Promise.reject(new Error("offline")));
+    render(<StrengthPanel trees={[football, strength]} onSwitch={onSwitch} />);
+    fireEvent.click(handle());
+    fireEvent.click(screen.getByRole("button", { name: t.strengthPanel.open }));
+    const again = await screen.findByRole("button", { name: t.strengthPanel.open });
+    expect(again.hasAttribute("disabled")).toBe(false);
+    expect(error).toHaveBeenCalled();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    error.mockRestore();
+  });
+
+  it("keeps focus inside the dialog while Open is disabled", () => {
+    render(<StrengthPanel trees={[football, strength]} onSwitch={vi.fn(() => new Promise<void>(() => {}))} />);
+    fireEvent.click(handle());
+    fireEvent.click(screen.getByRole("button", { name: t.strengthPanel.open }));
+    expect(screen.getByRole("dialog").contains(document.activeElement)).toBe(true);
+  });
 });

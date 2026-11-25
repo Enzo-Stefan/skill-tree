@@ -29,7 +29,7 @@ Open the Strength tree (the weights tree, `id: "weights"`) from a side panel tha
 
 The dialog is rendered with `createPortal` on `document.body`, not inside `.switcher`: on phones `.switcher` is sticky (`z-index: 2`) and has `backdrop-filter`, which would make it the containing block of a `position: fixed` overlay and shrink the overlay to the strip. Only the handle stays in the header.
 
-Recommendation: one "Strength" button in the Train header, in a row with the area pill (`.area-row`, inside `.switcher`), on both phones and laptops. It is the screen a player is on when they want to train, and it needs no edge tab. An edge tab would sit on top of the tree's horizontal scroll and is harder to hit at 44px. Checked in headless Chromium at 390x844 and 1280x800, not on a device.
+Recommendation: one "Strength" button in the Train header, in a row with the area pill (`.area-row`, inside `.switcher`), on both phones and laptops. It is the screen a player is on when they want to train, and it needs no edge tab. An edge tab would sit on top of the tree's horizontal scroll and is harder to hit at 44px. Layout only (element bounding boxes, no screenshots) was measured in headless Chromium at 320x568, 375x812, 390x844, 812x375 and 1280x800: the handle sits beside the pill at every size, is 44px high on touch and 36px on desktop, and the page has no horizontal scroll. The panel itself, the slide animation and a real phone have not been checked.
 
 ### 2. What the panel lists
 

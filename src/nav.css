@@ -340,6 +340,7 @@
 .strength-handle:hover { border-color: var(--btn-border-hover); }
 @media (pointer: coarse) { .strength-handle { min-height: 44px; } }
 
+.strength-panel:focus { outline: none; }
 .strength-overlay { place-items: stretch end; padding: 0; }
 .strength-panel {
   width: min(340px, 100%);

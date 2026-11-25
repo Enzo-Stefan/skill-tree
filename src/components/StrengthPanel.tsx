@@ -46,16 +46,20 @@ function Panel({ tree, onSwitch, onClose }: { tree: TreeSummary; onSwitch: Props
     setClosing(true);
     panelOut(dialog.current, onClose);
   }
-  // Focus goes back to the handle (the parent does it on close), not to whatever was active on mount:
-  // Safari doesn't focus a button on click, so that would be <body>.
-  const skipRestore = useRef(false);
-  useModalFocus(dialog, close, skipRestore);
+  useModalFocus(dialog, close);
 
   async function pick() {
     if (switching) return;
     setSwitching(true);
-    await onSwitch(tree.id);
-    setSwitching(false);
+    // A disabled button drops focus to <body>, which would let Escape and Tab skip the dialog's trap.
+    dialog.current?.focus();
+    try {
+      await onSwitch(tree.id);
+    } catch (err) {
+      console.error("Switching to Strength failed", err);
+    } finally {
+      setSwitching(false);
+    }
   }
 
   return (
@@ -72,6 +76,7 @@ function Panel({ tree, onSwitch, onClose }: { tree: TreeSummary; onSwitch: Props
         role="dialog"
         aria-modal="true"
         aria-labelledby="strength-panel-title"
+        tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
       >
         <h2 id="strength-panel-title">{t.strengthPanel.title}</h2>
