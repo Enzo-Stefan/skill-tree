@@ -55,6 +55,7 @@ import {
   saveStreakState,
   streakWeeks,
   weekCanCount,
+  weekNudge,
   weekOf,
   type StreakState,
 } from "./lib/streak";
@@ -464,6 +465,9 @@ export default function App() {
           {hasLevels && playerLevelId && (
             <PracticeBar
               daysThisWeek={daysThisWeek(practiceDays, today)}
+              days={practiceDays}
+              today={today}
+              nudge={weekNudge(practiceDays, streakState.since, today)}
               streak={streak}
               trainedToday={trainedToday}
               onToggle={toggleTrainedToday}

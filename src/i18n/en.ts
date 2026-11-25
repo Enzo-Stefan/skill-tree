@@ -295,6 +295,9 @@ export const en = {
     weeks: (n: number) => `${n} ${n === 1 ? "week" : "weeks"}`,
     trained: "Trained today ✓ (tap to undo)",
     train: "I trained today",
+    /** Friday and Saturday, while the week's goal is still within reach. */
+    nudge: (n: number) =>
+      n === 1 ? "1 more day this week keeps your streak growing." : `${n} more days this week keep your streak growing.`,
   },
   levelUp: {
     label: "Level up question",

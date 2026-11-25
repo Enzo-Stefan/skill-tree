@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { football } from "../data/football";
-import { addTrainingDay, canPickLevel, daysThisWeek, levelUpDue, needsPlacementTest, streakWeeks, weekCanCount, weekOf, type StreakState } from "./streak";
+import { addTrainingDay, canPickLevel, daysThisWeek, levelUpDue, needsPlacementTest, streakWeeks, weekCanCount, weekNudge, weekOf, type StreakState } from "./streak";
 
 // 2026-11-23 is a Monday.
 const week = (monday: string, count: number): string[] =>
@@ -23,6 +23,32 @@ describe("weeks", () => {
 
   it("counts different training days this week, once each", () => {
     expect(daysThisWeek(["2026-11-23", "2026-11-23", "2026-11-25", "2026-11-16"], "2026-11-26")).toBe(2);
+  });
+});
+
+describe("weekNudge", () => {
+  // 2026-11-23 is a Monday, so 27 is a Friday and 28 a Saturday.
+  it("only shows on Friday and Saturday", () => {
+    expect(weekNudge(["2026-11-23"], null, "2026-11-26")).toBeNull();
+    expect(weekNudge(["2026-11-23"], null, "2026-11-27")).toBe(2);
+  });
+
+  it("counts the days still needed", () => {
+    expect(weekNudge(["2026-11-23", "2026-11-24"], null, "2026-11-27")).toBe(1);
+    expect(weekNudge(["2026-11-23", "2026-11-27"], null, "2026-11-27")).toBe(1);
+  });
+
+  it("stays quiet once the weekly goal is met", () => {
+    expect(weekNudge(week("2026-11-23", 3), null, "2026-11-27")).toBeNull();
+  });
+
+  it("stays quiet when the remaining days can't reach the goal", () => {
+    expect(weekNudge([], null, "2026-11-28")).toBeNull();
+    expect(weekNudge(["2026-11-23"], null, "2026-11-28")).toBe(2);
+  });
+
+  it("stays quiet when this week can't count toward the streak", () => {
+    expect(weekNudge(["2026-11-23"], "2026-11-23", "2026-11-27")).toBeNull();
   });
 });
 

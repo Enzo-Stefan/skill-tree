@@ -87,6 +87,22 @@ export function weekCanCount(since: WeekKey | null, today: DayKey): boolean {
 }
 
 /**
+ * How many more training days the week needs, when the day is a Friday or Saturday and the goal is
+ * still reachable this week, or null. Days still open are today (unless it's already a training day)
+ * and the days up to Sunday.
+ */
+export function weekNudge(days: DayKey[], since: WeekKey | null, today: DayKey): number | null {
+  const weekday = parse(today).getDay();
+  if (weekday !== 5 && weekday !== 6) return null;
+  if (!weekCanCount(since, today)) return null;
+  const left = PRACTICE_DAYS_PER_WEEK - daysThisWeek(days, today);
+  if (left <= 0) return null;
+  const daysToSunday = 7 - ((weekday + 6) % 7);
+  const open = daysToSunday - (days.includes(today) ? 1 : 0);
+  return left <= open ? left : null;
+}
+
+/**
  * The step to ask about moving up to (the next step, or step 1 of the next level), or null.
  * Asks at most once a week and never past the top step.
  */
