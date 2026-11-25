@@ -47,6 +47,7 @@ const weightsContent: Tree = {
       drill: "Hold a dumbbell or kettlebell against your chest. Squat until your thighs are level with the floor, then stand up.",
       test: "10 reps with good form, using the heaviest weight you can manage.",
       check: { kind: "count", needed: 10 },
+      video: "https://www.youtube.com/watch?v=Mu7aVOjEBdA",
       tip: "Push your knees out over your toes and keep your chest up.",
     },
     {
@@ -60,6 +61,7 @@ const weightsContent: Tree = {
       drill: "One foot forward, one back. Lower your back knee towards the floor and push back up, holding a dumbbell in each hand.",
       test: "8 reps on each leg with the heaviest weight you can manage.",
       check: { kind: "count", needed: 8, perSide: true },
+      video: "https://www.youtube.com/watch?v=la0pLPq-3A8",
       tip: "Most of your weight stays on the front foot. Football is played on one leg at a time.",
     },
     {
@@ -73,6 +75,7 @@ const weightsContent: Tree = {
       drill: "Hold a bar or dumbbells. With soft knees, push your hips back and lower the weight down your legs until you feel your hamstrings stretch, then stand tall.",
       test: "8 reps with the heaviest weight you can manage with a flat back.",
       check: { kind: "count", needed: 8 },
+      video: "https://www.youtube.com/watch?v=3VXmecChYYM",
       tip: "Strong hamstrings protect against the most common football injury.",
     },
     {
@@ -86,6 +89,7 @@ const weightsContent: Tree = {
       drill: "Bar on your upper back in a rack with safety bars set. Squat to thighs level with the floor and stand up. If you're under 16, only do this with an adult who knows the lift.",
       test: "5 reps with the heaviest weight you can manage, safety bars set.",
       check: { kind: "count", needed: 5 },
+      video: "https://www.youtube.com/watch?v=gcNh17Ckjgg",
       tip: "Brace like someone is about to poke your stomach, then squat.",
     },
     {
@@ -99,6 +103,7 @@ const weightsContent: Tree = {
       drill: "Stand inside a trap bar, grip the handles, and stand up by pushing the floor away. If you're under 16, only do this with an adult who knows the lift.",
       test: "5 reps with the heaviest weight you can manage with a flat back.",
       check: { kind: "count", needed: 5 },
+      video: "https://www.youtube.com/watch?v=JBMqhrqCDi8",
       tip: "Think of it as a jump you don't leave the ground on. Push hard through your feet.",
     },
 
@@ -113,6 +118,7 @@ const weightsContent: Tree = {
       drill: "Jump onto a sturdy box from two feet and land softly. Step down, don't jump down.",
       test: "5 jumps in a row onto a box at knee height, landing quietly.",
       check: { kind: "count", needed: 5, inARow: true },
+      video: "https://www.youtube.com/watch?v=kNIInK_Le8I",
       tip: "Land in the same position you take off from. Quiet landings mean good control.",
     },
     {
@@ -126,6 +132,7 @@ const weightsContent: Tree = {
       drill: "Hinge at the hips and snap them forward to swing the kettlebell to chest height. Your arms just guide it.",
       test: "15 reps with the heaviest kettlebell you can swing with good form.",
       check: { kind: "count", needed: 15 },
+      video: "https://www.youtube.com/watch?v=DqkYuWR4zRI",
       tip: "The power comes from your hips, like the last moment of a long pass.",
     },
     {
@@ -139,6 +146,7 @@ const weightsContent: Tree = {
       drill: "Stand side-on to a wall. Rotate and throw a medicine ball into the wall as hard as you can, catch it and go again.",
       test: "10 throws on each side with the heaviest ball you can throw fast.",
       check: { kind: "count", needed: 10, perSide: true },
+      video: "https://www.youtube.com/watch?v=BGuLau6Dn7s",
       tip: "Turn your hips first, then your shoulders. It's the same order as a shot.",
     },
     {
@@ -151,6 +159,7 @@ const weightsContent: Tree = {
       drill: "Bound forward from one leg, land on the same leg and hold the landing for 2 seconds.",
       test: "5 bounds on each leg, each one held for 2 seconds without wobbling.",
       check: { kind: "count", needed: 5, perSide: true },
+      video: "https://www.youtube.com/watch?v=k-6iv3ihgXc",
       tip: "Sprinting is just bounding from leg to leg. Stick every landing.",
     },
     {
@@ -164,6 +173,7 @@ const weightsContent: Tree = {
       drill: "Holding light dumbbells, dip into a quarter squat and jump as high as you can. Land softly and reset.",
       test: "5 jumps with the heaviest dumbbells that still let you jump fast.",
       check: { kind: "count", needed: 5 },
+      video: "https://www.youtube.com/watch?v=A-cFYWvaHr0",
       tip: "Speed matters more than weight here. If you slow down, go lighter.",
     },
 
@@ -178,6 +188,7 @@ const weightsContent: Tree = {
       drill: "Forearms and toes on the floor, body in a straight line. Squeeze your glutes.",
       test: "Hold a plank for 60 seconds without your hips dropping.",
       check: { kind: "hold", seconds: 60 },
+      video: "https://www.youtube.com/watch?v=6LqqeBtFn9M",
       tip: "Breathe normally. Holding your breath doesn't count.",
     },
     {
@@ -190,6 +201,7 @@ const weightsContent: Tree = {
       drill: "Lie on your side, up on one forearm, hips lifted so your body is straight.",
       test: "Hold 45 seconds on each side.",
       check: { kind: "hold", seconds: 45, perSide: true },
+      video: "https://www.youtube.com/watch?v=N_s9em1xTqU",
       tip: "This is the muscle that keeps you upright when someone leans on you.",
     },
     {
@@ -202,6 +214,7 @@ const weightsContent: Tree = {
       drill: "Lie on your back, arms up, knees bent over your hips. Lower the opposite arm and leg slowly while your lower back stays flat.",
       test: "12 slow reps on each side with your lower back on the floor the whole time.",
       check: { kind: "count", needed: 12, perSide: true },
+      video: "https://www.youtube.com/watch?v=GbSC02oU3To",
       tip: "Slow is the point. If your back lifts, make the movement smaller.",
     },
     {
@@ -215,6 +228,7 @@ const weightsContent: Tree = {
       drill: "Stand side-on to a cable or band. Hold the handle at your chest, press it straight out and back without letting it twist you.",
       test: "10 reps on each side with the heaviest weight you can hold still.",
       check: { kind: "count", needed: 10, perSide: true },
+      video: "https://www.youtube.com/watch?v=n8ZZG9gElhs",
       tip: "Resisting rotation is what keeps you balanced when you shield the ball.",
     },
     {
@@ -227,6 +241,7 @@ const weightsContent: Tree = {
       drill: "Hang from a bar and lift your knees to your chest without swinging.",
       test: "12 reps without swinging.",
       check: { kind: "count", needed: 12 },
+      video: "https://www.youtube.com/watch?v=l7OroezzX9k",
       tip: "Curl your hips up at the top. Lifting only your legs works your hip flexors, not your core.",
     },
 
@@ -241,6 +256,7 @@ const weightsContent: Tree = {
       drill: "Stand on one foot on a step, heel hanging off. Rise onto your toes and lower slowly.",
       test: "15 reps on each leg, full height, without holding on tight.",
       check: { kind: "count", needed: 15, perSide: true },
+      video: "https://www.youtube.com/watch?v=ElcvJ0kjt6c",
       tip: "Strong calves protect your ankles and Achilles. Go all the way up and all the way down.",
     },
     {
@@ -253,6 +269,7 @@ const weightsContent: Tree = {
       drill: "Lie on your back, one foot on the floor and the other leg straight. Push your hips up and lower slowly.",
       test: "12 reps on each leg with a 2 second hold at the top.",
       check: { kind: "count", needed: 12, perSide: true },
+      video: "https://www.youtube.com/watch?v=b1zTCyGJXCQ",
       tip: "Squeeze your glute at the top. It takes pressure off your hamstrings and knees.",
     },
     {
@@ -265,6 +282,7 @@ const weightsContent: Tree = {
       drill: "Side plank with your top knee resting on a bench and your bottom leg off the floor. Once that's easy, rest your foot on the bench instead, which is much harder.",
       test: "Hold 20 seconds on each side with your knee on the bench.",
       check: { kind: "hold", seconds: 20, perSide: true },
+      video: "https://www.youtube.com/watch?v=5Hs7AfiMXgs",
       tip: "This trains the groin muscles that get pulled on long passes and stretches for the ball.",
     },
     {
@@ -277,6 +295,7 @@ const weightsContent: Tree = {
       drill: "Kneel with a partner holding your ankles. Lower your body forward as slowly as you can, catch yourself with your hands and push back up.",
       test: "5 reps, each lowering taking at least 3 seconds.",
       check: { kind: "count", needed: 5 },
+      video: "https://www.youtube.com/watch?v=3-4pKUhkzoQ",
       tip: "This one exercise cuts hamstring injuries a lot. Lower slowly, even if you fall the last bit.",
     },
     {
@@ -290,6 +309,7 @@ const weightsContent: Tree = {
       drill: "Stand on one leg holding a dumbbell in the opposite hand. Hinge forward until your body is level with the floor, then stand tall.",
       test: "8 reps on each leg with the heaviest dumbbell you can manage without losing balance.",
       check: { kind: "count", needed: 8, perSide: true },
+      video: "https://www.youtube.com/watch?v=Zfr6wizR8rs",
       tip: "Keep your hips square to the floor. It trains balance and hamstrings together.",
     },
 
