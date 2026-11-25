@@ -22,7 +22,7 @@ import { ProgressScreen } from "./components/ProgressScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { useAuth } from "./auth/useAuth";
 import { SignInDialog } from "./components/SignInDialog";
-import { challengeText } from "./lib/challenge";
+import { challengeText, shareChallenge } from "./lib/challenge";
 import { bestResult, resultDirection } from "./lib/results";
 import { skillFromSearch, skillUrl, withoutSkillParam } from "./lib/skillLink";
 import { loadWelcomeSkipped, saveWelcomeSkipped } from "./lib/welcome";
@@ -294,18 +294,10 @@ export default function App() {
     if (!skill || !better || value === undefined) return;
     const url = skillUrl(window.location.href, skillId, tree.id);
     const text = challengeText(skill.name, t.testMode.seconds(value), better, url);
-    const copy = () =>
-      Promise.resolve()
-        .then(() => navigator.clipboard.writeText(text))
-        .then(() => showToast(t.challenge.copied))
-        .catch(() => window.prompt(t.testMode.challenge, text));
-    if (typeof navigator.share !== "function") {
-      void copy();
-      return;
-    }
-    navigator.share({ title: t.challenge.title(skill.name), text }).catch((e: unknown) => {
-      if (e instanceof DOMException && e.name === "AbortError") return;
-      void copy();
+    void shareChallenge(t.challenge.title(skill.name), text, t.challenge.copyPrompt, () => showToast(t.challenge.copied), {
+      share: typeof navigator.share === "function" ? (d) => navigator.share(d) : undefined,
+      writeText: navigator.clipboard ? (v) => navigator.clipboard.writeText(v) : undefined,
+      prompt: (m, v) => window.prompt(m, v),
     });
   }
 

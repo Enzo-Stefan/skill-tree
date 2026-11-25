@@ -1,6 +1,7 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Skill } from "../types";
+import { showChallengeButton } from "../lib/challenge";
 import {
   canUndo,
   elapsed,
@@ -208,8 +209,8 @@ export function TestMode({ skill, check, limit, canPass, onPassed, onClose, resu
               </button>
             </p>
           )}
-          {saved && onChallenge && state.phase === "passed" && (
-            <button className="btn test-wide" type="button" onClick={() => onChallenge(skill.id)}>
+          {showChallengeButton(!!saved, !!onChallenge, state.phase) && (
+            <button className="btn test-wide" type="button" onClick={() => onChallenge?.(skill.id)}>
               {t.testMode.challenge}
             </button>
           )}

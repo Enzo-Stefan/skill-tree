@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { challengeText, type ChallengeStrings } from "./challenge";
+import { describe, expect, it, vi } from "vitest";
+import { challengeText, shareChallenge, showChallengeButton, type ChallengeStrings, type ShareEnv } from "./challenge";
 
 const strings: ChallengeStrings = {
   lower: (s, v) => `I did ${s} in ${v}. Beat it?`,
@@ -16,5 +16,64 @@ describe("challengeText", () => {
   });
   it("ends with the link on its own line", () => {
     expect(challengeText("a", "1 s", "lower", url, strings).split("\n").pop()).toBe(url);
+  });
+});
+
+describe("shareChallenge", () => {
+  const abort = (e: unknown) => Promise.reject(e);
+  function setup(over: Partial<ShareEnv>) {
+    const calls = { copied: 0, prompt: [] as string[][] };
+    const env: ShareEnv = {
+      writeText: () => Promise.resolve(),
+      prompt: (m, v) => void calls.prompt.push([m, v]),
+      ...over,
+    };
+    return { calls, run: () => shareChallenge("T", "msg", "P", () => void calls.copied++, env) };
+  }
+
+  it("shares and does not copy when the share succeeds", async () => {
+    const share = vi.fn(() => Promise.resolve());
+    const { calls, run } = setup({ share });
+    await run();
+    expect(share).toHaveBeenCalledWith({ title: "T", text: "msg" });
+    expect(calls.copied).toBe(0);
+    expect(calls.prompt).toEqual([]);
+  });
+  it("does nothing when the share sheet is cancelled, even with a plain Error", async () => {
+    const plain = Object.assign(new Error("x"), { name: "AbortError" });
+    const { calls, run } = setup({ share: () => abort(plain) });
+    await run();
+    expect(calls.copied).toBe(0);
+    expect(calls.prompt).toEqual([]);
+  });
+  it("copies when the share is rejected for another reason", async () => {
+    const { calls, run } = setup({ share: () => abort(new Error("NotAllowedError")) });
+    await run();
+    expect(calls.copied).toBe(1);
+  });
+  it("copies when there is no share sheet", async () => {
+    const { calls, run } = setup({});
+    await run();
+    expect(calls.copied).toBe(1);
+  });
+  it("falls back to the prompt, with the copy wording, when the clipboard is blocked", async () => {
+    const { calls, run } = setup({ writeText: () => abort(new Error("denied")) });
+    await run();
+    expect(calls.copied).toBe(0);
+    expect(calls.prompt).toEqual([["P", "msg"]]);
+  });
+  it("falls back to the prompt when there is no clipboard", async () => {
+    const { calls, run } = setup({ writeText: undefined });
+    await run();
+    expect(calls.prompt).toEqual([["P", "msg"]]);
+  });
+});
+
+describe("showChallengeButton", () => {
+  it("shows only when saved, challengeable and passed", () => {
+    expect(showChallengeButton(true, true, "passed")).toBe(true);
+    expect(showChallengeButton(false, true, "passed")).toBe(false);
+    expect(showChallengeButton(true, false, "passed")).toBe(false);
+    expect(showChallengeButton(true, true, "failed")).toBe(false);
   });
 });

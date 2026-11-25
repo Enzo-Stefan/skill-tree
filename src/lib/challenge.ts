@@ -34,3 +34,53 @@ export function challengeText(
 ): string {
   return `${strings[better](skillName, time)}\n${url}`;
 }
+
+/** What the share needs from the browser; injectable so the branches can be tested. */
+export interface ShareEnv {
+  share?: (data: { title: string; text: string }) => Promise<void>;
+  writeText?: (text: string) => Promise<void>;
+  prompt: (message: string, value: string) => unknown;
+}
+
+/**
+ * Shares the challenge: the share sheet where there is one, else the clipboard, else a prompt to copy by hand.
+ * Cancelling the share sheet does nothing; any other share failure falls back to the clipboard.
+ * The prompt can be suppressed in some PWA or embedded contexts, like the copy-link one.
+ *
+ * Args:
+ *   title: The share sheet title.
+ *   text: The message to share.
+ *   promptTitle: The wording above the text in the prompt fallback.
+ *   onCopied: Called after the text reached the clipboard.
+ *   env: The browser functions to use.
+ */
+export async function shareChallenge(
+  title: string,
+  text: string,
+  promptTitle: string,
+  onCopied: () => void,
+  env: ShareEnv,
+): Promise<void> {
+  const copy = async () => {
+    try {
+      if (!env.writeText) throw new Error("no clipboard");
+      await env.writeText(text);
+      onCopied();
+    } catch {
+      env.prompt(promptTitle, text);
+    }
+  };
+  if (!env.share) return copy();
+  try {
+    await env.share({ title, text });
+  } catch (e: unknown) {
+    // Checked by name: some browsers and webviews reject with a plain Error rather than a DOMException.
+    if ((e as { name?: unknown } | null)?.name === "AbortError") return;
+    await copy();
+  }
+}
+
+/** The challenge button shows once the result is saved and the test passed, and only when the app can share. */
+export function showChallengeButton(saved: boolean, canChallenge: boolean, phase: string): boolean {
+  return saved && canChallenge && phase === "passed";
+}

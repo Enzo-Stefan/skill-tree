@@ -287,6 +287,7 @@ export const en = {
     higher: (skill: string, time: string) => `I got ${time} on ${skill}. Beat it?`,
     title: (skill: string) => `hapi skill challenge: ${skill}`,
     copied: "Challenge copied. Paste it to a mate.",
+    copyPrompt: "Copy this challenge to send to a mate",
   },
   video: {
     offlineTitle: "Video needs internet",
