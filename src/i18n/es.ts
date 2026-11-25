@@ -78,6 +78,9 @@ export const es: Strings = {
     addToPlan: "Añadir a mi plan",
     removeFromPlan: "Quitar de mi plan",
     inPlan: "Está en tu plan: ya está desbloqueada y aún no la has pasado.",
+    addToCalendar: "Añadir mis días de entrenamiento al calendario",
+    calendarSummary: "Entrenamiento",
+    calendarDescription: "Tus días de entrenamiento semanales en hapi skill. Abre la app para ver la sesión de hoy:",
   },
   lifts: {
     title: "Tus pesos",

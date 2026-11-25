@@ -81,6 +81,9 @@ export const en = {
     addToPlan: "Add to my plan",
     removeFromPlan: "Remove from my plan",
     inPlan: "In your plan: it's unlocked and not passed yet.",
+    addToCalendar: "Add training days to my calendar",
+    calendarSummary: "Training",
+    calendarDescription: "Your weekly training days in hapi skill. Open the app to see today's session:",
   },
   lifts: {
     title: "Your weights",
