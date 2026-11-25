@@ -63,20 +63,25 @@ export function normalizeCity(city: string | null | undefined): string | null {
 // not a complete filter: a fluent reader should extend it before launch, and reports catch the rest.
 // Strong stems are blocked anywhere in the name ("xXfuckXx"). Short words are blocked only as a whole
 // word, so "grape", "economy" and "computadora" stay fine.
-const BLOCKED_STEMS = ["fuck", "shit", "bitch", "cunt", "nigg", "whore", "hitler", "mierda", "pendejo", "cabron"];
-const BLOCKED_WORDS = ["fag", "slut", "rape", "nazi", "puta", "puto", "joder", "coño", "verga", "pija", "violar"];
+export const BLOCKED_STEMS = ["fuck", "shit", "bitch", "cunt", "nigg", "whore", "hitler", "mierda", "pendejo", "cabron"];
+export const BLOCKED_WORDS = [
+  "fag", "slut", "rape", "nazi", "puta", "puto", "joder", "coño", "verga", "pija", "violar",
+  "culo", "marica", "maricon", "chinga",
+];
+// Whole words also count with a plural ending ("culos", "putas", "maricones"). Kept identical to
+// display_name_blocked in supabase/migrations/005_leaderboard.sql; a test compares the two lists.
+const BLOCKED_WORD_PATTERN = new RegExp(`^(${BLOCKED_WORDS.join("|")})(s|es)?$`);
 
 const LOOKALIKES: Record<string, string> = { "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "$": "s", "@": "a", "!": "i" };
+const ACCENTED = "áàäâéèëêíìïîóòöôúùüû";
+const UNACCENTED = "aaaaeeeeiiiioooouuuu";
 
-/** Lower case, accents off (but ñ kept), look-alike symbols turned into letters, everything else dropped. */
+/** Lower case, look-alike symbols and listed accents turned into plain letters (ñ kept), the rest dropped. Same as the SQL function. */
 function foldWord(word: string): string {
   return word
     .toLowerCase()
-    .replace(/ñ/g, "n~")
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/n~/g, "ñ")
     .replace(/[013457$@!]/g, (c) => LOOKALIKES[c] ?? c)
+    .replace(/[áàäâéèëêíìïîóòöôúùüû]/g, (c) => UNACCENTED[ACCENTED.indexOf(c)] ?? c)
     .replace(/[^a-zñ]/g, "");
 }
 
@@ -85,7 +90,7 @@ function isBlockedName(name: string): boolean {
   const joined = words.join("");
   if (BLOCKED_STEMS.some((stem) => joined.includes(stem))) return true;
   // Spelled out letter by letter ("p u t a") also counts as the whole word.
-  return BLOCKED_WORDS.includes(joined) || words.some((w) => BLOCKED_WORDS.includes(w));
+  return BLOCKED_WORD_PATTERN.test(joined) || words.some((w) => BLOCKED_WORD_PATTERN.test(w));
 }
 
 /** Null if the name is fine, otherwise a short reason code the screen can translate. */

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
+import migration from "../../supabase/migrations/005_leaderboard.sql?raw";
 import {
+  BLOCKED_STEMS,
+  BLOCKED_WORDS,
   IMPROVE_EVERY_MS,
   applyScoreUpdate,
   bestPossibleSprint,
@@ -204,7 +207,24 @@ describe("display names", () => {
   });
 
   it("does not block innocent names that contain a short blocked word", () => {
-    for (const name of ["Grape Fan", "Economy", "Computadora", "Pitufo", "Drape"]) expect(displayNameError(name), name).toBeNull();
+    for (const name of [
+      "Grape Fan", "Economy", "Computadora", "Pitufo", "Drape", "Raptor", "Putamen", "Puton",
+      "Chingachgook", "Maricarmen", "Cumulo", "Culottes",
+    ]) expect(displayNameError(name), name).toBeNull();
+  });
+
+  it("blocks the newer words and their plurals as whole words", () => {
+    for (const name of ["culo", "Culos", "marica", "maricon", "Maricones", "chinga", "chingas", "putas", "Putos", "c u l o", "mar.ica", "CUL0"]) {
+      expect(displayNameError(name), name).toBe("blocked");
+    }
+  });
+
+  it("keeps the word lists equal to display_name_blocked in 005_leaderboard.sql", () => {
+    const stems = [...migration.matchAll(/array\['([^\]]+)'\]/g)].map((m) => m[1]!.split("','"));
+    expect(stems[0]).toEqual(BLOCKED_STEMS);
+    const patterns = [...migration.matchAll(/~ '\^\(([^)]+)\)\(s\|es\)\?\$'/g)].map((m) => m[1]!.split("|"));
+    expect(patterns).toHaveLength(2);
+    for (const words of patterns) expect(words).toEqual(BLOCKED_WORDS);
   });
 });
 
