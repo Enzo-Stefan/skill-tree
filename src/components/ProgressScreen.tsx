@@ -28,11 +28,13 @@ interface Props {
   onShare: () => void;
   /** Opens the level picker; only for trees that have levels. */
   onPickLevel?: () => void;
+  /** Opens the leaderboard; leave undefined for trees that don't have one. */
+  onOpenLeaderboard?: () => void;
 }
 
 /** Rank, your level and streak, training this week, each branch, personal bests on lifts, and the share picture. */
 export function ProgressScreen(props: Props) {
-  const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, weekCanCount, streakWeeks, liftLog, onShare, onPickLevel } = props;
+  const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, weekCanCount, streakWeeks, liftLog, onShare, onPickLevel, onOpenLeaderboard } = props;
   const daysLeft = Math.max(0, PRACTICE_DAYS_PER_WEEK - daysThisWeek);
 
   // Picking a level here removes the Pick your level button, so the picker can't hand focus back
@@ -144,6 +146,18 @@ export function ProgressScreen(props: Props) {
           })}
         </ul>
       </section>
+
+      {onOpenLeaderboard && (
+        <section className="card" aria-labelledby="progress-board">
+          <h2 className="card-label" id="progress-board">
+            {t.leaderboard.title}
+          </h2>
+          <p className="card-note">{t.leaderboard.cardNote}</p>
+          <button className="btn" type="button" onClick={onOpenLeaderboard}>
+            {t.leaderboard.open}
+          </button>
+        </section>
+      )}
 
       <PersonalBests tree={tree} log={liftLog} />
     </div>

@@ -115,5 +115,16 @@
   {"name":"ab","expected":"too-short"},
   {"name":"  a  ","expected":"too-short"},
   {"name":"aaaaaaaaaaaaaaaaaaaaa","expected":"too-long"},
-  {"name":"fuckfuckfuckfuckfuckf","expected":"too-long","note":"refused for the length, not the word"}
+  {"name":"fuckfuckfuckfuckfuckf","expected":"too-long","note":"refused for the length, not the word"},
+  {"name":"culo","expected":"blocked"},
+  {"name":"Marica","expected":"blocked"},
+  {"name":"maricon","expected":"blocked"},
+  {"name":"CHINGA","expected":"blocked"},
+  {"name":"Putas","expected":"blocked"},
+  {"name":"Maricones","expected":"blocked"},
+  {"name":"c u l o","expected":"blocked"},
+  {"name":"Chingachgook","expected":"ok"},
+  {"name":"Maricarmen","expected":"ok"},
+  {"name":"Cumulo","expected":"ok"},
+  {"name":"Culottes","expected":"ok"}
 ]

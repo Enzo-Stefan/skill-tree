@@ -131,7 +131,7 @@ set search_path = ''
 as $$
 declare
   blocked_stems  text[] := array['fuck','shit','bitch','cunt','nigg','whore','hitler','mierda','pendejo','cabron','faggot'];
-  blocked_words  text[] := array['fag','slut','rape','nazi','puta','puto','joder','coño','verga','pija','violar'];
+  blocked_words  text[] := array['fag','slut','rape','nazi','puta','puto','joder','coño','verga','pija','violar','culo','marica','maricon','chinga'];
   allowed_words  text[] := array['scunthorpe','niggle','niggling','niggemann','shitake','yamashita','matsushita','kinoshita','morishita','ishita','kshitij','yoshitaka','mishit','pushit','pushitup','putto','rappe'];
   lookalike_from text   := '013457';
   lookalike_to   text   := 'oieast';

@@ -64,7 +64,7 @@ export function hemisphereFor(countryCode: string | null, picked: Hemisphere | n
 // Only the whole word counts, so "Sniggle" and "Niggler" are still caught although they hold "niggle".
 // All lists are written folded (see foldLetters).
 export const BLOCKED_STEMS = ["fuck", "shit", "bitch", "cunt", "nigg", "whore", "hitler", "mierda", "pendejo", "cabron", "faggot"];
-export const BLOCKED_WORDS = ["fag", "slut", "rape", "nazi", "puta", "puto", "joder", "coño", "verga", "pija", "violar"];
+export const BLOCKED_WORDS = ["fag", "slut", "rape", "nazi", "puta", "puto", "joder", "coño", "verga", "pija", "violar", "culo", "marica", "maricon", "chinga"];
 export const ALLOWED_WORDS = [
   "scunthorpe", "niggle", "niggling", "niggemann",
   "shitake", "yamashita", "matsushita", "kinoshita", "morishita", "ishita", "kshitij", "yoshitaka", "mishit", "pushit", "pushitup",
