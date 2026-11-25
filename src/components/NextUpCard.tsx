@@ -26,7 +26,7 @@ export function NextUpCard({ tree, skill, done, onOpen }: Props) {
     <button
       type="button"
       className="next-up"
-      style={{ "--c": branch?.color ?? "#f2c14e" } as CSSProperties}
+      style={{ "--c": branch?.color ?? "var(--fg-2)" } as CSSProperties}
       onClick={() => onOpen(skill)}
     >
       <span className="branch-dot" aria-hidden="true" />
