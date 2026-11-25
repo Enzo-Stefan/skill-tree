@@ -51,17 +51,12 @@
   --shadow-raised: 0 24px 48px rgba(0, 0, 0, 0.5);
   --video-bg: #000000;
 
-  /* Shape and spacing (4px scale) */
+  /* Shape. Spacing sticks to multiples of 4px. */
   --radius-card: 18px;
   --radius-md: 12px;
   --radius-sm: 8px;
+  --radius-sheet: 22px;
   --radius-pill: 999px;
-  --space-1: 4px;
-  --space-2: 8px;
-  --space-3: 12px;
-  --space-4: 16px;
-  --space-5: 20px;
-  --space-6: 24px;
 
   /* Motion */
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -589,7 +584,7 @@ main { flex: 1; display: flex; min-height: 0; }
     max-height: none;
     border-width: 1px 0 0;
     border-color: var(--glass-border-strong);
-    border-radius: 22px 22px 0 0;
+    border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
     box-shadow: var(--glass-edge), 0 -12px 32px var(--sheet-shadow);
     padding: 0 max(20px, env(safe-area-inset-right)) calc(20px + env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
     z-index: 10;
@@ -671,7 +666,7 @@ main { flex: 1; display: flex; min-height: 0; }
 
 @media (prefers-reduced-motion: reduce) {
   * { transition: none !important; }
-  .btn:active:not(:disabled), .close:active, .branch-tab:active, .level-option:active:not(.locked) { transform: none; }
+  .btn:active:not(:disabled), .close:active, .branch-tab:active, .level-option:active:not(.locked), .next-up:active { transform: none; }
   .skill.fx-done .skill-node { animation: tile-flash 0.8s ease-out; }
   .skill.fx-unlock .skill-node { animation: unlock-ring 0.9s ease-out; }
   .level.bump { animation: level-flash 0.9s ease-out; }

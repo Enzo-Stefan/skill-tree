@@ -81,7 +81,7 @@ export function SkillPanel({
 
   const state = skillState(skill, done);
   const branch = tree.branches.find((b) => b.id === skill.branch);
-  const color = branch?.color ?? "#f2c14e";
+  const color = branch?.color ?? "var(--fg-2)";
   const label = branch?.name ?? (skill.requires.length === 0 ? t.panel.startHere : t.panel.finalSkill);
   const missing = skill.requires
     .filter((r) => !done.has(r))
