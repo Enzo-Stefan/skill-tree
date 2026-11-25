@@ -1,10 +1,11 @@
 import type { TreeTranslation } from "../../lib/translate";
+import { footballRoutinesEs } from "./routines-football";
 
 // Spanish for the football tree. A FIRST DRAFT: someone fluent should check it, especially the
 // football terms, before the app shows it to players (#19). Numbers stay exactly as in English,
 // so the level targets and test checks still match.
 
-export const footballEs: TreeTranslation = {
+const footballContent: TreeTranslation = {
   title: "hapi skill",
   shortName: "Fútbol",
   tagline: "Toca una habilidad, supera su prueba y desbloquea la siguiente.",
@@ -219,4 +220,12 @@ export const footballEs: TreeTranslation = {
       tip: "Aquí es donde el trabajo da sus frutos. Disfrútalo.",
     },
   },
+};
+
+/** The Spanish football tree, with each skill's routine words (#80) from routines-football.ts. */
+export const footballEs: TreeTranslation = {
+  ...footballContent,
+  skills: Object.fromEntries(
+    Object.entries(footballContent.skills).map(([id, text]) => [id, { ...text, routine: footballRoutinesEs[id] }]),
+  ),
 };
