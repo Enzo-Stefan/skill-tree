@@ -67,7 +67,7 @@ describe("trainingIcs", () => {
     expect(field(text, "DTSTAMP")).toBe("20261125T080509Z");
   });
 
-  it("gives a stable UID for the app, so a re-import updates the same event", () => {
+  it("gives the same UID whatever the days or the date", () => {
     const a = trainingIcs(input({ days: [0] }));
     const b = trainingIcs(input({ days: [1, 3], now: new Date(2027, 0, 4) }));
     expect(field(a, "UID")).toBe("skill-tree-training:skill.example.app/app/");
@@ -102,8 +102,11 @@ describe("escapeText", () => {
     expect(escapeText("x\r\ny")).toBe("x\\ny");
   });
 
-  it("leaves plain text alone", () => {
+  it("escapes a comma inside a sentence", () => {
     expect(escapeText("Training, in hapi skill")).toBe("Training\\, in hapi skill");
+  });
+
+  it("leaves text without special characters unchanged", () => {
     expect(escapeText("plain")).toBe("plain");
   });
 });

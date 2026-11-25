@@ -36,7 +36,8 @@ export interface TrainingCalendarInput {
  *   The complete calendar file, ready to save as a .ics file.
  *
  * Raises:
- *   RangeError: If no valid training day is given, or the link is not an absolute URL.
+ *   RangeError: If no valid training day is given.
+ *   TypeError: If the link is not an absolute URL (thrown by `new URL`).
  */
 export function trainingIcs(input: TrainingCalendarInput): string {
   const weekdays = [...new Set(input.days.filter((d) => Number.isInteger(d) && d >= 0 && d <= 6))].sort((a, b) => a - b);
