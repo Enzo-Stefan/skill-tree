@@ -1,16 +1,23 @@
+import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import migration from "../../supabase/migrations/005_leaderboard.sql?raw";
+import { football } from "../data/football";
 import {
+  ALLOWED_WORDS,
   BLOCKED_STEMS,
   BLOCKED_WORDS,
+  HOMOGLYPH_FROM,
+  HOMOGLYPH_TO,
+  LOOKALIKE_FROM,
+  LOOKALIKE_TO,
+  SCRIPT_CLASSES,
   IMPROVE_EVERY_MS,
   applyScoreUpdate,
   bestPossibleSprint,
+  countRankedSkills,
   boardFor,
   displayNameError,
   inScope,
   levelStepOf,
-  normalizeCity,
   rankEntries,
   type BoardEntry,
   type ScoreSnapshot,
@@ -21,7 +28,6 @@ const entry = (userId: string, over: Partial<BoardEntry> = {}): BoardEntry => ({
   userId,
   displayName: userId,
   countryCode: "AL",
-  city: null,
   hemisphere: null,
   skills: 10,
   levelStep: 5,
@@ -29,7 +35,7 @@ const entry = (userId: string, over: Partial<BoardEntry> = {}): BoardEntry => ({
   ...over,
 });
 
-const viewer = (over: Partial<Viewer> = {}): Viewer => ({ userId: "me", countryCode: "AL", city: null, hemisphere: null, ...over });
+const viewer = (over: Partial<Viewer> = {}): Viewer => ({ userId: "me", countryCode: "AL", hemisphere: null, ...over });
 
 describe("level step", () => {
   const levels = ["beginner", "intermediate", "advanced", "expert"];
@@ -93,9 +99,9 @@ describe("ranking", () => {
 });
 
 describe("scopes", () => {
-  const me = viewer({ countryCode: "AL", city: "Tirana" });
-  const tirana = entry("t", { countryCode: "AL", city: "  tirana " });
-  const durres = entry("d", { countryCode: "AL", city: "Durrës" });
+  const me = viewer({ countryCode: "AL" });
+  const tirana = entry("t", { countryCode: "AL" });
+  const durres = entry("d", { countryCode: "AL" });
   const italy = entry("i", { countryCode: "IT" });
   const brazil = entry("br", { countryCode: "BR", hemisphere: "S" });
   const argentina = entry("ar", { countryCode: "AR" });
@@ -114,12 +120,6 @@ describe("scopes", () => {
     expect(inScope(me, brazil, "continent")).toBe(false);
   });
 
-  it("local is the same city in the same country, ignoring case and spaces", () => {
-    expect(inScope(me, tirana, "local")).toBe(true);
-    expect(inScope(me, durres, "local")).toBe(false);
-    expect(inScope(me, entry("x", { countryCode: "IT", city: "Tirana" }), "local")).toBe(false);
-  });
-
   it("hemisphere uses the capital, or the pick for countries that cross the equator", () => {
     expect(inScope(me, italy, "hemisphere")).toBe(true);
     expect(inScope(me, argentina, "hemisphere")).toBe(false);
@@ -132,12 +132,10 @@ describe("scopes", () => {
 
   it("a viewer without the needed detail sees nobody else, only themselves", () => {
     const nobody = viewer({ countryCode: null });
-    for (const scope of ["continent", "hemisphere", "country", "local"] as const) {
+    for (const scope of ["continent", "hemisphere", "country"] as const) {
       expect(inScope(nobody, italy, scope), scope).toBe(false);
       expect(inScope(nobody, entry("me"), scope), scope).toBe(true);
     }
-    const noCity = viewer({ countryCode: "AL", city: null });
-    expect(inScope(noCity, tirana, "local")).toBe(false);
     const unpicked = viewer({ countryCode: "BR", hemisphere: null });
     expect(inScope(unpicked, brazil, "hemisphere")).toBe(false);
   });
@@ -170,8 +168,8 @@ describe("the board a viewer sees", () => {
     expect(boardFor(entries, viewer(), "country").find((r) => r.isMe)!.rank).toBe(1);
   });
 
-  it("never returns the city or the user id", () => {
-    const rows = boardFor([entry("me", { city: "Tirana" })], viewer(), "global");
+  it("never returns the user id", () => {
+    const rows = boardFor([entry("me")], viewer(), "global");
     expect(Object.keys(rows[0]).sort()).toEqual(["bestSprint", "countryCode", "displayName", "isMe", "levelStep", "rank", "skills"]);
   });
 
@@ -219,28 +217,78 @@ describe("display names", () => {
     }
   });
 
-  it("keeps the word lists equal to display_name_blocked in 005_leaderboard.sql", () => {
-    const stems = [...migration.matchAll(/array\['([^\]]+)'\]/g)].map((m) => m[1]!.split("','"));
-    expect(stems[0]).toEqual(BLOCKED_STEMS);
-    const patterns = [...migration.matchAll(/~ '\^\(([^)]+)\)\(s\|es\)\?\$'/g)].map((m) => m[1]!.split("|"));
-    expect(patterns).toHaveLength(2);
-    for (const words of patterns) expect(words).toEqual(BLOCKED_WORDS);
+  it("does not block known innocent words that hold a blocked stem", () => {
+    for (const name of ["Scunthorpe FC", "Snigger", "Niggling Doubt", "Shitake Fan", "Yamashita", "Ken Kinoshita", "Mishit", "Pushitup"]) {
+      expect(displayNameError(name), name).toBeNull();
+    }
+  });
+
+  it("still blocks a stem next to an innocent word", () => {
+    for (const name of ["ScunthorpeFuck", "Snigga", "shitakeshit", "Faggot99"]) expect(displayNameError(name), name).toBe("blocked");
+  });
+
+  it("accepts names written wholly in Cyrillic or Greek", () => {
+    for (const name of ["Иван", "Наталья", "Νίκος", "Ελένη"]) expect(displayNameError(name), name).toBeNull();
+  });
+
+  it("refuses names that mix Latin with Cyrillic or Greek letters", () => {
+    // "fuсk" with a Cyrillic с, "Pаblo" with a Cyrillic а, "Nικος" with a Latin N.
+    for (const name of ["fu\u0441k", "P\u0430blo", "N\u03B9\u03BA\u03BF\u03C2"]) expect(displayNameError(name), name).toBe("characters");
+  });
+
+  it("blocks Cyrillic and Greek look-alike spellings", () => {
+    // ЅНІТ, ѕһ1т and ВІТСН in Cyrillic; ρυτα and ΝΑΖΙ in Greek.
+    for (const name of ["\u0405\u041D\u0406\u0422", "\u0455\u04BB1\u0442", "\u0412\u0406\u0422\u0421\u041D", "\u03C1\u03C5\u03C4\u03B1 99", "\u039D\u0391\u0396\u0399"]) {
+      expect(displayNameError(name), name).toBe("blocked");
+    }
   });
 });
 
-describe("cities", () => {
-  it("are matched trimmed, lower case, with inner spaces collapsed", () => {
-    expect(normalizeCity("  New   York ")).toBe("new york");
-    expect(normalizeCity("   ")).toBeNull();
-    expect(normalizeCity(null)).toBeNull();
-    expect(normalizeCity("x".repeat(100))).toHaveLength(60);
+describe("the database name check matches this one", () => {
+  const sql = readFileSync(new URL("../../supabase/migrations/005_leaderboard.sql", import.meta.url), "utf8");
+  const fn = sql.slice(sql.indexOf("function public.display_name_blocked"), sql.indexOf("function public.check_display_name"));
+  const sqlArray = (name: string) => {
+    const m = fn.match(new RegExp(`${name}\\s+text\\[\\]\\s*:=\\s*array\\[([^\\]]*)\\]`));
+    return m ? [...m[1].matchAll(/'([^']+)'/g)].map((x) => x[1]) : null;
+  };
+  const sqlText = (name: string) => fn.match(new RegExp(`${name}\\s+text\\s*:=\\s*'([^']*)'`))?.[1] ?? null;
+
+  it("has the same blocked stems, blocked words and allowed words", () => {
+    expect(sqlArray("blocked_stems")).toEqual(BLOCKED_STEMS);
+    expect(sqlArray("blocked_words")).toEqual(BLOCKED_WORDS);
+    expect(sqlArray("allowed_words")).toEqual(ALLOWED_WORDS);
+  });
+
+  it("matches blocked words with the same optional plural ending, built from its own blocked_words list", () => {
+    expect(fn).toContain("'^(' || array_to_string(blocked_words, '|') || ')(s|es)?$'");
+  });
+
+  it("removes the same accents", () => {
+    expect(sqlText("homoglyph_from")).not.toBeNull();
+    expect(fn).toContain("translate(folded, 'áàäâéèëêíìïîóòöôúùüû', 'aaaaeeeeiiiioooouuuu')");
+  });
+
+  it("has the same look-alike maps, each pair the same length so nothing is silently dropped", () => {
+    expect(sqlText("homoglyph_from")).toBe(HOMOGLYPH_FROM);
+    expect(sqlText("homoglyph_to")).toBe(HOMOGLYPH_TO);
+    expect(sqlText("lookalike_from")).toBe(LOOKALIKE_FROM);
+    expect(sqlText("lookalike_to")).toBe(LOOKALIKE_TO);
+    expect([...HOMOGLYPH_FROM]).toHaveLength([...HOMOGLYPH_TO].length);
+    expect([...LOOKALIKE_FROM]).toHaveLength([...LOOKALIKE_TO].length);
+    expect(new Set(HOMOGLYPH_FROM).size).toBe([...HOMOGLYPH_FROM].length);
+  });
+
+  it("refuses the same mix of alphabets", () => {
+    const check = sql.slice(sql.indexOf("add constraint profiles_display_name_one_script"));
+    const inSql = [...check.slice(0, check.indexOf(";")).matchAll(/~ '([^']+)'/g)].map((m) => m[1]);
+    expect(inSql).toEqual(SCRIPT_CLASSES);
   });
 });
 
 describe("cheating limits", () => {
   const DAY = IMPROVE_EVERY_MS;
   const start = Date.parse("2026-11-24T10:00:00Z");
-  const base: ScoreSnapshot = { skills: 5, levelStep: 3, bestSprint: 5, sprintImprovedAt: start, levelStepRaisedAt: start };
+  const base: ScoreSnapshot = { skills: 5, levelStep: 3, bestSprint: 5, sprintRecord: 5, sprintImprovedAt: start, levelStepRaisedAt: start };
 
   it("picks the fastest possible sprint, so an impossible time can't hide a real one", () => {
     expect(bestPossibleSprint([2.1, 5.4, 4.9, 20])).toBe(4.9);
@@ -249,43 +297,124 @@ describe("cheating limits", () => {
   });
 
   it("takes a first score as it is, and ignores an impossible first sprint", () => {
-    expect(applyScoreUpdate(null, { skills: 3, levelStep: 16, bestSprint: 5 }, start)).toMatchObject({ skills: 3, levelStep: 16, bestSprint: 5 });
-    expect(applyScoreUpdate(null, { skills: 3, levelStep: 2, bestSprint: 3.5 }, start).bestSprint).toBeNull();
-    expect(applyScoreUpdate(null, { skills: 3, levelStep: 2, bestSprint: 15.1 }, start).bestSprint).toBeNull();
-    expect(applyScoreUpdate(null, { skills: 3, levelStep: 2, bestSprint: 3.6 }, start).bestSprint).toBe(3.6);
+    expect(applyScoreUpdate(null, { skills: 3, levelStep: 16, sprintTimes: [5] }, start)).toMatchObject({ skills: 3, levelStep: 16, bestSprint: 5, sprintRecord: 5 });
+    expect(applyScoreUpdate(null, { skills: 3, levelStep: 2, sprintTimes: [3.5] }, start).bestSprint).toBeNull();
+    expect(applyScoreUpdate(null, { skills: 3, levelStep: 2, sprintTimes: [15.1] }, start).bestSprint).toBeNull();
+    expect(applyScoreUpdate(null, { skills: 3, levelStep: 2, sprintTimes: [3.6] }, start).bestSprint).toBe(3.6);
   });
 
   it("ignores an impossible sprint later on and keeps the old one", () => {
-    expect(applyScoreUpdate(base, { skills: 5, levelStep: 3, bestSprint: 2 }, start + 5 * DAY).bestSprint).toBe(5);
+    expect(applyScoreUpdate(base, { skills: 5, levelStep: 3, sprintTimes: [2] }, start + 5 * DAY).bestSprint).toBe(5);
   });
 
   it("lets the best sprint get faster once per 24 hours", () => {
-    const tooSoon = applyScoreUpdate(base, { skills: 5, levelStep: 3, bestSprint: 4.5 }, start + DAY - 1);
+    const tooSoon = applyScoreUpdate(base, { skills: 5, levelStep: 3, sprintTimes: [4.5] }, start + DAY - 1);
     expect(tooSoon.bestSprint).toBe(5);
-    const later = applyScoreUpdate(base, { skills: 5, levelStep: 3, bestSprint: 4.5 }, start + DAY);
-    expect(later).toMatchObject({ bestSprint: 4.5, sprintImprovedAt: start + DAY });
+    const later = applyScoreUpdate(base, { skills: 5, levelStep: 3, sprintTimes: [4.5] }, start + DAY);
+    expect(later).toMatchObject({ bestSprint: 4.5, sprintRecord: 4.5, sprintImprovedAt: start + DAY });
   });
 
   it("takes a slower or cleared sprint straight away", () => {
-    expect(applyScoreUpdate(base, { skills: 5, levelStep: 3, bestSprint: 6 }, start + 1).bestSprint).toBe(6);
-    expect(applyScoreUpdate(base, { skills: 5, levelStep: 3, bestSprint: null }, start + 1).bestSprint).toBeNull();
+    expect(applyScoreUpdate(base, { skills: 5, levelStep: 3, sprintTimes: [6] }, start + 1).bestSprint).toBe(6);
+    expect(applyScoreUpdate(base, { skills: 5, levelStep: 3, sprintTimes: [] }, start + 1).bestSprint).toBeNull();
   });
 
   it("raises the level step by 1 at most, once per 24 hours", () => {
-    const tooSoon = applyScoreUpdate(base, { skills: 5, levelStep: 16, bestSprint: 5 }, start + DAY - 1);
+    const tooSoon = applyScoreUpdate(base, { skills: 5, levelStep: 16, sprintTimes: [5] }, start + DAY - 1);
     expect(tooSoon.levelStep).toBe(3);
-    const later = applyScoreUpdate(base, { skills: 5, levelStep: 16, bestSprint: 5 }, start + DAY);
+    const later = applyScoreUpdate(base, { skills: 5, levelStep: 16, sprintTimes: [5] }, start + DAY);
     expect(later).toMatchObject({ levelStep: 4, levelStepRaisedAt: start + DAY });
   });
 
   it("always allows the level step and skills to go down", () => {
-    const next = applyScoreUpdate(base, { skills: 2, levelStep: 1, bestSprint: 5 }, start + 1);
+    const next = applyScoreUpdate(base, { skills: 2, levelStep: 1, sprintTimes: [5] }, start + 1);
     expect(next).toMatchObject({ skills: 2, levelStep: 1 });
   });
 
   it("is the same if the same update is applied twice", () => {
-    const once = applyScoreUpdate(base, { skills: 6, levelStep: 4, bestSprint: 4.8 }, start + DAY);
-    const twice = applyScoreUpdate(once, { skills: 6, levelStep: 4, bestSprint: 4.8 }, start + DAY);
+    const once = applyScoreUpdate(base, { skills: 6, levelStep: 4, sprintTimes: [4.8] }, start + DAY);
+    const twice = applyScoreUpdate(once, { skills: 6, levelStep: 4, sprintTimes: [4.8] }, start + DAY);
     expect(twice).toEqual(once);
+  });
+});
+
+describe("cheating limits: skills, timers and cleared results", () => {
+  const DAY = IMPROVE_EVERY_MS;
+  const start = Date.parse("2026-11-24T10:00:00Z");
+  const ids = football.skills.map((s) => s.id);
+  const base: ScoreSnapshot = { skills: 5, levelStep: 3, bestSprint: 5, sprintRecord: 5, sprintImprovedAt: start, levelStepRaisedAt: start };
+  const save = (prev: ScoreSnapshot | null, sprintTimes: number[], at: number, levelStep = 3) =>
+    applyScoreUpdate(prev, { skills: 5, levelStep, sprintTimes }, at);
+
+  it("counts only distinct, real skill ids", () => {
+    expect(countRankedSkills([], ids)).toBe(0);
+    expect(countRankedSkills(["bc1", "bc1", "bc1"], ids)).toBe(1);
+    expect(countRankedSkills(["bc1", "made-up", "BC2", "", "ft2"], ids)).toBe(2);
+    expect(countRankedSkills(Array.from({ length: 500 }, (_, i) => `x${i}`), ids)).toBe(0);
+    expect(countRankedSkills([...ids, ...ids], ids)).toBe(ids.length);
+  });
+
+  it("starts both 24-hour timers on a first save", () => {
+    const first = save(null, [5], start, 3);
+    expect(first).toEqual({ skills: 5, levelStep: 3, levelStepRaisedAt: start, bestSprint: 5, sprintRecord: 5, sprintImprovedAt: start });
+    expect(save(first, [3.6], start + 1, 16)).toMatchObject({ levelStep: 3, bestSprint: 5 });
+    expect(save(first, [3.6], start + DAY, 16)).toMatchObject({ levelStep: 4, bestSprint: 3.6, sprintRecord: 3.6 });
+  });
+
+  it("starts no timer on a first save without a level step or a sprint", () => {
+    const first = save(null, [], start, 0);
+    expect(first).toEqual({ skills: 5, levelStep: 0, levelStepRaisedAt: null, bestSprint: null, sprintRecord: null, sprintImprovedAt: null });
+    expect(save(first, [4], start + 1, 1)).toMatchObject({ levelStep: 1, bestSprint: 4, sprintRecord: 4, sprintImprovedAt: start + 1 });
+  });
+
+  it("does not reset the sprint limit when results are cleared", () => {
+    const cleared = save(base, [], start + 1);
+    expect(cleared).toMatchObject({ bestSprint: null, sprintRecord: 5, sprintImprovedAt: start });
+    // A faster time right after clearing gets the record, not the new time.
+    const back = save(cleared, [3.6], start + 2);
+    expect(back).toMatchObject({ bestSprint: 5, sprintRecord: 5, sprintImprovedAt: start });
+    // Once 24 hours have passed, the faster time counts.
+    expect(save(cleared, [3.6], start + DAY)).toMatchObject({ bestSprint: 3.6, sprintRecord: 3.6, sprintImprovedAt: start + DAY });
+  });
+
+  it("takes a time as fast as the record or slower after clearing, without touching the timer", () => {
+    const cleared = save(base, [], start + 1);
+    expect(save(cleared, [5], start + 2)).toMatchObject({ bestSprint: 5, sprintRecord: 5, sprintImprovedAt: start });
+    expect(save(cleared, [7], start + 2)).toMatchObject({ bestSprint: 7, sprintRecord: 5, sprintImprovedAt: start });
+  });
+
+  it("keeps a slower current best when a faster time comes too soon", () => {
+    const slower = save(base, [6], start + 1);
+    expect(slower).toMatchObject({ bestSprint: 6, sprintRecord: 5 });
+    expect(save(slower, [4], start + 2)).toMatchObject({ bestSprint: 6, sprintRecord: 5, sprintImprovedAt: start });
+  });
+
+  it("leaves everything as it was when there are only impossible times", () => {
+    expect(save(base, [2, 20], start + 5 * DAY)).toEqual(base);
+    const cleared = save(base, [], start + 1);
+    expect(save(cleared, [NaN, 3.5], start + 2)).toEqual(cleared);
+  });
+
+  it("does not reset the level timer when the level step goes down", () => {
+    const down = save(base, [5], start + 1, 1);
+    expect(down).toMatchObject({ levelStep: 1, levelStepRaisedAt: start });
+    expect(save(down, [5], start + 2, 2)).toMatchObject({ levelStep: 1 });
+    expect(save(down, [5], start + DAY, 4)).toMatchObject({ levelStep: 2, levelStepRaisedAt: start + DAY });
+  });
+});
+
+describe("the database scoring matches", () => {
+  const sql = readFileSync(new URL("../../supabase/migrations/005_leaderboard.sql", import.meta.url), "utf8");
+
+  it("football_skill_ids lists exactly the football skills, once each", () => {
+    const body = sql.slice(sql.indexOf("function public.football_skill_ids"));
+    const inSql = [...body.slice(body.indexOf("array["), body.indexOf("]::text[]")).matchAll(/'([^']+)'/g)].map((m) => m[1]);
+    expect(new Set(inSql).size).toBe(inSql.length);
+    expect([...inSql].sort()).toEqual(football.skills.map((s) => s.id).sort());
+  });
+
+  it("caps the skills score at the number of football skills", () => {
+    const cap = sql.match(/leaderboard_scores_skills_range\s+check \(skills between 0 and (\d+)\)/);
+    expect(Number(cap?.[1])).toBe(football.skills.length);
   });
 });

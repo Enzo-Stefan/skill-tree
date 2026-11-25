@@ -1,7 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Hemisphere, LeaderboardProfile, LeaderboardRow, LeaderboardScope, Tree } from "../types";
 import { countryByCode } from "../data/countries";
-import { CITY_MAX, continentOf, displayNameError, hemisphereFor, LEADERBOARD_LIMIT, normalizeCity } from "./leaderboard";
+import { continentOf, displayNameError, hemisphereFor, LEADERBOARD_LIMIT } from "./leaderboard";
 import { STEPS_PER_LEVEL } from "./progress";
 
 // What the leaderboard screens need on top of the rules in leaderboard.ts: calls to Supabase and a few
@@ -48,8 +48,7 @@ export function scopeAvailable(scope: LeaderboardScope, profile: LeaderboardProf
   if (!profile) return false;
   if (scope === "continent") return continentOf(profile.countryCode) !== null;
   if (scope === "hemisphere") return hemisphereFor(profile.countryCode, profile.hemisphere) !== null;
-  if (scope === "country") return profile.countryCode !== null;
-  return profile.countryCode !== null && normalizeCity(profile.city) !== null;
+  return profile.countryCode !== null;
 }
 
 /** Where a level step (1 to 16) sits, as "Advanced 2". Null when the tree has no such level. */
@@ -73,7 +72,6 @@ export class LeaderboardError extends Error {
 interface ProfileRow {
   display_name: string;
   country_code: string | null;
-  city: string | null;
   hemisphere: Hemisphere | null;
   leaderboard_opt_in: boolean;
 }
@@ -82,7 +80,7 @@ interface ProfileRow {
 export async function fetchProfile(client: SupabaseClient, userId: string): Promise<LeaderboardProfile | null> {
   const { data, error } = await client
     .from("profiles")
-    .select("display_name, country_code, city, hemisphere, leaderboard_opt_in")
+    .select("display_name, country_code, hemisphere, leaderboard_opt_in")
     .eq("user_id", userId)
     .maybeSingle<ProfileRow>();
   if (error) throw new LeaderboardError("failed", error.message);
@@ -90,7 +88,8 @@ export async function fetchProfile(client: SupabaseClient, userId: string): Prom
   return {
     displayName: data.display_name,
     countryCode: data.country_code,
-    city: data.city,
+    // The city column is kept for a later local board; the app neither reads nor writes it.
+    city: null,
     hemisphere: data.hemisphere,
     leaderboardOptIn: data.leaderboard_opt_in,
   };
@@ -99,12 +98,10 @@ export async function fetchProfile(client: SupabaseClient, userId: string): Prom
 /** What gets saved: text trimmed, and the hemisphere worked out from the country unless the player has to pick. */
 export function profileToRow(userId: string, profile: LeaderboardProfile) {
   const countryCode = profile.countryCode && countryByCode(profile.countryCode) ? profile.countryCode.toUpperCase() : null;
-  const city = profile.city?.trim().slice(0, CITY_MAX) ?? "";
   return {
     user_id: userId,
     display_name: profile.displayName.trim(),
     country_code: countryCode,
-    city: city === "" ? null : city,
     hemisphere: hemisphereFor(countryCode, profile.hemisphere),
     leaderboard_opt_in: profile.leaderboardOptIn,
   };

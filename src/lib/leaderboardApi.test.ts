@@ -43,19 +43,15 @@ describe("places", () => {
     expect(scopeAvailable("continent", profile({ countryCode: "ES" }))).toBe(true);
     expect(scopeAvailable("hemisphere", profile({ countryCode: "BR" }))).toBe(false);
     expect(scopeAvailable("hemisphere", profile({ countryCode: "BR", hemisphere: "S" }))).toBe(true);
-    expect(scopeAvailable("local", profile({ countryCode: "ES" }))).toBe(false);
-    expect(scopeAvailable("local", profile({ countryCode: "ES", city: " Madrid " }))).toBe(true);
-    expect(scopeAvailable("local", profile({ countryCode: "ES", city: "  " }))).toBe(false);
   });
 });
 
 describe("saving a profile", () => {
-  it("trims text, drops an empty city and works out the hemisphere", () => {
-    expect(profileToRow("u1", profile({ displayName: " Leo ", countryCode: "es", city: "  " }))).toEqual({
+  it("trims text, never sends a city and works out the hemisphere", () => {
+    expect(profileToRow("u1", profile({ displayName: " Leo ", countryCode: "es", city: "Madrid" }))).toEqual({
       user_id: "u1",
       display_name: "Leo",
       country_code: "ES",
-      city: null,
       hemisphere: "N",
       leaderboard_opt_in: true,
     });
@@ -66,11 +62,11 @@ describe("saving a profile", () => {
     expect(profileToRow("u1", profile({ countryCode: "AU", hemisphere: "N" })).hemisphere).toBe("S");
   });
 
-  it("ignores a country that isn't in the table, and cuts a long city to 60 characters", () => {
+  it("ignores a country that isn't in the table", () => {
     const row = profileToRow("u1", profile({ countryCode: "ZZ", hemisphere: "S", city: "x".repeat(80) }));
     expect(row.country_code).toBeNull();
     expect(row.hemisphere).toBeNull();
-    expect(row.city).toHaveLength(60);
+    expect(row).not.toHaveProperty("city");
   });
 });
 

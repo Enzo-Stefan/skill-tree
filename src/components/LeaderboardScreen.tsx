@@ -6,7 +6,7 @@ import { fetchLeaderboard, flagEmoji, LEADERBOARD_TREE, levelStepName, scopeAvai
 import { formatNumber } from "../lib/progress";
 import { language, t } from "../i18n";
 
-const SCOPES: LeaderboardScope[] = ["global", "continent", "hemisphere", "country", "local"];
+const SCOPES: LeaderboardScope[] = ["global", "continent", "hemisphere", "country"];
 
 interface Props {
   tree: Tree;

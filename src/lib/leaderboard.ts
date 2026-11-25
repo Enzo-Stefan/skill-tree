@@ -24,7 +24,6 @@ export const IMPROVE_EVERY_MS = 24 * 60 * 60 * 1000;
 
 export const NAME_MIN = 3;
 export const NAME_MAX = 20;
-export const CITY_MAX = 60;
 
 /** Level step 1 to 16: the player's level (0 to 3) times 4, plus their step inside it (1 to 4). */
 export function levelStepOf(levelIds: string[], levelId: string | null, step: number): number {
@@ -51,44 +50,67 @@ export function hemisphereFor(countryCode: string | null, picked: Hemisphere | n
   return country.capitalLat >= 0 ? "N" : "S";
 }
 
-/** A city for matching: trimmed, lower case, inner spaces collapsed. Null when empty. */
-export function normalizeCity(city: string | null | undefined): string | null {
-  const clean = (city ?? "").trim().replace(/\s+/g, " ").toLowerCase();
-  return clean === "" ? null : clean.slice(0, CITY_MAX);
-}
-
 // --- Display names ---
 
 // A short English and Spanish list, checked here and in the database. It is a first line of defence,
 // not a complete filter: a fluent reader should extend it before launch.
 // Strong stems are blocked anywhere in the name ("xXfuckXx"). Short words are blocked only as a whole
-// word, so "grape", "economy" and "computadora" stay fine.
-export const BLOCKED_STEMS = ["fuck", "shit", "bitch", "cunt", "nigg", "whore", "hitler", "mierda", "pendejo", "cabron"];
+// word, so "grape", "economy" and "computadora" stay fine. Known innocent words that hold a stem
+// ("Scunthorpe", "snigger", "Yamashita") are taken out before the stem check; they are whole words, not
+// fragments, so "snigga" is still caught. All lists are written folded (see foldWord).
+export const BLOCKED_STEMS = ["fuck", "shit", "bitch", "cunt", "nigg", "whore", "hitler", "mierda", "pendejo", "cabron", "faggot"];
 export const BLOCKED_WORDS = [
   "fag", "slut", "rape", "nazi", "puta", "puto", "joder", "coño", "verga", "pija", "violar",
   "culo", "marica", "maricon", "chinga",
 ];
-// Whole words also count with a plural ending ("culos", "putas", "maricones"). Kept identical to
-// display_name_blocked in supabase/migrations/005_leaderboard.sql; a test compares the two lists.
+// Whole words also count with a plural ending ("culos", "putas", "maricones"). Same as display_name_blocked
+// in supabase/migrations/005_leaderboard.sql, which builds the same pattern from its blocked_words list.
 const BLOCKED_WORD_PATTERN = new RegExp(`^(${BLOCKED_WORDS.join("|")})(s|es)?$`);
+export const ALLOWED_WORDS = [
+  "scunthorpe", "snigger", "sniggle", "niggle", "niggling", "niggard",
+  "shitake", "yamashita", "matsushita", "kinoshita", "morishita", "mishit", "pushit",
+];
 
-const LOOKALIKES: Record<string, string> = { "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "$": "s", "@": "a", "!": "i" };
+// Cyrillic and Greek letters that look like Latin ones, character for character (same length). Upper case
+// is listed too so the database gets it right even where its lower() only knows ASCII; here it is inert.
+export const HOMOGLYPH_FROM = "авеёіїјкмнорстухѕһӏАВЕЁІЇЈКМНОРСТУХЅҺӀαβεηικνορτυχάέήίόύΑΒΕΗΙΚΝΟΡΤΥΧΆΈΉΊΌΎζΖ";
+export const HOMOGLYPH_TO = "abeeiijkmhopctyxshlabeeiijkmhopctyxshlabenikvoptuxaeniouabehiknoptyxaehioyzz";
+export const LOOKALIKE_FROM = "013457$@!";
+export const LOOKALIKE_TO = "oieastsai";
+// Only these accents are removed, the same list as the SQL function (other accents are left, then dropped as non-letters).
 const ACCENTED = "áàäâéèëêíìïîóòöôúùüû";
 const UNACCENTED = "aaaaeeeeiiiioooouuuu";
 
-/** Lower case, look-alike symbols and listed accents turned into plain letters (ñ kept), the rest dropped. Same as the SQL function. */
+/** Like SQL translate(): each character in `from` becomes the one at the same place in `to`. */
+function translateChars(text: string, from: string, to: string): string {
+  const f = [...from];
+  const t = [...to];
+  return [...text].map((c) => {
+    const i = f.indexOf(c);
+    return i < 0 ? c : (t[i] ?? "");
+  }).join("");
+}
+
+/** Lower case, Cyrillic/Greek and symbol look-alikes turned into Latin letters, listed accents off (ñ kept), everything else dropped. */
 function foldWord(word: string): string {
-  return word
-    .toLowerCase()
-    .replace(/[013457$@!]/g, (c) => LOOKALIKES[c] ?? c)
-    .replace(/[áàäâéèëêíìïîóòöôúùüû]/g, (c) => UNACCENTED[ACCENTED.indexOf(c)] ?? c)
-    .replace(/[^a-zñ]/g, "");
+  // Look-alikes before and after lower case, so capital Greek Ν reads as n (as in the database).
+  const lower = translateChars(translateChars(word, HOMOGLYPH_FROM, HOMOGLYPH_TO).toLowerCase(), HOMOGLYPH_FROM, HOMOGLYPH_TO);
+  return translateChars(translateChars(lower, LOOKALIKE_FROM, LOOKALIKE_TO), ACCENTED, UNACCENTED).replace(/[^a-zñ]/g, "");
+}
+
+/** Latin, Cyrillic and Greek letters, as regex classes. The database constraint uses the same ones. */
+export const SCRIPT_CLASSES = ["[A-Za-z\u00C0-\u024F]", "[\u0400-\u04FF]", "[\u0370-\u03FF]"];
+
+/** Letters from more than one of Latin, Cyrillic and Greek: the usual look-alike trick. Same ranges as the database. */
+function mixesScripts(name: string): boolean {
+  return SCRIPT_CLASSES.filter((c) => new RegExp(c).test(name)).length > 1;
 }
 
 function isBlockedName(name: string): boolean {
   const words = name.split(/[\s._-]+/).map(foldWord).filter(Boolean);
   const joined = words.join("");
-  if (BLOCKED_STEMS.some((stem) => joined.includes(stem))) return true;
+  const withoutAllowed = ALLOWED_WORDS.reduce((s, ok) => s.split(ok).join(""), joined);
+  if (BLOCKED_STEMS.some((stem) => withoutAllowed.includes(stem))) return true;
   // Spelled out letter by letter ("p u t a") also counts as the whole word.
   return BLOCKED_WORD_PATTERN.test(joined) || words.some((w) => BLOCKED_WORD_PATTERN.test(w));
 }
@@ -100,26 +122,44 @@ export function displayNameError(name: string): "too-short" | "too-long" | "char
   if (clean.length > NAME_MAX) return "too-long";
   // Letters (any language), digits, spaces, dots, dashes and underscores. No "@", so no email addresses.
   if (!/^[\p{L}\p{N}][\p{L}\p{N} ._-]*$/u.test(clean)) return "characters";
+  if (mixesScripts(clean)) return "characters";
   if (isBlockedName(clean)) return "blocked";
   return null;
 }
 
 // --- Cheating limits ---
 
-/** What the database keeps per player and tree. Times are when the value last changed. */
+/**
+ * What the database keeps per player and tree. Times are when the value last changed.
+ * `bestSprint` is shown and ranked, and is cleared when the player clears their 30 m results.
+ * `sprintRecord` is the fastest time ever accepted and is never cleared, so clearing results can't
+ * reset the once-per-24-hours limit on getting faster.
+ */
 export interface ScoreSnapshot {
   skills: number;
   levelStep: number;
   bestSprint: number | null;
+  sprintRecord: number | null;
   sprintImprovedAt: number | null;
   levelStepRaisedAt: number | null;
 }
 
 /** What the player's progress says now. */
 export interface ScoreInput {
+  /** Finished skills, counted with countRankedSkills(). */
   skills: number;
   levelStep: number;
-  bestSprint: number | null;
+  /** Every 30 m time in the player's results, possible or not. Empty means no 30 m results at all. */
+  sprintTimes: number[];
+}
+
+/**
+ * How many finished skills count towards the score: distinct ids that are real skills of the tree.
+ * `done` is written by the browser, so duplicates or made-up ids must add nothing.
+ */
+export function countRankedSkills(done: readonly string[], skillIds: readonly string[]): number {
+  const real = new Set(skillIds);
+  return new Set(done.filter((id) => real.has(id))).size;
 }
 
 export function sprintIsPossible(seconds: number): boolean {
@@ -133,24 +173,31 @@ export function bestPossibleSprint(times: number[]): number | null {
 }
 
 /**
- * The stored score after the player's progress changed, with the cheating limits applied:
- * - an impossible sprint (under 3.6 s or over 15 s) is ignored;
- * - a best sprint can get faster once per 24 hours;
- * - the level step can rise by 1, once per 24 hours (the first score for a player is taken as it is).
- * Going down is always allowed, since players can undo skills or clear results.
+ * The stored score after the player's progress changed, with the cheating limits applied. The database
+ * trigger in migration 005 follows the same steps one for one.
+ * - The first save is taken as it is, but starts both 24-hour timers (when it has a level step or a sprint).
+ * - The level step can always go down; it can rise by 1, once per 24 hours.
+ * - Sprint (impossible times, under 3.6 s or over 15 s, are ignored):
+ *   - no 30 m results at all: the best is cleared (off the sprint board); the record and timer are kept;
+ *   - only impossible times: nothing changes;
+ *   - no record yet, or faster than the record with 24 hours since the last improvement: a new record;
+ *   - as fast as the record or slower: taken as it is;
+ *   - faster than the record too soon: the previous best stays, or the record if the best was cleared.
  */
 export function applyScoreUpdate(prev: ScoreSnapshot | null, input: ScoreInput, now: number): ScoreSnapshot {
   const skills = Math.max(0, Math.floor(input.skills));
   const wanted = Math.max(0, Math.min(16, Math.floor(input.levelStep)));
-  const sprint = input.bestSprint !== null && sprintIsPossible(input.bestSprint) ? input.bestSprint : null;
+  const hasSprint = input.sprintTimes.length > 0;
+  const sprint = bestPossibleSprint(input.sprintTimes);
 
   if (!prev) {
     return {
       skills,
       levelStep: wanted,
+      levelStepRaisedAt: wanted > 0 ? now : null,
       bestSprint: sprint,
+      sprintRecord: sprint,
       sprintImprovedAt: sprint === null ? null : now,
-      levelStepRaisedAt: null,
     };
   }
 
@@ -162,22 +209,25 @@ export function applyScoreUpdate(prev: ScoreSnapshot | null, input: ScoreInput, 
     levelStepRaisedAt = now;
   }
 
-  let { bestSprint, sprintImprovedAt } = prev;
-  if (sprint === null) {
-    // Nothing usable now. If the player had cleared their times, so does the board; an impossible time just leaves things as they were.
-    if (input.bestSprint === null) {
-      bestSprint = null;
-      sprintImprovedAt = null;
-    }
-  } else if (prev.bestSprint === null || sprint >= prev.bestSprint) {
+  let { bestSprint, sprintRecord, sprintImprovedAt } = prev;
+  if (!hasSprint) {
+    bestSprint = null;
+  } else if (sprint === null) {
+    // Only impossible times: nothing changes.
+  } else if (
+    prev.sprintRecord === null ||
+    (sprint < prev.sprintRecord && (prev.sprintImprovedAt === null || now - prev.sprintImprovedAt >= IMPROVE_EVERY_MS))
+  ) {
     bestSprint = sprint;
-    if (prev.bestSprint === null) sprintImprovedAt = now;
-  } else if (prev.sprintImprovedAt === null || now - prev.sprintImprovedAt >= IMPROVE_EVERY_MS) {
-    bestSprint = sprint;
+    sprintRecord = sprint;
     sprintImprovedAt = now;
+  } else if (sprint >= prev.sprintRecord) {
+    bestSprint = sprint;
+  } else {
+    bestSprint = prev.bestSprint ?? prev.sprintRecord;
   }
 
-  return { skills, levelStep, bestSprint, sprintImprovedAt, levelStepRaisedAt };
+  return { skills, levelStep, levelStepRaisedAt, bestSprint, sprintRecord, sprintImprovedAt };
 }
 
 // --- Ranking ---
@@ -187,7 +237,6 @@ export interface BoardEntry {
   userId: string;
   displayName: string;
   countryCode: string | null;
-  city: string | null;
   hemisphere: Hemisphere | null;
   skills: number;
   levelStep: number;
@@ -199,7 +248,6 @@ export interface BoardEntry {
 export interface Viewer {
   userId: string;
   countryCode: string | null;
-  city: string | null;
   hemisphere: Hemisphere | null;
 }
 
@@ -219,10 +267,6 @@ export function inScope(viewer: Viewer, entry: BoardEntry, scope: LeaderboardSco
     }
     case "country":
       return !!viewer.countryCode && entry.countryCode === viewer.countryCode;
-    case "local": {
-      const city = normalizeCity(viewer.city);
-      return !!viewer.countryCode && city !== null && entry.countryCode === viewer.countryCode && normalizeCity(entry.city) === city;
-    }
   }
 }
 
@@ -269,7 +313,7 @@ export function rankEntries(
 
 /**
  * The board a viewer sees: the top 50 in their scope, plus their own row when they are on the board but
- * further down. Only what other players may see is returned: no city, no user id.
+ * further down. Only what other players may see is returned: no user id.
  */
 export function boardFor(
   entries: BoardEntry[],

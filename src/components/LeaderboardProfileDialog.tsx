@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import type { Hemisphere, LeaderboardProfile } from "../types";
 import { countries as COUNTRIES } from "../data/countries";
-import { CITY_MAX, NAME_MAX } from "../lib/leaderboard";
+import { NAME_MAX } from "../lib/leaderboard";
 import { countryName, flagEmoji, nameProblem, needsHemispherePick, type NameProblem } from "../lib/leaderboardApi";
 import { useModalFocus } from "./useModalFocus";
 import { language, t } from "../i18n";
@@ -14,12 +14,11 @@ interface Props {
   onClose: () => void;
 }
 
-/** Display name, country, city and the on/off choice: the whole leaderboard profile in one dialog. */
+/** Display name, country and the on/off choice: the whole leaderboard profile in one dialog. */
 export function LeaderboardProfileDialog({ initial, onSave, onClose }: Props) {
   const dialog = useRef<HTMLDivElement>(null);
   const [name, setName] = useState(initial?.displayName ?? "");
   const [country, setCountry] = useState(initial?.countryCode ?? "");
-  const [city, setCity] = useState(initial?.city ?? "");
   const [hemisphere, setHemisphere] = useState<Hemisphere | null>(initial?.hemisphere ?? null);
   // Someone who opened this to join starts switched on; someone editing keeps their choice.
   const [optIn, setOptIn] = useState(initial ? initial.leaderboardOptIn : true);
@@ -45,7 +44,7 @@ export function LeaderboardProfileDialog({ initial, onSave, onClose }: Props) {
     const result = await onSave({
       displayName: name.trim(),
       countryCode: country || null,
-      city: city.trim() || null,
+      city: null,
       hemisphere: askHemisphere ? hemisphere : null,
       leaderboardOptIn: optIn,
     });
@@ -96,12 +95,6 @@ export function LeaderboardProfileDialog({ initial, onSave, onClose }: Props) {
             ))}
           </fieldset>
         )}
-
-        <label className="field">
-          <span>{t.leaderboardProfile.city}</span>
-          <input type="text" value={city} maxLength={CITY_MAX} autoComplete="off" aria-describedby="lb-city-help" onChange={(e) => setCity(e.target.value)} />
-          <small id="lb-city-help">{t.leaderboardProfile.cityHelp}</small>
-        </label>
 
         <label className="radio">
           <input type="checkbox" checked={optIn} onChange={(e) => setOptIn(e.target.checked)} />

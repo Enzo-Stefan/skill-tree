@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { PGlite } from "@electric-sql/pglite";
 import { beforeEach, describe, expect, it } from "vitest";
+import { football } from "../../src/data/football";
 
 // Runs the real migrations (001, 003, 005) in an in-memory Postgres, with a stand-in for Supabase's
 // auth schema, and checks the ranking, ties, scopes, privacy and cheating limits (#96).
@@ -51,7 +52,7 @@ async function addPlayer(p: Player) {
   await db.query(
     `insert into public.progress (user_id, tree_id, done, player_level, player_step, results)
      values ($1, 'football', $2, $3, $4, $5)`,
-    [id(p.n), Array.from({ length: p.skills ?? 0 }, (_, i) => `s${i}`), p.level ?? "beginner", p.step ?? 1, JSON.stringify(results)],
+    [id(p.n), football.skills.slice(0, p.skills ?? 0).map((sk) => sk.id), p.level ?? "beginner", p.step ?? 1, JSON.stringify(results)],
   );
 }
 
@@ -157,13 +158,11 @@ describe("scopes", () => {
   it("country keeps the caller's country", async () => {
     expect(await names("country")).toEqual(["MadridMe", "MadridMate", "BarcelonaPal"]);
   });
-  it("local matches the same city in the same country, ignoring case and spaces", async () => {
-    expect(await names("local")).toEqual(["MadridMe", "MadridMate"]);
+  it("has no city board: a local scope is refused", async () => {
+    await expect(board(1, "local")).rejects.toThrow(/Unknown scope/);
   });
   it("shows only the caller's own row when they haven't filled in what the scope needs", async () => {
     expect(await names("country", 6)).toEqual(["Nowhere"]);
-    expect(await names("local", 6)).toEqual(["Nowhere"]);
-    expect(await names("local", 4)).toEqual(["ParisPal"]);
   });
 });
 
@@ -209,6 +208,10 @@ describe("cheating limits", () => {
   it("lets the level step rise by one per 24 hours", async () => {
     await addPlayer({ n: 1, name: "Climber", level: "beginner", step: 1 });
     const step = async () => Number((await db.query<{ level_step: number }>("select level_step from public.leaderboard_scores")).rows[0].level_step);
+    // The first save started the 24-hour timer, so a rise is held back until it has passed.
+    await save(1, [], 4, "advanced");
+    expect(await step()).toBe(1);
+    await db.query("update public.leaderboard_scores set level_step_raised_at = now() - interval '25 hours'");
     await save(1, [], 4, "advanced"); // asks for step 12 at once
     expect(await step()).toBe(2);
     await save(1, [], 4, "advanced");
