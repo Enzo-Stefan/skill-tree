@@ -79,6 +79,12 @@ export const es: Strings = {
     addToPlan: "Añadir a mi plan",
     removeFromPlan: "Quitar de mi plan",
     inPlan: "Está en tu plan: ya está desbloqueada y aún no la has pasado.",
+    addToCalendar: "Añadir mis días de entrenamiento al calendario",
+    calendarSummary: "Entrenamiento",
+    calendarDescription: "Tus días de entrenamiento semanales en hapi skill. Abre la app para ver la sesión de hoy:",
+    calendarNote: (reminderMinutes: number) =>
+      `Los eventos son de 17:00 a 18:00 con un aviso ${reminderMinutes} minutos antes. Puedes cambiar la hora en tu calendario. Si importas el archivo dos veces, o de nuevo tras cambiar tu plan, puede crearse un evento repetido duplicado: borra primero el anterior.`,
+    calendarSaved: "Archivo de calendario descargado. Ábrelo para añadir tus días de entrenamiento.",
   },
   lifts: {
     title: "Tus pesos",
