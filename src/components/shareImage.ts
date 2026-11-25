@@ -76,7 +76,8 @@ function drawMiniTree(ctx: CanvasRenderingContext2D, stats: ShareStats, top: num
   const rows = Math.max(...stats.nodes.map((n) => n.row));
   const pos = (n: ShareStats["nodes"][number]) => ({
     x: left + (n.x + 0.5) * (width / slots),
-    y: top + (rows === 0 ? 0 : (n.row / rows) * height),
+    // Row 0 (the first skill) is at the bottom: the tree grows upward, like in the app (#79).
+    y: top + (rows === 0 ? height : height - (n.row / rows) * height),
   });
   const byId = new Map(stats.nodes.map((n) => [n.id, n]));
 
