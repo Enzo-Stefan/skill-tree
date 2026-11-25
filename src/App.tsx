@@ -58,6 +58,7 @@ import {
 } from "./lib/streak";
 import { useLiftLog } from "./components/useLiftLog";
 import { useResults } from "./components/useResults";
+import { useSessions } from "./components/useSessions";
 import { undoPass, withoutSkill } from "./components/undoPass";
 import type { SavedProgress } from "./lib/cloud";
 import { useCloudSync } from "./lib/useCloudSync";
@@ -94,6 +95,8 @@ export default function App() {
   const lifts = useLiftLog(tree);
   // Times saved from test mode (sprints). Saved to the account too, like the lift log.
   const results = useResults(tree);
+  // Which skills were trained on which day (idea 5). Saved to the account too, like the lift log.
+  const sessions = useSessions(tree);
   const [done, setDone] = useState<Set<string>>(() => loadProgress(tree));
   const [selectedId, setSelectedId] = useState(tree.skills[0].id);
   // Not in the URL: Google sign-in comes back with its tokens in the address's # part.
@@ -138,8 +141,8 @@ export default function App() {
 
   // Everything that is saved to a signed-in player's account.
   const progress: SavedProgress = useMemo(
-    () => ({ done: [...done], playerLevel: playerLevelId, playerStep, practiceDays, streak: streakState, liftLog: lifts.log, results: results.results }),
-    [done, playerLevelId, playerStep, practiceDays, streakState, lifts.log, results.results],
+    () => ({ done: [...done], playerLevel: playerLevelId, playerStep, practiceDays, streak: streakState, liftLog: lifts.log, results: results.results, sessions: sessions.sessions }),
+    [done, playerLevelId, playerStep, practiceDays, streakState, lifts.log, results.results, sessions.sessions],
   );
   const cloud = useCloudSync({ tree, userId: auth.account?.id ?? null, progress, apply: applySaved, onMessage: showToast });
   const accountAuth = {
@@ -178,6 +181,7 @@ export default function App() {
     setDone(new Set(p.done));
     lifts.replace(p.liftLog ?? []);
     results.replace(p.results ?? []);
+    sessions.replace(p.sessions ?? []);
     setPracticeDays(p.practiceDays);
     savePracticeDays(tree.id, p.practiceDays);
     // An account without a level never clears the level picked in this browser.
@@ -378,6 +382,7 @@ export default function App() {
     updateStreak({ since: null, askedWeek: null });
     lifts.clear();
     results.clear();
+    sessions.clear();
     setTestOpen(false);
     setSelectedId(tree.skills[0].id);
     setBranchId(tree.branches[0].id);
