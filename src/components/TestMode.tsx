@@ -1,6 +1,7 @@
 import { useEffect, useReducer, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import type { Skill } from "../types";
+import { showChallengeButton } from "../lib/challenge";
 import {
   canUndo,
   elapsed,
@@ -33,6 +34,8 @@ interface Props {
   onClose: () => void;
   /** Where a finished stopwatch test's time can be saved. Only for skills whose results the app can keep. */
   results?: Results;
+  /** Shares a challenge with the skill's best saved result ("beat my time"). Without it there is no challenge button. */
+  onChallenge?: (skillId: string) => void;
 }
 
 /** How often the clock redraws while it runs. The time itself comes from timestamps, not from counting these. */
@@ -43,7 +46,7 @@ const TICK_MS = 100;
  * count and hold a timer at the same time. Opens over the skill sheet. A running test ignores taps
  * outside it and Escape, so a stray touch can't throw away a run.
  */
-export function TestMode({ skill, check, limit, canPass, onPassed, onClose, results }: Props) {
+export function TestMode({ skill, check, limit, canPass, onPassed, onClose, results, onChallenge }: Props) {
   const dialog = useRef<HTMLDivElement>(null);
   const restoreFocus = useRef(true);
   const [state, dispatch] = useReducer(runReducer, null, () => startRun(check, limit));
@@ -205,6 +208,11 @@ export function TestMode({ skill, check, limit, canPass, onPassed, onClose, resu
                 {t.testMode.undoSave}
               </button>
             </p>
+          )}
+          {showChallengeButton(!!saved, !!onChallenge, state.phase, check.kind) && (
+            <button className="btn test-wide" type="button" onClick={() => onChallenge?.(skill.id)}>
+              {t.testMode.challenge}
+            </button>
           )}
         </div>
 

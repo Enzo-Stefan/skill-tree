@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Skill, Tree } from "../types";
+import { DEFAULT_REMINDER_MINUTES, calendarLink, trainingIcs } from "../lib/ics";
+import { saveTextFile } from "../lib/saveFile";
 import { MAX_DAY_MINUTES, MIN_DAY_MINUTES, trainedPlanDays, type PlanDay } from "../lib/plan";
 import type { DayKey } from "../lib/streak";
 import { language, t } from "../i18n";
@@ -133,6 +135,28 @@ function WeekView({ days, skills, today, trained, state, unplaced }: { days: Pla
   const long = new Intl.DateTimeFormat(language, { weekday: "long" });
   const short = new Intl.DateTimeFormat(language, { weekday: "narrow" });
   const date = new Intl.DateTimeFormat(language, { day: "numeric", month: "short" });
+  const [calendarStatus, setCalendarStatus] = useState("");
+  const statusTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(statusTimer.current), []);
+  // Plan indexes (0 Monday to 6 Sunday) of the days with sessions scheduled.
+  const training = days.flatMap((d, i) => (!d.rest && d.items.length > 0 ? [i] : []));
+  const exportCalendar = () => {
+    saveTextFile(
+      trainingIcs({
+        days: training,
+        summary: t.training.calendarSummary,
+        description: t.training.calendarDescription,
+        link: calendarLink(window.location),
+        now: new Date(),
+      }),
+      "training.ics",
+      "text/calendar;charset=utf-8",
+    );
+    // Clear first so a repeat export changes the live region again and is re-announced.
+    setCalendarStatus("");
+    window.clearTimeout(statusTimer.current);
+    statusTimer.current = window.setTimeout(() => setCalendarStatus(t.training.calendarSaved), 100);
+  };
   return (
     <>
       <ol className="week-plan">
@@ -190,6 +214,17 @@ function WeekView({ days, skills, today, trained, state, unplaced }: { days: Pla
         </div>
       </div>
       {unplaced > 0 && <p className="hint">{t.training.unplaced(unplaced)}</p>}
+      {training.length > 0 && (
+        <div className="calendar-export">
+          <button className="btn" type="button" onClick={exportCalendar}>
+            {t.training.addToCalendar}
+          </button>
+          <p className="hint">{t.training.calendarNote(DEFAULT_REMINDER_MINUTES)}</p>
+          <p className="sr-only" role="status" aria-live="polite">
+            {calendarStatus}
+          </p>
+        </div>
+      )}
       <div className="day-limit">
         <span id="day-limit-label">{t.training.dayLimit}</span>
         <div className="stepper" role="group" aria-labelledby="day-limit-label">
