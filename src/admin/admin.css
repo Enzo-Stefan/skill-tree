@@ -1,0 +1,12 @@
+.admin { display: block; max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; color: var(--fg); }
+.admin h1 { margin: 0 0 16px; font-size: 1.5rem; }
+.admin-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.admin-list, .admin-reports { list-style: none; margin: 0; padding: 0; }
+.admin-player { border: 1px solid var(--line-faint); border-radius: var(--radius-card); padding: 16px; margin-bottom: 12px; }
+.admin-player h2 { margin: 0; font-size: 1.1rem; overflow-wrap: anywhere; }
+.admin-badge { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--danger-text); }
+.admin-meta { margin: 2px 0 8px; color: var(--text-2); font-size: 0.875rem; }
+.admin-reports li { padding: 8px 0; border-top: 1px solid var(--line-faint); }
+.admin-reports p { margin: 0; overflow-wrap: anywhere; }
+.admin-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 8px; }
+.admin-error { color: var(--danger-text); }
