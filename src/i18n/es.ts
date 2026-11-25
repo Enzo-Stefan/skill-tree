@@ -19,6 +19,7 @@ export const es: Strings = {
   app: {
     train: "Entrenar",
     showingTargets: (rung: string) => `Mostrando objetivos de ${rung}.`,
+    linkCopied: "Enlace copiado.",
     newRank: (rank: string) => `Nuevo rango: ${rank}.`,
     skillCompleteUnlocked: (skill: string, unlocked: string[]) =>
       `${skill} completada. Desbloqueadas: ${unlocked.join(", ")}.`,
@@ -190,6 +191,7 @@ export const es: Strings = {
   panel: {
     status: { done: "Completada", available: "Lista para entrenar", locked: "Bloqueada" },
     startHere: "Empieza aquí",
+    copyLink: "Copiar enlace a esta habilidad",
     finalSkill: "Habilidad final",
     close: "Cerrar",
     closeLabel: "Cerrar los detalles de la habilidad",

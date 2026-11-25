@@ -20,6 +20,7 @@ export const en = {
   app: {
     train: "Train",
     showingTargets: (rung: string) => `Showing ${rung} targets.`,
+    linkCopied: "Link copied.",
     newRank: (rank: string) => `New rank: ${rank}.`,
     skillCompleteUnlocked: (skill: string, unlocked: string[]) => `${skill} complete. Unlocked: ${unlocked.join(", ")}.`,
     skillComplete: (skill: string) => `${skill} complete.`,
@@ -198,6 +199,7 @@ export const en = {
   panel: {
     status: { done: "Completed", available: "Ready to train", locked: "Locked" },
     startHere: "Start here",
+    copyLink: "Copy link to this skill",
     finalSkill: "Final skill",
     close: "Close",
     closeLabel: "Close skill details",

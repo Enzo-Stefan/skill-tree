@@ -22,6 +22,7 @@ import { ProgressScreen } from "./components/ProgressScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { useAuth } from "./auth/useAuth";
 import { SignInDialog } from "./components/SignInDialog";
+import { skillFromSearch, skillUrl, withoutSkillParam } from "./lib/skillLink";
 import { loadWelcomeSkipped, saveWelcomeSkipped } from "./lib/welcome";
 import {
   clearPlayerLevel,
@@ -83,7 +84,9 @@ interface Toast {
 
 export default function App() {
   // The tree the player last chose (src/lib/activeTree.ts). Switching reloads the app.
-  const [tree] = useState(() => activeTree(trees));
+  // A shared link (?skill=ps3) opens that skill, in whichever tree has it. Read once per page load.
+  const [link] = useState(() => skillFromSearch(trees, window.location.search));
+  const [tree] = useState(() => link?.tree ?? activeTree(trees));
   const auth = useAuth();
   // The sign-in screen that opens the app. Decided once per page load: a player who is signed in
   // when the session check finishes never sees it, so signing out or an expired session later doesn't bring it up.
@@ -100,7 +103,7 @@ export default function App() {
   // Which skills were trained on which day (idea 5). Saved to the account too, like the lift log.
   const sessions = useSessions(tree);
   const [done, setDone] = useState<Set<string>>(() => loadProgress(tree));
-  const [selectedId, setSelectedId] = useState(tree.skills[0].id);
+  const [selectedId, setSelectedId] = useState(link?.skillId ?? tree.skills[0].id);
   // Not in the URL: Google sign-in comes back with its tokens in the address's # part.
   const [tab, setTab] = useState<Tab>("train");
   const [toast, setToast] = useState<Toast | null>(null);
@@ -111,10 +114,12 @@ export default function App() {
   // Keep in sync with the phone media query in index.css. The height clause catches phones held sideways.
   const isPhone = useMediaQuery("(max-width: 700px), (max-height: 500px) and (pointer: coarse)");
   // The branch pill: highlighted in the tree, and remembered in this browser. null is "All".
-  const [branchId, setBranchId] = useState<string | null>(() => activeBranch(tree));
+  const [branchId, setBranchId] = useState<string | null>(
+    () => (link && tree.skills.find((s) => s.id === link.skillId)?.branch) || activeBranch(tree),
+  );
   // Where the tree should scroll to next (after picking a branch, or when a skill opens).
-  const [scrollTo, setScrollTo] = useState<ScrollRequest | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [scrollTo, setScrollTo] = useState<ScrollRequest | null>(link ? { id: link.skillId } : null);
+  const [sheetOpen, setSheetOpen] = useState(link !== null);
   const [playerLevelId, setPlayerLevelId] = useState<string | null>(() => loadPlayerLevel(tree));
   const hasLevels = (tree.playerLevels?.length ?? 0) > 0;
   // Ask on first visit; after that, only when the player asks to change.
@@ -260,6 +265,19 @@ export default function App() {
     saveActiveBranch(tree.id, id);
     const target = id === null ? null : branchFocusSkill(tree, id, done);
     if (target) setScrollTo({ id: target.id });
+  }
+
+  // Take ?skill= out of the address bar once it's been read, so a reload or a tree switch doesn't reopen it.
+  useEffect(() => {
+    if (link) window.history.replaceState(window.history.state, "", withoutSkillParam(window.location.href));
+  }, [link]);
+
+  function copySkillLink(id: string) {
+    const url = skillUrl(window.location.href, id);
+    navigator.clipboard
+      .writeText(url)
+      .then(() => showToast(t.app.linkCopied))
+      .catch(() => window.prompt(t.panel.copyLink, url));
   }
 
   function select(id: string) {
@@ -514,6 +532,7 @@ export default function App() {
                 levelId={playerLevelId}
                 planAdded={planState.added.includes(selectedId)}
                 onTogglePlan={() => planState.toggleAdded(selectedId)}
+                onCopyLink={copySkillLink}
                 // One sheet at a time: on phones the skill sheet steps aside while a level dialog is open.
                 hidden={isPhone && (pickerOpen || testOpen || placementId !== null)}
               />
