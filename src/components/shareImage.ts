@@ -5,14 +5,24 @@ import { t } from "../i18n";
 export const SHARE_WIDTH = 1080;
 export const SHARE_HEIGHT = 1350;
 
-const GRASS = "#0e2c20";
-const GRASS_2 = "#113425";
-const CHALK = "#eef3ea";
-const CHALK_DIM = "rgba(238, 243, 234, 0.55)";
-const CHALK_FAINT = "rgba(238, 243, 234, 0.16)";
-const GOLD = "#f2c14e";
-const DISPLAY = '"Oswald", "Arial Narrow", Impact, sans-serif';
+const BG = "#0a0a0a";
+const FG = "#f5f5f5";
+const FG_2 = "#a3a3a3";
+const FG_FAINT = "rgba(255, 255, 255, 0.16)";
+const GLOW = "rgba(255, 255, 255, 0.075)";
+/** Same recipe as --branch-mix and --branch-grey in index.css: a branch colour is this much itself, the rest grey. */
+const BRANCH_MIX = 0.55;
+const BRANCH_GREY = [0x8c, 0x8c, 0x8c];
 const BODY = '-apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+
+/** Mixes a "#rrggbb" branch colour toward grey, as the app does, so the image stays near-monochrome. */
+export function mutedBranchColor(hex: string): string {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return `rgb(${BRANCH_GREY.join(", ")})`;
+  const n = parseInt(m[1], 16);
+  const channels = [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  return `rgb(${channels.map((c, i) => Math.round(c * BRANCH_MIX + BRANCH_GREY[i] * (1 - BRANCH_MIX))).join(", ")})`;
+}
 
 export interface ShareStats {
   title: string;
@@ -34,7 +44,7 @@ export function shareStats(
   streak: number | null,
   site: string,
 ): ShareStats {
-  const colorOf = (branch: string | null) => tree.branches.find((b) => b.id === branch)?.color ?? GOLD;
+  const colorOf = (branch: string | null) => tree.branches.find((b) => b.id === branch)?.color ?? "#8c8c8c";
   return {
     title: tree.title,
     rank: levelInfo(tree.levels, done.size).current.name,
@@ -66,7 +76,8 @@ function drawMiniTree(ctx: CanvasRenderingContext2D, stats: ShareStats, top: num
   const rows = Math.max(...stats.nodes.map((n) => n.row));
   const pos = (n: ShareStats["nodes"][number]) => ({
     x: left + (n.x + 0.5) * (width / slots),
-    y: top + (rows === 0 ? 0 : (n.row / rows) * height),
+    // Row 0 (the first skill) is at the bottom: the tree grows upward, like in the app (#79).
+    y: top + (rows === 0 ? height : height - (n.row / rows) * height),
   });
   const byId = new Map(stats.nodes.map((n) => [n.id, n]));
 
@@ -77,7 +88,7 @@ function drawMiniTree(ctx: CanvasRenderingContext2D, stats: ShareStats, top: num
       const a = pos(parent);
       const b = pos(child);
       const lit = parent.done && child.done;
-      ctx.strokeStyle = lit ? child.color : CHALK_FAINT;
+      ctx.strokeStyle = lit ? mutedBranchColor(child.color) : FG_FAINT;
       ctx.lineWidth = lit ? 4 : 2;
       ctx.beginPath();
       ctx.moveTo(a.x, a.y);
@@ -93,12 +104,12 @@ function drawMiniTree(ctx: CanvasRenderingContext2D, stats: ShareStats, top: num
     ctx.beginPath();
     ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
     if (n.done) {
-      ctx.fillStyle = n.color;
+      ctx.fillStyle = "#ffffff";
       ctx.fill();
     } else {
-      ctx.fillStyle = GRASS;
+      ctx.fillStyle = BG;
       ctx.fill();
-      ctx.strokeStyle = CHALK_FAINT;
+      ctx.strokeStyle = FG_FAINT;
       ctx.lineWidth = 3;
       ctx.stroke();
     }
@@ -107,28 +118,31 @@ function drawMiniTree(ctx: CanvasRenderingContext2D, stats: ShareStats, top: num
 
 /** Draws the share image onto a SHARE_WIDTH x SHARE_HEIGHT canvas. */
 export function drawShareImage(ctx: CanvasRenderingContext2D, stats: ShareStats): void {
-  for (let x = 0; x < SHARE_WIDTH; x += 108) {
-    ctx.fillStyle = (x / 108) % 2 === 0 ? GRASS : GRASS_2;
-    ctx.fillRect(x, 0, 108, SHARE_HEIGHT);
-  }
+  ctx.fillStyle = BG;
+  ctx.fillRect(0, 0, SHARE_WIDTH, SHARE_HEIGHT);
+  const glow = ctx.createRadialGradient(SHARE_WIDTH / 2, 0, 0, SHARE_WIDTH / 2, 0, SHARE_HEIGHT * 0.8);
+  glow.addColorStop(0, GLOW);
+  glow.addColorStop(1, "rgba(255, 255, 255, 0)");
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, SHARE_WIDTH, SHARE_HEIGHT);
   ctx.textBaseline = "alphabetic";
   ctx.textAlign = "left";
 
-  ctx.fillStyle = CHALK_DIM;
-  ctx.font = `600 34px ${DISPLAY}`;
+  ctx.fillStyle = FG_2;
+  ctx.font = `600 34px ${BODY}`;
   ctx.fillText(stats.title, 90, 120);
 
-  ctx.fillStyle = GOLD;
-  ctx.font = `700 112px ${DISPLAY}`;
+  ctx.fillStyle = "#ffffff";
+  ctx.font = `700 112px ${BODY}`;
   ctx.fillText(stats.rank.toUpperCase(), 86, 240);
 
-  ctx.fillStyle = CHALK;
+  ctx.fillStyle = FG;
   ctx.font = `600 44px ${BODY}`;
   ctx.fillText(t.share.imageSkills(stats.done, stats.total), 90, 310);
 
   if (stats.levelName) {
     const streak = stats.streak ? t.share.imageStreak(stats.streak) : "";
-    ctx.fillStyle = CHALK_DIM;
+    ctx.fillStyle = FG_2;
     ctx.font = `400 36px ${BODY}`;
     ctx.fillText(t.share.imageTraining(stats.levelName, streak), 90, 362);
   }
@@ -137,25 +151,25 @@ export function drawShareImage(ctx: CanvasRenderingContext2D, stats: ShareStats)
 
   let y = 880;
   for (const b of stats.branches) {
-    ctx.fillStyle = CHALK;
-    ctx.font = `600 30px ${DISPLAY}`;
+    ctx.fillStyle = FG;
+    ctx.font = `600 30px ${BODY}`;
     ctx.textAlign = "left";
     ctx.fillText(b.name.toUpperCase(), 90, y);
     ctx.textAlign = "right";
-    ctx.fillStyle = CHALK_DIM;
+    ctx.fillStyle = FG_2;
     ctx.font = `700 28px ${BODY}`;
     ctx.fillText(`${b.done}/${b.total}`, SHARE_WIDTH - 90, y);
     const barY = y + 14;
     const barW = SHARE_WIDTH - 180;
-    ctx.fillStyle = CHALK_FAINT;
+    ctx.fillStyle = FG_FAINT;
     ctx.fillRect(90, barY, barW, 12);
-    ctx.fillStyle = b.color;
+    ctx.fillStyle = mutedBranchColor(b.color);
     ctx.fillRect(90, barY, b.total ? (barW * b.done) / b.total : 0, 12);
     y += 66;
   }
 
   ctx.textAlign = "center";
-  ctx.fillStyle = CHALK_DIM;
+  ctx.fillStyle = FG_2;
   ctx.font = `400 30px ${BODY}`;
   ctx.fillText(stats.site, SHARE_WIDTH / 2, SHARE_HEIGHT - 50);
 }
@@ -163,7 +177,7 @@ export function drawShareImage(ctx: CanvasRenderingContext2D, stats: ShareStats)
 /** Renders the share image to a PNG. Waits for the app's fonts so the text matches the app. */
 export async function renderShareImage(stats: ShareStats): Promise<Blob> {
   try {
-    await Promise.all([document.fonts.load(`700 112px ${DISPLAY}`), document.fonts.load(`600 44px ${BODY}`)]);
+    await Promise.all([document.fonts.load(`700 112px ${BODY}`), document.fonts.load(`600 44px ${BODY}`)]);
   } catch {
     // Fonts are a nicety. The fallbacks in the font stacks still draw fine.
   }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { football } from "../data/football";
-import { shareStats } from "./shareImage";
+import { mutedBranchColor, shareStats } from "./shareImage";
 
 describe("share image stats", () => {
   it("counts skills per branch and overall, with the current rank", () => {
@@ -20,5 +20,13 @@ describe("share image stats", () => {
     expect(stats.done).toBe(1);
     expect(stats.streak).toBeNull();
     expect(stats.levelName).toBeNull();
+  });
+});
+
+describe("mutedBranchColor", () => {
+  it("mixes 55% of the colour with grey and falls back to grey for non-hex input", () => {
+    expect(mutedBranchColor("#ffffff")).toBe("rgb(203, 203, 203)");
+    expect(mutedBranchColor("#8c8c8c")).toBe("rgb(140, 140, 140)");
+    expect(mutedBranchColor("red")).toBe("rgb(140, 140, 140)");
   });
 });
