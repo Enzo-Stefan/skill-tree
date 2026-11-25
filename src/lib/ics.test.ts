@@ -1,5 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { escapeText, foldLine, trainingIcs, type TrainingCalendarInput } from "./ics";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { PRODUCTION_URL, calendarLink, escapeText, foldLine, trainingIcs, type TrainingCalendarInput } from "./ics";
+import { saveTextFile } from "./saveFile";
 
 const LINK = "https://skill.example.app/app/";
 // 2026-11-25 is a Wednesday (plan index 2).
@@ -70,7 +71,7 @@ describe("trainingIcs", () => {
   it("gives the same UID whatever the days or the date", () => {
     const a = trainingIcs(input({ days: [0] }));
     const b = trainingIcs(input({ days: [1, 3], now: new Date(2027, 0, 4) }));
-    expect(field(a, "UID")).toBe("skill-tree-training:skill.example.app/app/");
+    expect(field(a, "UID")).toBe("hapi-skill-training:skill.example.app/app/");
     expect(field(b, "UID")).toBe(field(a, "UID"));
   });
 
@@ -88,6 +89,39 @@ describe("trainingIcs", () => {
   it("refuses an empty list of training days", () => {
     expect(() => trainingIcs(input({ days: [] }))).toThrow(RangeError);
     expect(() => trainingIcs(input({ days: [7, -1] }))).toThrow(RangeError);
+  });
+
+  it("starts next week when today's session has already begun", () => {
+    // Only Wednesday, exported on Wednesday 18:30: the next Wednesday is 2026-12-02.
+    const late = trainingIcs(input({ days: [2], now: new Date(2026, 10, 25, 18, 30) }));
+    expect(field(late, "DTSTART")).toBe("20261202T170000");
+    // Wednesday and Friday: the next valid day is Friday, this week.
+    const friday = trainingIcs(input({ days: [2, 4], now: new Date(2026, 10, 25, 17, 0) }));
+    expect(field(friday, "DTSTART")).toBe("20261127T170000");
+    // Before the start, today still counts.
+    const early = trainingIcs(input({ days: [2], now: new Date(2026, 10, 25, 16, 59) }));
+    expect(field(early, "DTSTART")).toBe("20261125T170000");
+  });
+
+  it("adds a display reminder 30 minutes before, with escaped text", () => {
+    const text = trainingIcs(input({ summary: "Legs, arms; core" }));
+    const lines = unfold(text);
+    const i = lines.indexOf("BEGIN:VALARM");
+    expect(lines.slice(i, i + 5)).toEqual(["BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:Legs\\, arms\\; core", "TRIGGER:-PT30M", "END:VALARM"]);
+    expect(lines.indexOf("END:VEVENT")).toBeGreaterThan(i);
+    expect(unfold(trainingIcs(input({ reminderMinutes: 10 }))).includes("TRIGGER:-PT10M")).toBe(true);
+  });
+
+  it("identifies the product as hapi skill", () => {
+    expect(field(trainingIcs(input()), "PRODID")).toBe("-//hapi skill//Training plan//EN");
+  });
+
+  it("throws RangeError for a start hour, length or reminder out of range", () => {
+    for (const startHour of [-1, 24, 1.5, Number.NaN]) expect(() => trainingIcs(input({ startHour }))).toThrow(RangeError);
+    for (const durationMinutes of [0, -30, 1441, 2.5]) expect(() => trainingIcs(input({ durationMinutes }))).toThrow(RangeError);
+    for (const reminderMinutes of [-1, 10081, 0.5]) expect(() => trainingIcs(input({ reminderMinutes }))).toThrow(RangeError);
+    expect(() => trainingIcs(input({ startHour: 0, durationMinutes: 1440 }))).not.toThrow();
+    expect(() => trainingIcs(input({ startHour: 23 }))).not.toThrow();
   });
 
   it("escapes commas, semicolons and backslashes in the summary", () => {
@@ -139,5 +173,50 @@ describe("foldLine", () => {
     const text = trainingIcs(input({ description: "Keep going, every week. ".repeat(10) }));
     for (const part of text.split("\r\n")) expect(new TextEncoder().encode(part).length).toBeLessThanOrEqual(75);
     expect(field(text, "DESCRIPTION")).toBe(`${"Keep going\\, every week. ".repeat(10)}\\n${LINK}`);
+  });
+});
+
+describe("calendarLink", () => {
+  const at = (origin: string, pathname = "/") => calendarLink({ origin, pathname, hostname: new URL(origin).hostname });
+
+  it("uses the production URL on localhost, private-network and preview hosts", () => {
+    for (const origin of ["http://localhost:5173", "http://127.0.0.1:4173", "http://[::1]:5173", "http://192.168.1.20:5173", "http://10.0.0.4", "http://172.20.1.1", "http://mac.local:5173", "https://skill-tree-git-calendar-ics-team.vercel.app"]) {
+      expect(at(origin, "/app/")).toBe(PRODUCTION_URL);
+    }
+  });
+
+  it("keeps the real origin and path on the production host", () => {
+    expect(at("https://skill-tree-5y8k.vercel.app", "/app/")).toBe("https://skill-tree-5y8k.vercel.app/app/");
+    expect(at("https://hapiskill.example", "/")).toBe("https://hapiskill.example/");
+  });
+});
+
+describe("saveTextFile", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("downloads the text through a temporary link, then cleans up", () => {
+    vi.useFakeTimers();
+    const link = { href: "", download: "", click: vi.fn(), remove: vi.fn() };
+    const append = vi.fn();
+    const createObjectURL = vi.fn(() => "blob:test");
+    const revokeObjectURL = vi.fn();
+    vi.stubGlobal("document", { createElement: vi.fn(() => link), body: { append } });
+    vi.stubGlobal("URL", { createObjectURL, revokeObjectURL });
+
+    saveTextFile("BEGIN:VCALENDAR", "training.ics", "text/calendar;charset=utf-8");
+
+    const blob = (createObjectURL.mock.calls[0] as unknown as [Blob])[0];
+    expect(blob.type).toBe("text/calendar;charset=utf-8");
+    expect(link.href).toBe("blob:test");
+    expect(link.download).toBe("training.ics");
+    expect(append).toHaveBeenCalledWith(link);
+    expect(link.click).toHaveBeenCalledOnce();
+    expect(link.remove).toHaveBeenCalledOnce();
+    expect(revokeObjectURL).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(1000);
+    expect(revokeObjectURL).toHaveBeenCalledWith("blob:test");
   });
 });

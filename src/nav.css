@@ -275,6 +275,7 @@
 .week-plan-item { display: inline-flex; gap: 6px; align-items: baseline; }
 .week-plan-item.heavy { font-weight: 700; }
 .week-plan-mark svg { width: 22px; height: 22px; color: var(--gold-text); }
+.calendar-export { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
 .day-limit { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
 .stepper { display: inline-flex; align-items: center; gap: 12px; font-variant-numeric: tabular-nums; }
 .stepper .btn { min-width: 44px; min-height: 44px; }

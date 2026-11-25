@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { Skill, Tree } from "../types";
-import { trainingIcs } from "../lib/ics";
+import { calendarLink, trainingIcs } from "../lib/ics";
+import { saveTextFile } from "../lib/saveFile";
 import { MAX_DAY_MINUTES, MIN_DAY_MINUTES, trainedPlanDays, type PlanDay } from "../lib/plan";
 import type { DayKey } from "../lib/streak";
 import { language, t } from "../i18n";
@@ -23,18 +24,6 @@ const DAY_STEP = 15;
 function parse(key: DayKey): Date {
   const [y, m, d] = key.split("-").map(Number);
   return new Date(y, m - 1, d);
-}
-
-/** Saves text as a file from a temporary download link. Nothing leaves the browser. */
-function saveTextFile(text: string, name: string, type: string): void {
-  const url = URL.createObjectURL(new Blob([text], { type }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = name;
-  document.body.append(link);
-  link.click();
-  link.remove();
-  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 /** The Training tab: today's session as a checklist, and the week's plan. */
@@ -146,8 +135,23 @@ function WeekView({ days, skills, today, trained, state, unplaced }: { days: Pla
   const long = new Intl.DateTimeFormat(language, { weekday: "long" });
   const short = new Intl.DateTimeFormat(language, { weekday: "narrow" });
   const date = new Intl.DateTimeFormat(language, { day: "numeric", month: "short" });
-  // Plan indexes (0 Monday to 6 Sunday) of the days the player trains on: every day that isn't rest.
-  const training = days.flatMap((d, i) => (d.rest ? [] : [i]));
+  const [calendarStatus, setCalendarStatus] = useState("");
+  // Plan indexes (0 Monday to 6 Sunday) of the days with sessions scheduled.
+  const training = days.flatMap((d, i) => (!d.rest && d.items.length > 0 ? [i] : []));
+  const exportCalendar = () => {
+    saveTextFile(
+      trainingIcs({
+        days: training,
+        summary: t.training.calendarSummary,
+        description: t.training.calendarDescription,
+        link: calendarLink(window.location),
+        now: new Date(),
+      }),
+      "training.ics",
+      "text/calendar;charset=utf-8",
+    );
+    setCalendarStatus(t.training.calendarSaved);
+  };
   return (
     <>
       <ol className="week-plan">
@@ -206,26 +210,14 @@ function WeekView({ days, skills, today, trained, state, unplaced }: { days: Pla
       </div>
       {unplaced > 0 && <p className="hint">{t.training.unplaced(unplaced)}</p>}
       {training.length > 0 && (
-        <div className="day-limit">
-          <button
-            className="btn"
-            type="button"
-            onClick={() =>
-              saveTextFile(
-                trainingIcs({
-                  days: training,
-                  summary: t.training.calendarSummary,
-                  description: t.training.calendarDescription,
-                  link: window.location.origin + window.location.pathname,
-                  now: new Date(),
-                }),
-                "training.ics",
-                "text/calendar;charset=utf-8",
-              )
-            }
-          >
+        <div className="calendar-export">
+          <button className="btn" type="button" onClick={exportCalendar}>
             {t.training.addToCalendar}
           </button>
+          <p className="hint">{t.training.calendarNote}</p>
+          <p className="sr-only" role="status" aria-live="polite">
+            {calendarStatus}
+          </p>
         </div>
       )}
       <div className="day-limit">

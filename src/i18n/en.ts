@@ -84,6 +84,8 @@ export const en = {
     addToCalendar: "Add training days to my calendar",
     calendarSummary: "Training",
     calendarDescription: "Your weekly training days in hapi skill. Open the app to see today's session:",
+    calendarNote: "Events are 17:00 to 18:00 with a reminder 30 minutes before. You can edit the time in your calendar.",
+    calendarSaved: "Calendar file downloaded. Open it to add your training days.",
   },
   lifts: {
     title: "Your weights",

@@ -4,7 +4,30 @@
 const BYDAY = ["MO", "TU", "WE", "TH", "FR", "SA", "SU"] as const;
 const DEFAULT_START_HOUR = 17;
 const DEFAULT_DURATION_MINUTES = 60;
+const DEFAULT_REMINDER_MINUTES = 30;
 const MAX_LINE_OCTETS = 75;
+/** The deployed app, used in calendar events when the app runs somewhere a player's calendar can't reach. */
+export const PRODUCTION_URL = "https://skill-tree-5y8k.vercel.app/";
+
+/**
+ * The link to put in a calendar event for the page at `location`.
+ *
+ * Localhost, private-network and preview hosts mean nothing in a calendar, so they get the production URL.
+ */
+export function calendarLink(location: Pick<URL, "origin" | "pathname" | "hostname">): string {
+  const prod = new URL(PRODUCTION_URL);
+  const host = location.hostname.replace(/^\[|\]$/g, "");
+  const local =
+    host === "localhost" ||
+    host.endsWith(".localhost") ||
+    host.endsWith(".local") ||
+    host === "::1" ||
+    /^(127|10)\./.test(host) ||
+    /^192\.168\./.test(host) ||
+    /^172\.(1[6-9]|2\d|3[01])\./.test(host);
+  const preview = host.endsWith(".vercel.app") && host !== prod.hostname;
+  return local || preview ? PRODUCTION_URL : location.origin + location.pathname;
+}
 
 export interface TrainingCalendarInput {
   /** Training weekdays as plan indexes: 0 is Monday, 6 is Sunday. Invalid entries are ignored. */
@@ -15,12 +38,14 @@ export interface TrainingCalendarInput {
   description: string;
   /** Link back to the app, added to the description and to the URL property. */
   link: string;
-  /** Sets DTSTAMP and the first occurrence: the first training day on or after this local date. */
+  /** Sets DTSTAMP and the first occurrence: the first training day whose session hasn't started yet. */
   now: Date;
-  /** Local start hour, 0 to 23. Defaults to 17:00. */
+  /** Local start hour, an integer from 0 to 23. Defaults to 17:00. */
   startHour?: number;
-  /** Length of each session in minutes. Defaults to 60. */
+  /** Length of each session in minutes, an integer from 1 to 1440. Defaults to 60. */
   durationMinutes?: number;
+  /** How long before the start the reminder shows, in minutes (0 to 10080). Defaults to 30. */
+  reminderMinutes?: number;
 }
 
 /**
@@ -36,7 +61,7 @@ export interface TrainingCalendarInput {
  *   The complete calendar file, ready to save as a .ics file.
  *
  * Raises:
- *   RangeError: If no valid training day is given.
+ *   RangeError: If no valid training day is given, or startHour, durationMinutes or reminderMinutes is out of range.
  *   TypeError: If the link is not an absolute URL (thrown by `new URL`).
  */
 export function trainingIcs(input: TrainingCalendarInput): string {
@@ -44,9 +69,13 @@ export function trainingIcs(input: TrainingCalendarInput): string {
   if (weekdays.length === 0) throw new RangeError("trainingIcs needs at least one training day");
   const startHour = input.startHour ?? DEFAULT_START_HOUR;
   const duration = input.durationMinutes ?? DEFAULT_DURATION_MINUTES;
+  const reminder = input.reminderMinutes ?? DEFAULT_REMINDER_MINUTES;
+  if (!Number.isInteger(startHour) || startHour < 0 || startHour > 23) throw new RangeError(`startHour must be an integer from 0 to 23, got ${startHour}`);
+  if (!Number.isInteger(duration) || duration < 1 || duration > 1440) throw new RangeError(`durationMinutes must be an integer from 1 to 1440, got ${duration}`);
+  if (!Number.isInteger(reminder) || reminder < 0 || reminder > 10080) throw new RangeError(`reminderMinutes must be an integer from 0 to 10080, got ${reminder}`);
   const url = new URL(input.link);
 
-  const first = firstOccurrence(weekdays, input.now);
+  const first = firstOccurrence(weekdays, input.now, startHour);
   const start = localStamp(first, startHour, 0);
   const end = localStamp(first, startHour, duration);
   const rrule = `FREQ=WEEKLY;BYDAY=${weekdays.map((d) => BYDAY[d]).join(",")}`;
@@ -54,10 +83,10 @@ export function trainingIcs(input: TrainingCalendarInput): string {
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Skill Tree//Training plan//EN",
+    "PRODID:-//hapi skill//Training plan//EN",
     "CALSCALE:GREGORIAN",
     "BEGIN:VEVENT",
-    `UID:${escapeText(`skill-tree-training:${url.host}${url.pathname}`)}`,
+    `UID:${escapeText(`hapi-skill-training:${url.host}${url.pathname}`)}`,
     `DTSTAMP:${utcStamp(input.now)}`,
     `DTSTART:${start}`,
     `DTEND:${end}`,
@@ -65,6 +94,11 @@ export function trainingIcs(input: TrainingCalendarInput): string {
     `SUMMARY:${escapeText(input.summary)}`,
     `DESCRIPTION:${escapeText(`${input.description}\n${input.link}`)}`,
     `URL:${input.link}`,
+    "BEGIN:VALARM",
+    "ACTION:DISPLAY",
+    `DESCRIPTION:${escapeText(input.summary)}`,
+    `TRIGGER:-PT${reminder}M`,
+    "END:VALARM",
     "END:VEVENT",
     "END:VCALENDAR",
   ];
@@ -106,11 +140,13 @@ function utf8Octets(ch: string): number {
   return 4;
 }
 
-/** The first date on or after `now` (local time) whose weekday is one of `weekdays`. */
-function firstOccurrence(weekdays: number[], now: Date): Date {
-  for (let offset = 0; offset < 7; offset++) {
+/** The first training date (local time) whose session starts after `now`: today only if `startHour` is still ahead. */
+function firstOccurrence(weekdays: number[], now: Date, startHour: number): Date {
+  for (let offset = 0; offset <= 7; offset++) {
     const date = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset);
-    if (weekdays.includes((date.getDay() + 6) % 7)) return date;
+    if (!weekdays.includes((date.getDay() + 6) % 7)) continue;
+    const startsAt = new Date(date.getFullYear(), date.getMonth(), date.getDate(), startHour);
+    if (startsAt.getTime() > now.getTime()) return date;
   }
   throw new RangeError("no training day in the next week");
 }
