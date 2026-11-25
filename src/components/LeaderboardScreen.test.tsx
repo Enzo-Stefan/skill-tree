@@ -6,7 +6,7 @@ import type { LeaderboardRow, Tree } from "../types";
 import { t } from "../i18n";
 import { LeaderboardScreen } from "./LeaderboardScreen";
 
-vi.mock("../auth/client", () => ({ loadSupabase: vi.fn(async () => ({ rpc: vi.fn() })) }));
+vi.mock("../auth/client", () => ({ loadSupabase: vi.fn(async () => ({ rpc: vi.fn(), auth: { getSession: vi.fn(async () => ({ data: { session: { user: {} } } })) } })) }));
 vi.mock("../lib/leaderboardApi", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/leaderboardApi")>()),
   fetchLeaderboard: vi.fn(),

@@ -1,16 +1,12 @@
 import { useEffect, useId, useRef, useState } from "react";
 import type { LeaderboardRow } from "../types";
 import { loadSupabase } from "../auth/client";
-import { DB_NOT_SIGNED_IN, LeaderboardError, reportRow } from "../lib/leaderboardApi";
+import { LeaderboardError, reportRow } from "../lib/leaderboardApi";
 import { t } from "../i18n";
 import { useModalFocus } from "./useModalFocus";
 
 /** The longest reason the database keeps (migration 006 cuts anything longer). */
 export const REASON_MAX = 300;
-
-// The daily limit in migration 006 is a plain RAISE with no SQLSTATE, so the database reports it as P0001 like any
-// other plain RAISE. It is the one case still matched by its message text.
-const TOO_MANY_MESSAGE = "Too many reports today.";
 
 interface Props {
   row: LeaderboardRow;
@@ -48,13 +44,19 @@ export function ReportDialog({ row, onClose, onSent }: Props) {
     try {
       const client = await loadSupabase();
       if (!client) throw new Error("no client");
+      const { data } = await client.auth.getSession();
+      if (!data.session) {
+        setSignedOut(true);
+        setError(t.leaderboard.reportSignIn);
+        return;
+      }
       await reportRow(client, row.rowKey, trimmed);
       onSent();
     } catch (e) {
-      if (e instanceof LeaderboardError && e.dbCode === DB_NOT_SIGNED_IN) {
+      if (e instanceof LeaderboardError && e.code === "signedOut") {
         setSignedOut(true);
         setError(t.leaderboard.reportSignIn);
-      } else if (e instanceof LeaderboardError && e.message === TOO_MANY_MESSAGE) {
+      } else if (e instanceof LeaderboardError && e.code === "rateLimited") {
         setError(t.leaderboard.reportTooMany);
       } else {
         setError(t.leaderboard.reportFailed);

@@ -13,7 +13,7 @@ export interface LeaderboardProfileState {
   /** Tries loading the profile again. */
   retry: () => void;
   /** Saves the profile. Resolves to the problem code, or null when it worked. */
-  save: (next: LeaderboardProfile) => Promise<LeaderboardError["code"] | null>;
+  save: (next: LeaderboardProfile) => Promise<Extract<LeaderboardError["code"], "taken" | "blocked" | "failed"> | null>;
   /** Takes the player off the leaderboard. Their other settings stay for next time. */
   leave: () => Promise<boolean>;
 }
@@ -61,7 +61,8 @@ export function useLeaderboardProfile(userId: string | null): LeaderboardProfile
         setProfile(next);
         return null;
       } catch (e) {
-        return e instanceof LeaderboardError ? e.code : ("failed" as const);
+        if (e instanceof LeaderboardError && (e.code === "taken" || e.code === "blocked")) return e.code;
+        return "failed" as const;
       }
     },
     [userId, error],

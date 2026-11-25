@@ -6,7 +6,8 @@ import { t } from "../i18n";
 import { LeaderboardError, reportRow } from "../lib/leaderboardApi";
 import { ReportDialog } from "./ReportDialog";
 
-vi.mock("../auth/client", () => ({ loadSupabase: vi.fn(async () => ({ rpc: vi.fn() })) }));
+const getSession = vi.fn();
+vi.mock("../auth/client", () => ({ loadSupabase: vi.fn(async () => ({ rpc: vi.fn(), auth: { getSession } })) }));
 vi.mock("../lib/leaderboardApi", async (importOriginal) => ({
   ...(await importOriginal<typeof import("../lib/leaderboardApi")>()),
   reportRow: vi.fn(),
@@ -15,6 +16,8 @@ vi.mock("../lib/leaderboardApi", async (importOriginal) => ({
 afterEach(cleanup);
 beforeEach(() => {
   vi.mocked(reportRow).mockReset();
+  getSession.mockReset();
+  getSession.mockResolvedValue({ data: { session: { user: {} } } });
 });
 
 const row: LeaderboardRow = {
@@ -101,7 +104,7 @@ describe("ReportDialog", () => {
   });
 
   it("shows the database's sign-in message and offers Close instead of Cancel", async () => {
-    vi.mocked(reportRow).mockRejectedValue(new LeaderboardError("failed", "Sign in to report a row.", "28000"));
+    vi.mocked(reportRow).mockRejectedValue(new LeaderboardError("signedOut", "Sign in to report a row.", "28000"));
     renderDialog();
     fireEvent.change(reasonBox(), { target: { value: "spam" } });
     fireEvent.click(sendButton());
@@ -110,8 +113,19 @@ describe("ReportDialog", () => {
     expect(sendButton().disabled).toBe(true);
   });
 
+  it("shows the sign-in message and makes no report_row call when there is no session", async () => {
+    getSession.mockResolvedValue({ data: { session: null } });
+    const { onSent } = renderDialog();
+    fireEvent.change(reasonBox(), { target: { value: "spam" } });
+    fireEvent.click(sendButton());
+    expect((await screen.findByRole("alert")).textContent).toBe(t.leaderboard.reportSignIn);
+    expect(reportRow).not.toHaveBeenCalled();
+    expect(onSent).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: t.leaderboard.close })).toBeTruthy();
+  });
+
   it("shows the database's daily limit message", async () => {
-    vi.mocked(reportRow).mockRejectedValue(new LeaderboardError("failed", "Too many reports today."));
+    vi.mocked(reportRow).mockRejectedValue(new LeaderboardError("rateLimited", "Too many reports today.", "P0001"));
     renderDialog();
     fireEvent.change(reasonBox(), { target: { value: "spam" } });
     fireEvent.click(sendButton());

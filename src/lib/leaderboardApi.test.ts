@@ -21,12 +21,27 @@ describe("reporting a row", () => {
     expect(rpc).toHaveBeenCalledWith("report_row", { row_key: "row-1", reason: "looks fake" });
   });
 
-  it("turns a database error into a LeaderboardError and keeps its SQLSTATE", async () => {
-    const rpc = vi.fn().mockResolvedValue({ data: null, error: { code: "28000", message: "Sign in to report a row." } });
-    const error = await reportRow(fakeClient(rpc), "row-1", "spam").catch((e: unknown) => e);
+  const failWith = async (code: string | undefined, message: string) => {
+    const rpc = vi.fn().mockResolvedValue({ data: null, error: { code, message } });
+    return (await reportRow(fakeClient(rpc), "row-1", "spam").catch((e: unknown) => e)) as LeaderboardError;
+  };
+
+  it.each([
+    ["42501", "permission denied for function report_row", "signedOut"],
+    ["28000", "Sign in to report a row.", "signedOut"],
+    ["P0001", "Too many reports today.", "rateLimited"],
+    ["XX000", "boom", "failed"],
+  ])("maps SQLSTATE %s to %s and keeps the code", async (code, message, expected) => {
+    const error = await failWith(code, message);
     expect(error).toBeInstanceOf(LeaderboardError);
-    expect((error as LeaderboardError).message).toBe("Sign in to report a row.");
-    expect((error as LeaderboardError).dbCode).toBe("28000");
+    expect(error.code).toBe(expected);
+    expect(error.dbCode).toBe(code);
+    expect(error.message).toBe(message);
+  });
+
+  it("does not match on the message text", async () => {
+    expect((await failWith("XX000", "Too many reports today.")).code).toBe("failed");
+    expect((await failWith(undefined, "Sign in to report a row.")).code).toBe("failed");
   });
 });
 
