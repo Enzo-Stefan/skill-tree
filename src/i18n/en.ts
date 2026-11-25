@@ -62,6 +62,7 @@ export const en = {
     finished: "Session finished. Counted as a training day.",
     finishedToday: "Done for today",
     progress: (done: number, total: number) => `${done} of ${total} exercises done`,
+    restDays: "Rest days",
     dayLimit: "Most training per day",
     minutes: (n: number) => `${n} min`,
     lessTime: "Less time per day",

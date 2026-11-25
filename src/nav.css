@@ -287,3 +287,6 @@
 .stepper .btn { min-width: 44px; min-height: 44px; }
 @media (max-width: 700px) { .week-plan li { grid-template-columns: 84px minmax(0, 1fr) 22px; } }
 @media (prefers-reduced-motion: reduce) { .seg-btn, .rest-btn { transition: none; } }
+.rest-days { display: inline-flex; gap: 4px; }
+.rest-day { min-width: 40px; min-height: 40px; padding: 0; border: 1.5px solid var(--chalk-faint); }
+.rest-day[aria-pressed="true"] { border-color: var(--gold-text); color: var(--gold-text); }

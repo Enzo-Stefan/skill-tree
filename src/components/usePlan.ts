@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { Tree } from "../types";
 import type { DayKey } from "../lib/streak";
-import { buildWeekPlan, cleanDayMinutes, loadDayMinutes, saveDayMinutes, skillsToPlan, type WeekPlan } from "../lib/plan";
+import { buildWeekPlan, cleanDayMinutes, cleanRestDays, loadDayMinutes, loadRestDays, saveDayMinutes, saveRestDays, skillsToPlan, type WeekPlan } from "../lib/plan";
 
 export interface PlanState {
   plan: WeekPlan;
@@ -10,6 +10,10 @@ export interface PlanState {
   toggleAdded: (skillId: string) => void;
   dayMinutes: number;
   setDayMinutes: (minutes: number) => void;
+  /** Days kept free, as plan indexes (0 Monday to 6 Sunday). Never empty. */
+  restDays: number[];
+  /** Turns a day into a rest day or a training day. The last rest day can't be turned off. */
+  toggleRestDay: (index: number) => void;
   /** Exercises ticked off today, as "<day>|<skill>|<exercise index>", so yesterday's ticks never show today. */
   ticks: Set<string>;
   toggleTick: (key: string) => void;
@@ -38,11 +42,12 @@ function saveAdded(treeId: string, ids: string[]): void {
 export function usePlan(tree: Tree, done: Set<string>, levelId: string | null, today: DayKey): PlanState {
   const [added, setAdded] = useState(() => loadAdded(tree.id));
   const [dayMinutes, setMinutes] = useState(loadDayMinutes);
+  const [restDays, setRestDays] = useState(loadRestDays);
   const [ticks, setTicks] = useState<Set<string>>(() => new Set());
 
   const plan = useMemo(
-    () => buildWeekPlan(skillsToPlan(tree, done, added), levelId, today, dayMinutes),
-    [tree, done, added, levelId, today, dayMinutes],
+    () => buildWeekPlan(skillsToPlan(tree, done, added), levelId, today, dayMinutes, restDays),
+    [tree, done, added, levelId, today, dayMinutes, restDays],
   );
 
   const toggleAdded = useCallback(
@@ -59,6 +64,15 @@ export function usePlan(tree: Tree, done: Set<string>, levelId: string | null, t
     saveDayMinutes(clean);
     setMinutes(clean);
   }, []);
+  const toggleRestDay = useCallback((index: number) => {
+    setRestDays((prev) => {
+      const next = cleanRestDays(prev.includes(index) ? prev.filter((d) => d !== index) : [...prev, index]);
+      // cleanRestDays gives Sunday back for an empty list, so emptying it is refused here instead.
+      if (prev.includes(index) && prev.length === 1) return prev;
+      saveRestDays(next);
+      return next;
+    });
+  }, []);
   const toggleTick = useCallback(
     (key: string) =>
       setTicks((prev) => {
@@ -69,5 +83,5 @@ export function usePlan(tree: Tree, done: Set<string>, levelId: string | null, t
     [],
   );
 
-  return { plan, added, toggleAdded, dayMinutes, setDayMinutes, ticks, toggleTick };
+  return { plan, added, toggleAdded, dayMinutes, setDayMinutes, restDays, toggleRestDay, ticks, toggleTick };
 }

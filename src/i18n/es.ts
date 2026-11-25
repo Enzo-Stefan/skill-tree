@@ -62,6 +62,7 @@ export const es: Strings = {
     finished: "Sesión terminada. Cuenta como día de entrenamiento.",
     finishedToday: "Hecho por hoy",
     progress: (done: number, total: number) => `${done} de ${total} ejercicios hechos`,
+    restDays: "Días de descanso",
     dayLimit: "Máximo de entrenamiento al día",
     minutes: (n: number) => `${n} min`,
     lessTime: "Menos tiempo al día",

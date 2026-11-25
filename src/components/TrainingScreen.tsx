@@ -129,6 +129,7 @@ function TodayView({ day, skills, levelId, state, finished, onFinish }: { day: P
 
 function WeekView({ days, skills, today, trained, state, unplaced }: { days: PlanDay[]; skills: Map<string, Skill>; today: DayKey; trained: Set<DayKey>; state: PlanState; unplaced: number }) {
   const long = new Intl.DateTimeFormat(language, { weekday: "long" });
+  const short = new Intl.DateTimeFormat(language, { weekday: "narrow" });
   const date = new Intl.DateTimeFormat(language, { day: "numeric", month: "short" });
   return (
     <>
@@ -168,6 +169,24 @@ function WeekView({ days, skills, today, trained, state, unplaced }: { days: Pla
           );
         })}
       </ol>
+      <div className="day-limit">
+        <span id="rest-days-label">{t.training.restDays}</span>
+        <div className="rest-days" role="group" aria-labelledby="rest-days-label">
+          {days.map((d, i) => (
+            <button
+              key={d.date}
+              type="button"
+              className="seg-btn rest-day"
+              aria-pressed={state.restDays.includes(i)}
+              aria-label={long.format(parse(d.date))}
+              disabled={state.restDays.length === 1 && state.restDays.includes(i)}
+              onClick={() => state.toggleRestDay(i)}
+            >
+              {short.format(parse(d.date))}
+            </button>
+          ))}
+        </div>
+      </div>
       {unplaced > 0 && <p className="hint">{t.training.unplaced(unplaced)}</p>}
       <div className="day-limit">
         <span id="day-limit-label">{t.training.dayLimit}</span>
