@@ -46,6 +46,10 @@ Players delete their own account from the app (tap their name, then **Delete acc
 
 `profiles` (display name, country, continent, city, hemisphere, opt-in), `leaderboard_scores` (filled by a trigger on `progress`, never by the app) and `leaderboard_reports`. Players read only their own profile; nobody reads scores or reports directly. The ranking comes from `public.leaderboard(...)`, which returns opted-in players only and never the city. `leaderboard_reports` and `report_row` exist in the database, but no app UI writes to them yet. Run 005 before the app version that uses it ships. The SQL is tested with `npm test` (`supabase/tests/`), which runs the migrations in an in-memory Postgres.
 
+## Admin reports (006)
+
+`admins` (who may read reports), report `status` (open, dismissed, actioned), and `leaderboard_hidden` (rows an admin hid; kept per account, so deleting a profile and joining again does not bring a row back). `leaderboard()` skips hidden players. Admins use `admin_list_reports`, `admin_resolve_report` and `admin_unhide`; each refuses anyone not in `admins` and none returns a user id. A resolved report no longer blocks the same player reporting the same row again. After running 006, add the two admins by hand in the SQL editor: `insert into public.admins (user_id) values ('<enzo uuid>'), ('<stefan uuid>');`. Run 006 on the live project before the app version that uses it ships, because `main` deploys itself. Tested in `supabase/tests/admin.test.ts`.
+
 ## Free plan
 
 Free projects pause after a week with no activity. If sign-in stops working, open the project
