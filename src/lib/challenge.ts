@@ -80,7 +80,20 @@ export async function shareChallenge(
   }
 }
 
-/** The challenge button shows once the result is saved and the test passed, and only when the app can share. */
-export function showChallengeButton(saved: boolean, canChallenge: boolean, phase: string): boolean {
-  return saved && canChallenge && phase === "passed";
+/**
+ * The only test kind that saves a numeric result today: a stopwatch ("time"), in seconds. Anything
+ * else would need its own unit and wording before it can be challenged, so it gets no button.
+ */
+export function savesSeconds(checkKind: string): boolean {
+  return checkKind === "time";
+}
+
+/** The saved result as the challenge shows it. Seconds only: see savesSeconds. */
+export function challengeResult(value: number): string {
+  return t.testMode.seconds(value);
+}
+
+/** The challenge button shows once a stopwatch result is saved and the test passed, and only when the app can share. */
+export function showChallengeButton(saved: boolean, canChallenge: boolean, phase: string, checkKind: string): boolean {
+  return saved && canChallenge && phase === "passed" && savesSeconds(checkKind);
 }

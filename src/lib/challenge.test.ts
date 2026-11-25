@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { challengeText, shareChallenge, showChallengeButton, type ChallengeStrings, type ShareEnv } from "./challenge";
+import { challengeText, shareChallenge, showChallengeButton, challengeResult, savesSeconds, type ChallengeStrings, type ShareEnv } from "./challenge";
 
 const strings: ChallengeStrings = {
   lower: (s, v) => `I did ${s} in ${v}. Beat it?`,
@@ -70,10 +70,19 @@ describe("shareChallenge", () => {
 });
 
 describe("showChallengeButton", () => {
-  it("shows only when saved, challengeable and passed", () => {
-    expect(showChallengeButton(true, true, "passed")).toBe(true);
-    expect(showChallengeButton(false, true, "passed")).toBe(false);
-    expect(showChallengeButton(true, false, "passed")).toBe(false);
-    expect(showChallengeButton(true, true, "failed")).toBe(false);
+  it("shows only when saved, challengeable, passed and a stopwatch test", () => {
+    expect(showChallengeButton(true, true, "passed", "time")).toBe(true);
+    expect(showChallengeButton(false, true, "passed", "time")).toBe(false);
+    expect(showChallengeButton(true, false, "passed", "time")).toBe(false);
+    expect(showChallengeButton(true, true, "failed", "time")).toBe(false);
+  });
+  it("hides for kinds that don't save seconds, so no '20 s on juggling'", () => {
+    for (const kind of ["count", "hits", "hold"]) {
+      expect(savesSeconds(kind)).toBe(false);
+      expect(showChallengeButton(true, true, "passed", kind)).toBe(false);
+    }
+  });
+  it("formats the result in seconds", () => {
+    expect(challengeResult(13.2)).toMatch(/13.2 s/);
   });
 });

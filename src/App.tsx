@@ -22,7 +22,7 @@ import { ProgressScreen } from "./components/ProgressScreen";
 import { SettingsScreen } from "./components/SettingsScreen";
 import { useAuth } from "./auth/useAuth";
 import { SignInDialog } from "./components/SignInDialog";
-import { challengeText, shareChallenge } from "./lib/challenge";
+import { challengeResult, challengeText, shareChallenge } from "./lib/challenge";
 import { bestResult, resultDirection } from "./lib/results";
 import { skillFromSearch, skillUrl, withoutSkillParam } from "./lib/skillLink";
 import { loadWelcomeSkipped, saveWelcomeSkipped } from "./lib/welcome";
@@ -287,13 +287,14 @@ export default function App() {
 
   // Shares "I did X in 13.2 s. Beat it?" with the player's best time for the skill (not the run that just ended)
   // plus the skill link: the share sheet where there is one, else the clipboard.
+  // Only stopwatch tests save a number (the button is hidden for other kinds), so the result is always seconds.
   function challengeMate(skillId: string) {
     const skill = tree.skills.find((s) => s.id === skillId);
     const better = skill ? resultDirection(tree, skill) : null;
     const value = bestResult(tree, results.results, skillId)?.value;
     if (!skill || !better || value === undefined) return;
     const url = skillUrl(window.location.href, skillId, tree.id);
-    const text = challengeText(skill.name, t.testMode.seconds(value), better, url);
+    const text = challengeText(skill.name, challengeResult(value), better, url);
     void shareChallenge(t.challenge.title(skill.name), text, t.challenge.copyPrompt, () => showToast(t.challenge.copied), {
       share: typeof navigator.share === "function" ? (d) => navigator.share(d) : undefined,
       writeText: navigator.clipboard ? (v) => navigator.clipboard.writeText(v) : undefined,

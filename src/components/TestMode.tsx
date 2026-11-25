@@ -209,7 +209,7 @@ export function TestMode({ skill, check, limit, canPass, onPassed, onClose, resu
               </button>
             </p>
           )}
-          {showChallengeButton(!!saved, !!onChallenge, state.phase) && (
+          {showChallengeButton(!!saved, !!onChallenge, state.phase, check.kind) && (
             <button className="btn test-wide" type="button" onClick={() => onChallenge?.(skill.id)}>
               {t.testMode.challenge}
             </button>
