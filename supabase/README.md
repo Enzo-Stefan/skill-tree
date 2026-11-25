@@ -46,6 +46,19 @@ Players delete their own account from the app (tap their name, then **Delete acc
 
 `profiles` (display name, country, continent, city, hemisphere, opt-in), `leaderboard_scores` (filled by a trigger on `progress`, never by the app) and `leaderboard_reports`. Players read only their own profile; nobody reads scores or reports directly. The ranking comes from `public.leaderboard(...)`, which returns opted-in players only and never the city. `leaderboard_reports` and `report_row` exist in the database, but no app UI writes to them yet. Run 005 before the app version that uses it ships. The SQL is tested with `npm test` (`supabase/tests/`), which runs the migrations in an in-memory Postgres.
 
+## Report emails (notify-report)
+
+`supabase/functions/notify-report` emails the admins for every new report. It needs migration 006 first (it counts open reports by `status`). At most 10 emails an hour, then one summary email, then none until the hour passes. The email is plain text: report id, reported player's name, the reason, the open count and a link to `/#admin`. It has no reporter and no user id.
+
+Set up (once, by an admin):
+
+1. Resend: make an API key, and a sender it allows. The free test sender only delivers to the Resend account owner, so mailing two people needs a verified domain, or one address that forwards to the other.
+2. `supabase secrets set WEBHOOK_SECRET=<long random> RESEND_API_KEY=<key> ADMIN_EMAILS=a@x.com,b@y.com EMAIL_FROM="Skill Tree <reports@your-domain>" APP_URL=https://<the app address>`
+3. `supabase functions deploy notify-report --no-verify-jwt` (the webhook proves itself with the secret instead of a login).
+4. Dashboard, Database, Webhooks: new webhook on table `leaderboard_reports`, event Insert, type Supabase Edge Function, function `notify-report`, with the HTTP header `x-webhook-secret: <the same WEBHOOK_SECRET>`.
+
+A failed email does not fail the report. The webhook is asynchronous, so a mail outage only delays the email; the report still shows on the admin page. Tested in `supabase/tests/notifyReport.test.ts` (the parts that need no network).
+
 ## Admin reports (006)
 
 `admins` (who may read reports), report `status` (open, dismissed, actioned), and `leaderboard_hidden` (rows an admin hid; kept per account, so deleting a profile and joining again does not bring a row back). `leaderboard()` skips hidden players. Admins use `admin_list_reports`, `admin_resolve_report` and `admin_unhide`; each refuses anyone not in `admins` and none returns a user id. A resolved report no longer blocks the same player reporting the same row again. After running 006, add the two admins by hand in the SQL editor: `insert into public.admins (user_id) values ('<enzo uuid>'), ('<stefan uuid>');`. Run 006 on the live project before the app version that uses it ships, because `main` deploys itself. Tested in `supabase/tests/admin.test.ts`.
