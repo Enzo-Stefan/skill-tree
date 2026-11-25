@@ -162,3 +162,9 @@ export async function fetchLeaderboard(
   if (error) throw new LeaderboardError("failed", error.message);
   return toResult((data ?? []) as BoardRow[]);
 }
+
+/** Reports the player behind a row. The database keeps the reason as free text (blank is stored as "unspecified"). */
+export async function reportRow(client: SupabaseClient, rowKey: string, reason: string): Promise<void> {
+  const { error } = await client.rpc("report_row", { row_key: rowKey, reason });
+  if (error) throw new LeaderboardError("failed", error.message);
+}
