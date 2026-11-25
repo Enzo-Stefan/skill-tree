@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { Auth } from "../auth/useAuth";
 import { AccountDialog } from "./AccountDialog";
 import { SignInDialog } from "./SignInDialog";
+import type { LeaderboardProfileState } from "../lib/useLeaderboardProfile";
 import { deviceLanguage, LANGUAGES, savedLanguage, t, type Language } from "../i18n";
 
 interface Props {
@@ -17,10 +18,15 @@ interface Props {
   onLanguage: (code: Language | null) => void;
   /** Called after the account was deleted, e.g. to show a message. */
   onDeleted: () => void;
+  /** The player's leaderboard profile; leave undefined for trees without a leaderboard. */
+  leaderboard?: LeaderboardProfileState;
+  onMessage?: (text: string) => void;
+  /** Opens the leaderboard profile dialog. */
+  onEditProfile?: () => void;
 }
 
 /** Level, account, copy and reset, language, and About: everything that isn't training. */
-export function SettingsScreen({ auth, treeName, playerLevelName, onChangeLevel, onCopy, onReset, onLanguage, onDeleted }: Props) {
+export function SettingsScreen({ auth, treeName, playerLevelName, onChangeLevel, onCopy, onReset, onLanguage, onDeleted, leaderboard, onMessage, onEditProfile }: Props) {
   const [signInOpen, setSignInOpen] = useState(false);
   const [accountOpen, setAccountOpen] = useState(false);
   const { account } = auth;
@@ -51,6 +57,25 @@ export function SettingsScreen({ auth, treeName, playerLevelName, onChangeLevel,
             </>
           ) : (
             <Row label={t.settings.signIn} sub={t.settings.signInSub} chevron onClick={() => setSignInOpen(true)} />
+          )}
+        </Group>
+      )}
+
+      {showAccount && account && leaderboard && onEditProfile && (
+        <Group title={t.leaderboardProfile.group}>
+          <Row
+            label={leaderboard.profile?.leaderboardOptIn ? t.leaderboardProfile.status.on : t.leaderboardProfile.status.off}
+            sub={leaderboard.profile?.leaderboardOptIn ? t.leaderboardProfile.statusSub.on : t.leaderboardProfile.statusSub.off}
+            value={leaderboard.profile?.displayName}
+            chevron
+            onClick={onEditProfile}
+          />
+          {leaderboard.profile?.leaderboardOptIn && (
+            <Row
+              label={t.leaderboardProfile.leave}
+              sub={t.leaderboardProfile.leaveSub}
+              onClick={() => void leaderboard.leave().then((ok) => ok && onMessage?.(t.leaderboardProfile.left))}
+            />
           )}
         </Group>
       )}

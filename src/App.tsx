@@ -65,6 +65,10 @@ import { useSessions } from "./components/useSessions";
 import { undoPass, withoutSkill } from "./components/undoPass";
 import type { SavedProgress } from "./lib/cloud";
 import { useCloudSync } from "./lib/useCloudSync";
+import { LeaderboardScreen } from "./components/LeaderboardScreen";
+import { LeaderboardProfileDialog } from "./components/LeaderboardProfileDialog";
+import { useLeaderboardProfile } from "./lib/useLeaderboardProfile";
+import { LEADERBOARD_TREE } from "./lib/leaderboardApi";
 import { chooseLanguage, language, t, type Language } from "./i18n";
 
 // The trees with their skill content in the app's language (English where a translation is missing).
@@ -151,6 +155,11 @@ export default function App() {
     () => ({ done: [...done], playerLevel: playerLevelId, playerStep, practiceDays, streak: streakState, liftLog: lifts.log, results: results.results, sessions: sessions.sessions }),
     [done, playerLevelId, playerStep, practiceDays, streakState, lifts.log, results.results, sessions.sessions],
   );
+  // The ranked leaderboard (#96): the player's profile, and whether its screen or its profile dialog is open.
+  const leaderboard = useLeaderboardProfile(auth.account?.id ?? null);
+  const hasLeaderboard = tree.id === LEADERBOARD_TREE;
+  const [boardOpen, setBoardOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const cloud = useCloudSync({ tree, userId: auth.account?.id ?? null, progress, apply: applySaved, onMessage: showToast });
   const accountAuth = {
     ...auth,
@@ -437,6 +446,7 @@ export default function App() {
   function goTo(next: Tab) {
     if (tab === "train") trainScroll.current = trainScrollers().map((e) => e.scrollTop);
     setTab(next);
+    setBoardOpen(false);
     setSheetOpen(false);
   }
 
@@ -542,7 +552,19 @@ export default function App() {
         {tab === "plan" && (
           <TrainingScreen tree={tree} state={planState} levelId={playerLevelId} today={today} practiceDays={practiceDays} onFinish={finishSession} />
         )}
-        {tab === "progress" && (
+        {tab === "progress" && boardOpen && hasLeaderboard && (
+          <LeaderboardScreen
+            tree={tree}
+            auth={auth}
+            profile={leaderboard.profile}
+            profileLoading={leaderboard.loading}
+            onBack={() => setBoardOpen(false)}
+            onEditProfile={() => setProfileOpen(true)}
+            onSignIn={() => void auth.signInWithGoogle()}
+            onMessage={showToast}
+          />
+        )}
+        {tab === "progress" && !(boardOpen && hasLeaderboard) && (
           <ProgressScreen
             tree={tree}
             done={done}
@@ -557,6 +579,7 @@ export default function App() {
             liftLog={lifts.log}
             onShare={() => setSharing(shareStats(tree, done, playerRungName, streak, window.location.host))}
             onPickLevel={hasLevels ? () => setPickerOpen(true) : undefined}
+            onOpenLeaderboard={hasLeaderboard ? () => setBoardOpen(true) : undefined}
           />
         )}
         {tab === "settings" && (
@@ -569,6 +592,9 @@ export default function App() {
             onReset={reset}
             onLanguage={(code) => void switchLanguage(code)}
             onDeleted={() => showToast(t.app.accountDeleted)}
+            leaderboard={hasLeaderboard ? leaderboard : undefined}
+            onEditProfile={() => setProfileOpen(true)}
+            onMessage={showToast}
           />
         )}
       </div>
@@ -629,6 +655,20 @@ export default function App() {
           onDismiss={() => {
             setPlacementId(null);
             setPickerOpen(true);
+          }}
+        />
+      )}
+      {profileOpen && (
+        <LeaderboardProfileDialog
+          initial={leaderboard.profile}
+          onClose={() => setProfileOpen(false)}
+          onSave={async (next) => {
+            const problem = await leaderboard.save(next);
+            if (!problem) {
+              setProfileOpen(false);
+              showToast(t.leaderboardProfile.saved);
+            }
+            return problem;
           }}
         />
       )}
