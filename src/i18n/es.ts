@@ -280,6 +280,8 @@ export const es: Strings = {
     weeks: (n: number) => `${n} ${n === 1 ? "semana" : "semanas"}`,
     trained: "Hoy he entrenado ✓ (toca para deshacer)",
     train: "Hoy he entrenado",
+    nudge: (n: number) =>
+      n === 1 ? "Falta 1 día más esta semana para que tu racha siga creciendo." : `Faltan ${n} días más esta semana para que tu racha siga creciendo.`,
   },
   levelUp: {
     label: "Pregunta para subir de nivel",
