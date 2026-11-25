@@ -1,4 +1,3 @@
-import type { ReactNode } from "react";
 import type { Tree } from "../types";
 import { levelInfo } from "../lib/progress";
 import { useIncreased } from "./useIncreased";
@@ -10,16 +9,13 @@ interface Props {
   /** The player's level and step, e.g. "Beginner 2", or null. Leave undefined for trees without levels. */
   playerLevelName?: string | null;
   onChangeLevel?: () => void;
-  /** The switch between trees (Football / Strength), shown above the title. */
-  treeSwitch?: ReactNode;
 }
 
 /** Top of the Train tab: which tree, your rank, and your level (the targets depend on it). */
-export function Header({ tree, doneCount, playerLevelName, onChangeLevel, treeSwitch }: Props) {
+export function Header({ tree, doneCount, playerLevelName, onChangeLevel }: Props) {
   return (
     <header className="header">
       <div className="brand">
-        {treeSwitch}
         <h1>{t.app.train}</h1>
         {/* Google checks that the home screen links to the privacy policy before it approves sign-in. */}
         <p>

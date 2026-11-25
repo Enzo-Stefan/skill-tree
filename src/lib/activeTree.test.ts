@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { trees } from "../data";
 import { football } from "../data/football";
 import { weights } from "../data/weights";
-import { activeTree, findTree, saveActiveTree, switchTree, treeSummaries } from "./activeTree";
+import { activeBranch, activeTree, findTree, saveActiveBranch, saveActiveTree, switchTree, treeSummaries } from "./activeTree";
 
 const store = new Map<string, string>();
 beforeEach(() => {
@@ -68,5 +68,54 @@ describe("tree summaries (for a picker)", () => {
 
   it("starts every tree at zero", () => {
     expect(treeSummaries(trees, football).map((t) => t.done)).toEqual([0, 0]);
+  });
+});
+
+describe("the branch pill", () => {
+  it("is All the first time", () => {
+    expect(activeBranch(football)).toBeNull();
+  });
+
+  it("is remembered for each tree on its own", () => {
+    saveActiveBranch("football", "ps");
+    saveActiveBranch("weights", "cr");
+    expect(activeBranch(football)).toBe("ps");
+    expect(activeBranch(weights)).toBe("cr");
+  });
+
+  it("goes back to All when All is picked", () => {
+    saveActiveBranch("football", "ps");
+    saveActiveBranch("football", null);
+    expect(activeBranch(football)).toBeNull();
+  });
+
+  it("falls back to All for a branch the tree doesn't have, and when storage is blocked", () => {
+    saveActiveBranch("football", "cr");
+    expect(activeBranch(football)).toBeNull();
+    globalThis.localStorage = {
+      getItem: () => {
+        throw new Error("blocked");
+      },
+      setItem: () => {
+        throw new Error("blocked");
+      },
+      removeItem: () => {
+        throw new Error("blocked");
+      },
+    } as unknown as Storage;
+    expect(activeBranch(football)).toBeNull();
+    expect(() => saveActiveBranch("football", "ps")).not.toThrow();
+  });
+});
+
+describe("upcoming trees", () => {
+  it("come after the real ones, locked, and never repeat a real tree", () => {
+    const list = treeSummaries(trees, football, [
+      { id: "guitar", name: "Guitar" },
+      { id: "weights", name: "Weights again" },
+    ]);
+    expect(list.map((t) => t.id)).toEqual(["football", "weights", "guitar"]);
+    expect(list[2]).toMatchObject({ shortName: "Guitar", soon: true, active: false });
+    expect(list[0].soon).toBeUndefined();
   });
 });

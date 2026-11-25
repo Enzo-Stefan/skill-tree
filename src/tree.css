@@ -1,9 +1,20 @@
-/* The skill tree (Train tab). Wide screens: a column per branch between the start and the final
-   skill. Phones: one branch as a list, and the whole Train tab scrolls as one page. */
+/* The skill tree (Train tab). It grows upward: the first skill at the bottom, the final skill on top.
+   Wide screens: every skill on its own spot (tier and slot from the tree data) with lines drawn between
+   them, one band per branch. Phones: one column, and the whole Train tab scrolls as one page. */
 .tree-wrap { flex: 1; min-width: 0; overflow: auto; padding: 20px 24px 32px; }
-.tree { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
-.tree-end { display: flex; justify-content: center; }
-.branch-cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(6rem, 1fr)); gap: 10px; }
+.tree { position: relative; max-width: 1100px; margin: 0 auto; }
+.tree-end { display: flex; justify-content: center; position: relative; z-index: 1; }
+
+/* Wide: a grid with half a slot per column. The branch bands and their lists are subgrids, so a skill
+   placed inside a band lines up with the skills in the other bands, row by row. */
+.tree.wide { display: grid; row-gap: 30px; container-type: inline-size; }
+.tree.wide .branch-col {
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-template-rows: subgrid;
+  margin: 0 3px;
+  padding: 12px 0 8px;
+}
 .branch-col {
   display: flex;
   flex-direction: column;
@@ -13,21 +24,37 @@
   background: var(--glass-faint);
   border: 1px solid var(--glass-border);
 }
-.branch-col h3 {
-  margin: 0;
-  font-size: 0.9375rem;
-  font-weight: 700;
-  text-align: center;
-}
+/* The branch picked in the switcher. */
+.branch-col.focused { border-color: var(--c-ink); background: color-mix(in srgb, var(--c-ink) 12%, transparent); }
+.branch-head { grid-column: 1 / -1; grid-row: 1; padding: 0 4px; text-align: center; }
+.branch-head h3 { margin: 0; font-size: 0.9375rem; font-weight: 700; }
 .branch-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--c-ink); }
-.branch-col h3 .branch-dot { margin-right: 6px; vertical-align: 0.1em; }
+.branch-head h3 .branch-dot { margin-right: 6px; vertical-align: 0.1em; }
 .branch-count { margin: 0 0 8px; font-size: 0.8125rem; color: var(--text-2); font-variant-numeric: tabular-nums; }
-.branch-col ol, .skill-list { list-style: none; margin: 0; padding: 0; width: 100%; }
+.tree.wide .branch-grid {
+  grid-column: 1 / -1;
+  grid-row: 2 / -1;
+  display: grid;
+  grid-template-columns: subgrid;
+  grid-template-rows: subgrid;
+}
+.branch-grid, .skill-list { list-style: none; margin: 0; padding: 0; }
+.tree.wide .skill-li { position: relative; z-index: 1; display: flex; justify-content: center; align-items: flex-start; }
 
 .skill-li { position: relative; display: flex; flex-direction: column; align-items: center; }
-/* The rail between skills in a branch: coloured once the skill above it is done. */
-.branch-col .skill-li + .skill-li::before { content: ""; width: 2px; height: 10px; background: var(--line-faint); }
-.branch-col .skill-li.done + .skill-li::before { background: var(--c-ink); }
+
+/* The lines between skills, drawn behind them. Each is drawn from the lower skill up to the one it
+   unlocks, so a line that grows when a skill opens moves upward. */
+.edges { position: absolute; inset: 0; z-index: 0; overflow: visible; pointer-events: none; }
+.edge { fill: none; stroke-width: 2; stroke-linecap: round; }
+.edge.base { stroke: var(--line-faint); }
+.edge.lit { stroke: var(--c-ink); }
+.edge.grow { stroke-dasharray: 1; animation: edge-grow 0.7s ease-out 0.35s backwards; }
+@keyframes edge-grow { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+@keyframes edge-flash { from { stroke: var(--chalk); } }
+@media (prefers-reduced-motion: reduce) {
+  .edge.grow { stroke-dasharray: none; animation: edge-flash 0.9s ease-out; }
+}
 
 .skill {
   position: relative;
@@ -76,23 +103,45 @@
   white-space: nowrap;
 }
 
-/* In a branch column: circle above the name. */
-.skill.card { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 4px; text-align: center; }
+/* On the wide tree: circle above the name. The names are small so the longest words fit one slot. */
+.skill.card { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0; text-align: center; }
+.skill.card .skill-name {
+  /* Scales with the tree's width (a container query unit), so the longest words fit one slot: about 10px
+     when the tree is as narrow as it gets, 13px when there is plenty of room. */
+  font-size: clamp(0.6rem, 1.1cqw, 0.8125rem);
+  hyphens: auto;
+  /* Lines run behind the names: a soft halo in the page colour keeps the words readable where they cross. */
+  text-shadow: 0 0 3px var(--grass), 0 0 3px var(--grass), 0 0 6px var(--grass);
+}
 .tree-end .skill.card { width: auto; min-width: 10rem; padding: 8px 16px; }
+/* Out of the flow, so the suggested skill's badge never moves the skills around it (and their lines). */
+.skill.card .skill-badge { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); padding: 1px 7px; font-size: 0.6875rem; }
 
-/* In the phone list: circle, then name and status. */
-.skill-list { padding: 8px max(16px, env(safe-area-inset-right)) 24px max(16px, env(safe-area-inset-left)); }
+/* The phone's single column: circle, then name and status. */
+.tree.stacked { display: flex; flex-direction: column; gap: 14px; max-width: 36rem; padding: 12px max(16px, env(safe-area-inset-right)) 24px max(16px, env(safe-area-inset-left)); }
+.tree.stacked .tree-end { display: block; }
+.tree.stacked .branch-col { padding: 12px 6px 8px; }
+.tree.stacked .branch-head { padding: 0 8px; text-align: left; }
+.tree.stacked .skill-list { width: 100%; padding: 0; }
 .skill-list .skill-li + .skill-li { margin-top: 6px; }
-.skill-list .skill-li + .skill-li::before {
+/* The line down to the skill below, lit once that one is passed. It grows upward when the skill opens. */
+.skill-li.has-rail::after {
   content: "";
   position: absolute;
   left: 31px;
-  top: -14px;
+  bottom: -14px;
   width: 2px;
   height: 22px;
   background: var(--line-faint);
 }
-.skill-list .skill-li.done + .skill-li::before { background: var(--c-ink); }
+/* The first skill of a branch: a short line down to the edge of the branch, towards the start. */
+.skill-li.rail-stub::after { bottom: -8px; height: 16px; }
+.skill-li.rail-lit::after { background: var(--c-ink); }
+.skill-li.rail-grow::after { transform-origin: bottom; animation: rail-grow 0.6s ease-out 0.35s backwards; }
+@keyframes rail-grow { from { transform: scaleY(0); } }
+@media (prefers-reduced-motion: reduce) {
+  .skill-li.rail-grow::after { animation: none; }
+}
 .skill.row { width: 100%; display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 8px; text-align: left; }
 .skill.row .skill-node { width: 44px; height: 44px; }
 .skill.row.big .skill-node { width: 52px; height: 52px; }
@@ -125,6 +174,7 @@
   .train > * { flex-shrink: 0; }
   .train main { flex: none; }
   .train .tree-wrap { overflow: visible; padding: 0; }
-  .train .branch-tabs { position: sticky; top: 0; z-index: 2; }
+  /* Both rows of pills stay at the top while the tree scrolls under them. */
+  .train .switcher { position: sticky; top: 0; z-index: 2; }
   .next-up { margin: 12px max(16px, env(safe-area-inset-right)) 4px max(16px, env(safe-area-inset-left)); }
 }
