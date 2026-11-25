@@ -173,6 +173,16 @@ export const es: Strings = {
     soon: "Próximamente",
     soonLabel: (name: string) => `${name}, próximamente`,
   },
+  strengthPanel: {
+    /** The button in the Train header that opens the panel. */
+    handle: "Fuerza",
+    handleLabel: "Abrir el panel del árbol de Fuerza",
+    title: "Fuerza",
+    close: "Cerrar",
+    open: "Abrir árbol de Fuerza",
+    opening: "Abriendo…",
+    progress: (done: number, total: number, rank: string) => `${done}/${total} habilidades · ${rank}`,
+  },
   branchTabs: {
     label: "Ramas",
     /** The pill that shows the whole tree. */

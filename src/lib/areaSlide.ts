@@ -23,3 +23,32 @@ export function slideIn(el: HTMLElement | null, direction: -1 | 0 | 1): void {
     { duration: SLIDE_MS, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
   );
 }
+
+const PANEL_EASING = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+function canAnimate(el: HTMLElement | null): el is HTMLElement {
+  return !!el && typeof el.animate === "function" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** Slides a side panel in from the right edge. Does nothing under reduced motion or when the browser can't animate. */
+export function panelIn(el: HTMLElement | null): void {
+  if (!canAnimate(el)) return;
+  el.animate(
+    [{ transform: "translateX(100%)" }, { transform: "translateX(0)" }],
+    { duration: SLIDE_MS, easing: PANEL_EASING },
+  );
+}
+
+/** Slides a side panel back out to the right, then calls `done`. Under reduced motion it calls `done` at once. */
+export function panelOut(el: HTMLElement | null, done: () => void): void {
+  if (!canAnimate(el)) {
+    done();
+    return;
+  }
+  const animation = el.animate(
+    [{ transform: "translateX(0)" }, { transform: "translateX(100%)" }],
+    { duration: SLIDE_MS, easing: PANEL_EASING, fill: "forwards" },
+  );
+  animation.onfinish = done;
+  animation.oncancel = done;
+}

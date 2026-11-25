@@ -1,0 +1,66 @@
+// @vitest-environment jsdom
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import type { TreeSummary } from "../lib/activeTree";
+import { t } from "../i18n";
+import { StrengthPanel } from "./StrengthPanel";
+
+afterEach(cleanup);
+
+const football: TreeSummary = { id: "football", title: "Football", shortName: "Football", tagline: "", done: 3, total: 40, rank: "Academy", active: true };
+const strength: TreeSummary = { id: "weights", title: "Strength", shortName: "Strength", tagline: "Lift well", done: 2, total: 30, rank: "Novice", active: false };
+
+// Reduced motion on, so closing finishes at once and no animation API is needed.
+vi.stubGlobal("matchMedia", () => ({ matches: true }));
+
+const handle = () => screen.getByRole("button", { name: t.strengthPanel.handleLabel });
+
+describe("StrengthPanel", () => {
+  it("renders nothing with one tree, or when Strength is open or not built", () => {
+    for (const trees of [[football], [football, { ...strength, active: true }], [football, { ...strength, soon: true }]]) {
+      const { container, unmount } = render(<StrengthPanel trees={trees} onSwitch={vi.fn()} />);
+      expect(container.innerHTML).toBe("");
+      unmount();
+    }
+  });
+
+  it("opens with focus on the open button and keeps Tab inside", () => {
+    render(<StrengthPanel trees={[football, strength]} onSwitch={vi.fn()} />);
+    fireEvent.click(handle());
+    const open = screen.getByRole("button", { name: t.strengthPanel.open });
+    expect(screen.getByRole("dialog").getAttribute("aria-modal")).toBe("true");
+    expect(document.activeElement).toBe(open);
+    const close = screen.getByRole("button", { name: t.strengthPanel.close });
+    close.focus();
+    fireEvent.keyDown(window, { key: "Tab" });
+    expect(document.activeElement).toBe(open);
+  });
+
+  it("closes on Escape and gives focus back to the handle", () => {
+    render(<StrengthPanel trees={[football, strength]} onSwitch={vi.fn()} />);
+    handle().focus();
+    fireEvent.click(handle());
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.activeElement).toBe(handle());
+  });
+
+  it("closes on a backdrop tap", () => {
+    const { container } = render(<StrengthPanel trees={[football, strength]} onSwitch={vi.fn()} />);
+    fireEvent.click(handle());
+    fireEvent.click(container.ownerDocument.querySelector(".overlay")!);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("picking Strength switches once, even on a double click", async () => {
+    const onSwitch = vi.fn(() => new Promise<void>(() => {}));
+    render(<StrengthPanel trees={[football, strength]} onSwitch={onSwitch} />);
+    fireEvent.click(handle());
+    const open = screen.getByRole("button", { name: t.strengthPanel.open });
+    fireEvent.click(open);
+    fireEvent.click(open);
+    expect(onSwitch).toHaveBeenCalledTimes(1);
+    expect(onSwitch).toHaveBeenCalledWith("weights");
+    expect(screen.getByRole("button", { name: t.strengthPanel.opening }).getAttribute("aria-busy")).toBe("true");
+  });
+});

@@ -179,6 +179,16 @@ export const en = {
     soon: "Coming soon",
     soonLabel: (name: string) => `${name}, coming soon`,
   },
+  strengthPanel: {
+    /** The button in the Train header that opens the panel. */
+    handle: "Strength",
+    handleLabel: "Open the Strength tree panel",
+    title: "Strength",
+    close: "Close",
+    open: "Open Strength tree",
+    opening: "Opening…",
+    progress: (done: number, total: number, rank: string) => `${done}/${total} skills · ${rank}`,
+  },
   branchTabs: {
     label: "Branches",
     /** The pill that shows the whole tree. */
