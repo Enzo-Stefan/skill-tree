@@ -6,6 +6,9 @@ import type { RoutineText } from "../../lib/translate";
 //
 // A FIRST DRAFT, like the rest of the Spanish: someone fluent should check it, especially the football
 // and gym terms, before Spanish is picked up from the phone's setting (#19).
+//
+// The wording leans towards Spain ("móvil", "portería", "ve a por él", "gemelos", "diana"). If players in
+// Latin America are in scope, those are the words to adapt ("celular", "arco", "ve por él", "pantorrillas").
 
 const WARM_BALL = "5 minutos: trote suave, balanceos de piernas y círculos de cadera, y luego 20 toques suaves al balón con los dos pies.";
 const COOL_BALL = "5 minutos: camina y luego estira gemelos, isquiotibiales y cadera, 20 segundos de cada lado.";
@@ -81,7 +84,7 @@ export const footballRoutinesEs: Record<string, RoutineText> = {
     { name: "Cambio de ritmo", howTo: "Conduce despacio durante 5 m, luego acelera con fuerza más allá de un cono y sigue durante 10 m." },
   ]),
   sh1: ball([
-    { name: "Definición a las esquinas", howTo: "Desde el punto de penalti, tiros con el interior a las esquinas inferiores marcadas." },
+    { name: "Remates a las esquinas", howTo: "Desde el punto de penalti, tiros con el interior a las esquinas inferiores marcadas." },
     { name: "Anúncialo y ejecútalo", howTo: "Di en voz alta la esquina antes de cada tiro y dispara a esa esquina." },
   ]),
   sh2: ball([
@@ -101,7 +104,7 @@ export const footballRoutinesEs: Record<string, RoutineText> = {
     { name: "Voleas contra la pared", howTo: "Lanza el balón contra una pared y golpea el rebote de volea." },
   ]),
   df1: ball([
-    { name: "Zigzag de temporización", howTo: "De perfil, con las rodillas flexionadas, desplázate hacia atrás en zigzag entre conos sin cruzar los pies." },
+    { name: "Zigzag de contención", howTo: "De perfil, con las rodillas flexionadas, desplázate hacia atrás en zigzag entre conos sin cruzar los pies." },
     { name: "Mantener la posición", howTo: "Mantén la posición defensiva sobre las puntas, desplazándote 2 m a la izquierda o a la derecha cada pocos segundos." },
   ]),
   df2: ball([
@@ -135,7 +138,7 @@ export const footballRoutinesEs: Record<string, RoutineText> = {
   ft4: run([{ name: "Repeticiones de 40 m", howTo: "Esprinta 40 m, descansa 30 segundos y repite." }]),
   ft5: run([
     { name: "Carrera a ritmo constante", howTo: "Corre a un ritmo constante, cómodamente exigente." },
-    { name: "Arrancadas de sprint", howTo: "Durante la carrera, esprinta 20 segundos cada 3 minutos." },
+    { name: "Arrancadas a máxima velocidad", howTo: "Durante la carrera, esprinta 20 segundos cada 3 minutos." },
   ]),
   final: run([
     { name: "Circuito de habilidades", howTo: "Una ronda: 20 toques, 10 pases a la pared, un eslalon entre conos y 5 tiros. Descansa y vuelve a empezar." },
