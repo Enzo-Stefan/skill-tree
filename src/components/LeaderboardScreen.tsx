@@ -5,6 +5,7 @@ import { loadSupabase } from "../auth/client";
 import { fetchLeaderboard, flagEmoji, LEADERBOARD_TREE, levelStepName, scopeAvailable, type LeaderboardResult } from "../lib/leaderboardApi";
 import { formatNumber } from "../lib/progress";
 import { language, t } from "../i18n";
+import { ReportDialog } from "./ReportDialog";
 
 const SCOPES: LeaderboardScope[] = ["global", "continent", "hemisphere", "country"];
 
@@ -21,15 +22,18 @@ interface Props {
   /** Opens the profile dialog to join or to add the missing place. */
   onEditProfile: () => void;
   onSignIn: () => void;
+  /** Shows a short message, such as the thanks after a report. */
+  onMessage: (text: string) => void;
 }
 
 /** The ranked leaderboard: four scope tabs, an optional single-test filter, the top 50 and your own row. */
-export function LeaderboardScreen({ tree, auth, profile, profileLoading, profileError, onRetryProfile, onBack, onEditProfile, onSignIn }: Props) {
+export function LeaderboardScreen({ tree, auth, profile, profileLoading, profileError, onRetryProfile, onBack, onEditProfile, onSignIn, onMessage }: Props) {
   const [scope, setScope] = useState<LeaderboardScope>("global");
   const [sprintOnly, setSprintOnly] = useState(false);
   const [result, setResult] = useState<LeaderboardResult | null>(null);
   const [failed, setFailed] = useState(false);
   const [reload, setReload] = useState(0);
+  const [reporting, setReporting] = useState<LeaderboardRow | null>(null);
 
   const supported = tree.id === LEADERBOARD_TREE;
   const signedIn = auth.configured && Boolean(auth.account);
@@ -156,14 +160,14 @@ export function LeaderboardScreen({ tree, auth, profile, profileLoading, profile
             {result && result.top.length > 0 && (
               <ol className="lb-list">
                 {result.top.map((row) => (
-                  <Row key={`${row.rank}-${row.displayName}`} row={row} tree={tree} sprintOnly={sprintOnly} />
+                  <Row key={`${row.rank}-${row.displayName}`} row={row} tree={tree} sprintOnly={sprintOnly} onReport={setReporting} />
                 ))}
                 {result.me && (
                   <>
                     <li className="lb-gap" aria-hidden="true">
                       …
                     </li>
-                    <Row row={result.me} tree={tree} sprintOnly={sprintOnly} />
+                    <Row row={result.me} tree={tree} sprintOnly={sprintOnly} onReport={setReporting} />
                   </>
                 )}
               </ol>
@@ -171,12 +175,23 @@ export function LeaderboardScreen({ tree, auth, profile, profileLoading, profile
           </div>
         </>
       )}
+
+      {reporting && (
+        <ReportDialog
+          row={reporting}
+          onClose={() => setReporting(null)}
+          onSent={() => {
+            setReporting(null);
+            onMessage(t.leaderboard.reportSent);
+          }}
+        />
+      )}
     </div>
   );
 }
 
-/** One player: rank, flag and name, and the score. Your own row is marked. */
-function Row({ row, tree, sprintOnly }: { row: LeaderboardRow; tree: Tree; sprintOnly: boolean }) {
+/** One player: rank, flag and name, and the score. Your own row is marked and has no Report button. */
+function Row({ row, tree, sprintOnly, onReport }: { row: LeaderboardRow; tree: Tree; sprintOnly: boolean; onReport: (row: LeaderboardRow) => void }) {
   const flag = flagEmoji(row.countryCode);
   const sprint = row.bestSprint !== null ? t.leaderboard.sprint(formatNumber(row.bestSprint, language)) : null;
   const score = sprintOnly
@@ -193,6 +208,11 @@ function Row({ row, tree, sprintOnly }: { row: LeaderboardRow; tree: Tree; sprin
         {row.isMe && <em className="lb-you"> {t.leaderboard.you}</em>}
       </span>
       <span className="lb-score">{score}</span>
+      {!row.isMe && (
+        <button className="lb-report" type="button" onClick={() => onReport(row)} aria-label={t.leaderboard.reportTitle(row.displayName)}>
+          {t.leaderboard.report}
+        </button>
+      )}
     </li>
   );
 }

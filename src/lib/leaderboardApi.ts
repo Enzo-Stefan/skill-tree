@@ -59,13 +59,16 @@ export function levelStepName(tree: Tree, levelStep: number): string | null {
 
 // ---- Supabase calls ----
 
-export type LeaderboardErrorCode = "taken" | "blocked" | "failed";
+export type LeaderboardErrorCode = "taken" | "blocked" | "signedOut" | "rateLimited" | "failed";
 
 export class LeaderboardError extends Error {
   readonly code: LeaderboardErrorCode;
-  constructor(code: LeaderboardErrorCode, message: string) {
+  /** The database's own error code (SQLSTATE, as PostgREST reports it), when there is one. */
+  readonly dbCode?: string;
+  constructor(code: LeaderboardErrorCode, message: string, dbCode?: string) {
     super(message);
     this.code = code;
+    this.dbCode = dbCode;
   }
 }
 
@@ -161,4 +164,20 @@ export async function fetchLeaderboard(
   });
   if (error) throw new LeaderboardError("failed", error.message);
   return toResult((data ?? []) as BoardRow[]);
+}
+
+/** SQLSTATE 42501: an expired session reaches report_row() as the anon role, which has no execute grant. */
+const DB_PERMISSION_DENIED = "42501";
+/** SQLSTATE 28000: report_row() raises it when a signed-in call has no user id. */
+const DB_NOT_SIGNED_IN = "28000";
+/** SQLSTATE P0001: a plain RAISE. In report_row() the daily limit is the only one; a new plain RAISE there needs a new mapping. */
+const DB_RAISE = "P0001";
+
+/** Reports the player behind a row. The database keeps the reason as free text (blank is stored as "unspecified"). Errors are matched on the SQLSTATE only. */
+export async function reportRow(client: SupabaseClient, rowKey: string, reason: string): Promise<void> {
+  const { error } = await client.rpc("report_row", { row_key: rowKey, reason });
+  if (!error) return;
+  if (error.code === DB_PERMISSION_DENIED || error.code === DB_NOT_SIGNED_IN) throw new LeaderboardError("signedOut", error.message, error.code);
+  if (error.code === DB_RAISE) throw new LeaderboardError("rateLimited", error.message, error.code);
+  throw new LeaderboardError("failed", error.message, error.code);
 }

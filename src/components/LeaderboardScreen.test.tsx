@@ -1,10 +1,17 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { Auth } from "../auth/useAuth";
-import type { Tree } from "../types";
+import type { LeaderboardRow, Tree } from "../types";
 import { t } from "../i18n";
 import { LeaderboardScreen } from "./LeaderboardScreen";
+
+vi.mock("../auth/client", () => ({ loadSupabase: vi.fn(async () => ({ rpc: vi.fn(), auth: { getSession: vi.fn(async () => ({ data: { session: { user: {} } } })) } })) }));
+vi.mock("../lib/leaderboardApi", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../lib/leaderboardApi")>()),
+  fetchLeaderboard: vi.fn(),
+  reportRow: vi.fn(),
+}));
 
 afterEach(cleanup);
 
@@ -31,6 +38,7 @@ function renderScreen(onRetryProfile = vi.fn()) {
       onBack={vi.fn()}
       onEditProfile={vi.fn()}
       onSignIn={vi.fn()}
+      onMessage={vi.fn()}
     />,
   );
   return onRetryProfile;
@@ -48,5 +56,62 @@ describe("LeaderboardScreen profile load error", () => {
     const onRetry = renderScreen();
     fireEvent.click(screen.getByRole("button", { name: t.leaderboardProfile.retry }));
     expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("LeaderboardScreen report buttons", () => {
+  const board = { id: "football", title: "Football", tagline: "", branches: [], skills: [], levels: [] } as Tree;
+  const base = { countryCode: null, skills: 2, levelStep: 1, bestSprint: null };
+  const others: LeaderboardRow = { ...base, rank: 1, rowKey: "row-other", displayName: "Ana", isMe: false };
+  const mine: LeaderboardRow = { ...base, rank: 2, rowKey: "row-me", displayName: "Sam", isMe: true };
+
+  it("gives every other row a Report button and none to the viewer's own row", async () => {
+    const { fetchLeaderboard } = await import("../lib/leaderboardApi");
+    vi.mocked(fetchLeaderboard).mockResolvedValue({ top: [others, mine], me: null });
+    render(
+      <LeaderboardScreen
+        tree={board}
+        auth={auth}
+        profile={null}
+        profileLoading={false}
+        profileError={false}
+        onRetryProfile={vi.fn()}
+        onBack={vi.fn()}
+        onEditProfile={vi.fn()}
+        onSignIn={vi.fn()}
+        onMessage={vi.fn()}
+      />,
+    );
+    expect(await screen.findByText("Ana")).toBeTruthy();
+    expect(screen.getByRole("button", { name: t.leaderboard.reportTitle("Ana") })).toBeTruthy();
+    expect(screen.queryByRole("button", { name: t.leaderboard.reportTitle("Sam") })).toBeNull();
+    expect(screen.getByText(t.leaderboard.you).closest("li")?.querySelector("button")).toBeNull();
+  });
+
+  it("closes the dialog after a send and passes the thanks message up", async () => {
+    const { fetchLeaderboard, reportRow } = await import("../lib/leaderboardApi");
+    vi.mocked(fetchLeaderboard).mockResolvedValue({ top: [others], me: null });
+    vi.mocked(reportRow).mockResolvedValue();
+    const onMessage = vi.fn();
+    render(
+      <LeaderboardScreen
+        tree={board}
+        auth={auth}
+        profile={null}
+        profileLoading={false}
+        profileError={false}
+        onRetryProfile={vi.fn()}
+        onBack={vi.fn()}
+        onEditProfile={vi.fn()}
+        onSignIn={vi.fn()}
+        onMessage={onMessage}
+      />,
+    );
+    fireEvent.click(await screen.findByRole("button", { name: t.leaderboard.reportTitle("Ana") }));
+    fireEvent.change(screen.getByRole("textbox"), { target: { value: "looks fake" } });
+    fireEvent.click(screen.getByRole("button", { name: t.leaderboard.reportSend }));
+    await waitFor(() => expect(onMessage).toHaveBeenCalledWith(t.leaderboard.reportSent));
+    expect(reportRow).toHaveBeenCalledWith(expect.anything(), "row-other", "looks fake");
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
