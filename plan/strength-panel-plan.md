@@ -1,6 +1,6 @@
 # Strength tree side panel (plan for #107)
 
-Status: proposal, for Stefan's yes. Nothing here is built.
+Status: built in this PR (#110); the decisions for Stefan below still stand.
 
 ## Goal
 
@@ -27,7 +27,9 @@ Open the Strength tree (the weights tree, `id: "weights"`) from a side panel tha
 
 ### 1. Where the handle lives
 
-Recommendation: one "Strength" button in the Train header, next to the area pill, on both phones and laptops. It is the screen a player is on when they want to train, and it needs no edge tab. An edge tab would sit on top of the tree's horizontal scroll and is harder to hit at 44px. This placement has not been checked on a device.
+The dialog is rendered with `createPortal` on `document.body`, not inside `.switcher`: on phones `.switcher` is sticky (`z-index: 2`) and has `backdrop-filter`, which would make it the containing block of a `position: fixed` overlay and shrink the overlay to the strip. Only the handle stays in the header.
+
+Recommendation: one "Strength" button in the Train header, in a row with the area pill (`.area-row`, inside `.switcher`), on both phones and laptops. It is the screen a player is on when they want to train, and it needs no edge tab. An edge tab would sit on top of the tree's horizontal scroll and is harder to hit at 44px. Checked in headless Chromium at 390x844 and 1280x800, not on a device.
 
 ### 2. What the panel lists
 
@@ -43,7 +45,7 @@ Add a slide-out helper next to `slideIn` in `areaSlide.ts`: the panel moves in f
 
 ### 5. Focus, Escape and close
 
-The panel is a modal dialog (`role="dialog"`, `aria-modal="true"`) with `.overlay`, so it uses `useModalFocus`. Focus lands on the Strength button when it opens and returns to the handle when it closes. Escape and a backdrop tap close it. Because it is a modal, Tab stays inside it while open.
+The panel is a modal dialog (`role="dialog"`, `aria-modal="true"`) with `.overlay`, so it uses `useModalFocus`. Focus lands on the Strength button when it opens. On close it goes back to the handle through a ref kept in `StrengthPanel`, because Safari does not focus a button on click and `document.activeElement` at mount would be `<body>`. Escape and a backdrop tap close it. Because it is a modal, Tab stays inside it while open.
 
 ### 6. Strings
 
@@ -57,7 +59,7 @@ A new `t.strengthPanel` block in `en.ts` and `es.ts` (handle label, panel title,
 ### 8. Files
 
 - New: `src/components/StrengthPanel.tsx`, `src/components/StrengthPanel.test.tsx`.
-- Changed: `src/App.tsx` (handle and open state), `src/nav.css` (panel and handle styles), `src/lib/areaSlide.ts` and its test, `src/i18n/en.ts`, `src/i18n/es.ts`.
+- Changed: `src/App.tsx` (only the `StrengthPanel` element and the `.area-row` wrapper; the open state lives in `StrengthPanel`, not in `App`), `src/nav.css` (panel and handle styles), `src/lib/areaSlide.ts` and its test, `src/i18n/en.ts`, `src/i18n/es.ts`.
 - Not changed: `src/data/*`, `src/lib/activeTree.ts`, Supabase migrations. No data or migration work is expected.
 
 ## Order of work
