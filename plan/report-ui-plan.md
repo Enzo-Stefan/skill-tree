@@ -1,6 +1,6 @@
 # Report button and dialog (plan for #104)
 
-Status: proposal, for Stefan's yes. Nothing here is built. Relates to #104 and #109. #109 is a closed, unmerged plan PR (`admin-page-plan`); the admin page it planned was built anyway and is on `main`.
+Status: proposal, for Stefan's yes. Nothing here is built on this branch. An implementation of the same button is open as #119 (branch `report-ui`, based on `main`), so decide which one to keep before building. Relates to #104, #109 and #119. #109 is a closed, unmerged plan PR (`admin-page-plan`); the admin page it planned was built anyway and is on `main`.
 
 ## Where this stands on main
 
@@ -22,9 +22,9 @@ A signed-in player can report another player's row on the leaderboard. The repor
 - Database: `report_row(row_key uuid, reason text)` and `leaderboard_reports` are defined in migration 005; migration 006 replaces `report_row` and adds report status. Whether 006 is applied on the live project is not verified here (see Order of work, step 1). This issue needs no migration and no SQL change.
 - Reports are one open report per reporter and reported player (a partial unique index). A resolved report does not block a new report of the same player. A duplicate open report is a silent no-op: the insert uses `on conflict do nothing`, and no email is sent.
 - Rate limit: at most 10 reports per reporter in any rolling 24 hours. The count includes resolved reports and is checked before the insert, so silent duplicates do not count.
-- A report of a row that is unknown, hidden or your own is silently ignored: `report_row` returns without inserting.
+- A report of a row that is unknown or your own is silently ignored: `report_row` returns without inserting. A hidden row is not ignored: migration 006's `report_row` does not check `leaderboard_hidden`, so a report that carries a key the client still holds is stored. `leaderboard()` leaves hidden rows out, so a fresh client cannot obtain such a key.
 - Row key: `leaderboard()` returns a random `rowKey` for each row (`LeaderboardRow.rowKey` in `src/types.ts`). The app never sees user ids.
-- The old UI was removed in commit `f94b3ce`, so its parent `f94b3ce^` has the screen code to restore. Commit `2cba5fd`, which #104 names, only adds tests, so it is not the source.
+- The old UI was never merged to `main`. It lives on `origin/leaderboard-ui`: commit `f94b3ce` removed the Report button from that branch, so its parent `f94b3ce^` has the screen code to restore. Commit `2cba5fd`, which #104 names, adds tests and the test-library dev dependencies but no report code, so it is not the source.
 - The old client call is out of date. It calls `report_row` with `reported_name` (the display name) and a three-option reason. Migration 005 takes `row_key` and a free-text reason (1 to 300 characters; blank is stored as "unspecified"). The client must be rewritten, not copied.
 - Global scope needs no profile (`scopeAvailable` in `src/lib/leaderboardApi.ts`), so a signed-in player who never joined still sees the board and can report. The board is not fetched while signed out.
 - `f94b3ce` also removed the `onMessage` prop from the screen (`App.tsx` passed `showToast`), the privacy sentence about reports, and changed a line in `supabase/README.md` to say no app UI writes reports yet. That README line still exists on `main`, and it says "Run 005", which is now incomplete because 006 is also needed.
