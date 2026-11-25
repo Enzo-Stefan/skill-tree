@@ -59,6 +59,10 @@ Set up (once, by an admin):
 
 A failed email does not fail the report. The webhook is asynchronous, so a mail outage only delays the email; the report still shows on the admin page. Tested in `supabase/tests/notifyReport.test.ts` (the parts that need no network).
 
+## Admin reports (006)
+
+`admins` (who may read reports), report `status` (open, dismissed, actioned), and `leaderboard_hidden` (rows an admin hid; kept per account, so deleting a profile and joining again does not bring a row back). `leaderboard()` skips hidden players. Admins use `admin_list_reports`, `admin_resolve_report` and `admin_unhide`; each refuses anyone not in `admins` and none returns a user id. A resolved report no longer blocks the same player reporting the same row again. After running 006, add the two admins by hand in the SQL editor: `insert into public.admins (user_id) values ('<enzo uuid>'), ('<stefan uuid>');`. Run 006 on the live project before the app version that uses it ships, because `main` deploys itself. Tested in `supabase/tests/admin.test.ts`.
+
 ## Free plan
 
 Free projects pause after a week with no activity. If sign-in stops working, open the project
