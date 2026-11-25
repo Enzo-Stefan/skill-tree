@@ -109,6 +109,11 @@ describe("bests", () => {
     expect(bestResult(football, log, "ft4")).toBeNull();
   });
 
+  it("keeps the best time when a slower run is saved after it (what a challenge shares)", () => {
+    const runs = [sprint("2026-11-08", 12.8), sprint("2026-11-09", 14.0)];
+    expect(bestResult(football, runs, "ft2")?.value).toBe(12.8);
+  });
+
   it("picks the highest count when higher is better", () => {
     const reps = [
       { skillId: "bc1", date: "2026-11-01", value: 18 },

@@ -280,6 +280,14 @@ export const en = {
     undoSave: "Undo",
     /** In the skill sheet, above the saved best time. */
     bestTime: "Your best time",
+    challenge: "Challenge a mate",
+  },
+  challenge: {
+    lower: (skill: string, time: string) => `I did ${skill} in ${time}. Beat it?`,
+    higher: (skill: string, time: string) => `I got ${time} on ${skill}. Beat it?`,
+    title: (skill: string) => `hapi skill challenge: ${skill}`,
+    copied: "Challenge copied. Paste it to a mate.",
+    copyPrompt: "Copy this challenge to send to a mate",
   },
   video: {
     offlineTitle: "Video needs internet",

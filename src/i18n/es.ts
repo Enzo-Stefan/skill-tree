@@ -265,6 +265,14 @@ export const es: Strings = {
     newBest: (time: string) => `¡Nuevo mejor tiempo: ${time}!`,
     undoSave: "Deshacer",
     bestTime: "Tu mejor tiempo",
+    challenge: "Retar a un colega",
+  },
+  challenge: {
+    lower: (skill: string, time: string) => `He hecho ${skill} en ${time}. ¿Lo superas?`,
+    higher: (skill: string, time: string) => `He conseguido ${time} en ${skill}. ¿Lo superas?`,
+    title: (skill: string) => `Reto de hapi skill: ${skill}`,
+    copied: "Reto copiado. Pégaselo a un colega.",
+    copyPrompt: "Copia este reto para enviárselo a un colega",
   },
   video: {
     offlineTitle: "El vídeo necesita internet",
