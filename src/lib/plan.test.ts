@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { football } from "../data/football";
 import type { Skill } from "../types";
 import { validateTree } from "./progress";
-import { buildWeekPlan, cleanDayMinutes, DEFAULT_DAY_MINUTES, skillsToPlan, trainedPlanDays } from "./plan";
+import { buildWeekPlan, cleanDayMinutes, cleanRestDays, DEFAULT_DAY_MINUTES, loadRestDays, saveRestDays, skillsToPlan, trainedPlanDays } from "./plan";
 
 const skill = (id: string) => football.skills.find((s) => s.id === id)!;
 // 2026-11-25 is a Wednesday; its week runs Monday 2026-11-23 to Sunday 2026-11-29.
@@ -95,7 +95,8 @@ describe("the week plan", () => {
   it("keeps every day under the limit, and lists what didn't fit", () => {
     const plan = buildWeekPlan([fake("a", 7, 40), fake("b", 7, 30)], null, WEDNESDAY, 60);
     for (const d of plan.days) expect(d.minutes).toBeLessThanOrEqual(60);
-    expect(plan.unplaced.length).toBe(7);
+    // Six training days (Sunday is rest): "a" fits on all six, "b" never fits next to it.
+    expect(plan.unplaced.length).toBe(8);
     expect(plan.days.reduce((n, d) => n + d.items.length, 0) + plan.unplaced.length).toBe(14);
   });
 
@@ -128,6 +129,58 @@ describe("the week plan", () => {
   it("is the same every time for the same input", () => {
     const skills = skillsToPlan(football, new Set(["root"]));
     expect(buildWeekPlan(skills, "advanced", WEDNESDAY)).toEqual(buildWeekPlan(skills, "advanced", WEDNESDAY));
+  });
+});
+
+describe("rest days", () => {
+  it("keeps Sunday free by default, even when skills want every day", () => {
+    const plan = buildWeekPlan([fake("a", 7, 10), fake("b", 7, 10)], null, WEDNESDAY);
+    expect(plan.days[6].rest).toBe(true);
+    expect(plan.days[6].items).toEqual([]);
+    expect(plan.days.slice(0, 6).every((d) => !d.rest && d.items.length === 2)).toBe(true);
+    expect(plan.unplaced).toHaveLength(2);
+  });
+
+  it("can rest on other days the player picks", () => {
+    const plan = buildWeekPlan([fake("a", 7, 10)], null, WEDNESDAY, 60, [2, 5]);
+    expect(plan.days.map((d) => d.rest)).toEqual([false, false, true, false, false, true, false]);
+    expect(plan.days[2].items).toEqual([]);
+    expect(plan.days[5].items).toEqual([]);
+  });
+
+  it("always keeps at least one rest day and one training day", () => {
+    expect(cleanRestDays([])).toEqual([6]);
+    expect(cleanRestDays("sunday")).toEqual([6]);
+    expect(cleanRestDays([3, 3, 9, -1, 1.5])).toEqual([3]);
+    expect(cleanRestDays([0, 1, 2, 3, 4, 5, 6])).toEqual([0, 1, 2, 3, 4, 5]);
+  });
+
+  it("a real first week keeps its rest day and lists what didn't fit instead of going over the limit", () => {
+    const skills = skillsToPlan(football, new Set(["root"]));
+    const plan = buildWeekPlan(skills, "beginner", WEDNESDAY);
+    expect(plan.days[6].items).toEqual([]);
+    for (const d of plan.days) expect(d.minutes).toBeLessThanOrEqual(DEFAULT_DAY_MINUTES);
+    const wanted = skills.reduce((n, s) => n + s.routine!.sessionsPerWeek, 0);
+    expect(plan.days.reduce((n, d) => n + d.items.length, 0) + plan.unplaced.length).toBe(wanted);
+  });
+
+  it("remembers the rest days the player picks", () => {
+    const store = new Map<string, string>();
+    const real = globalThis.localStorage;
+    globalThis.localStorage = {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+    } as Storage;
+    try {
+      expect(loadRestDays()).toEqual([6]);
+      saveRestDays([5, 2]);
+      expect(loadRestDays()).toEqual([2, 5]);
+      store.set("skill-tree:plan-rest-days", "not json");
+      expect(loadRestDays()).toEqual([6]);
+    } finally {
+      globalThis.localStorage = real;
+    }
   });
 });
 

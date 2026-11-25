@@ -10,6 +10,10 @@ import { dayKey, weekOf, type DayKey } from "./streak";
 export const DEFAULT_DAY_MINUTES = 60;
 export const MIN_DAY_MINUTES = 15;
 export const MAX_DAY_MINUTES = 180;
+/** Days of the week as plan indexes: 0 is Monday, 6 is Sunday. */
+export const SUNDAY = 6;
+/** The rest day when the player hasn't picked one. */
+export const DEFAULT_REST_DAYS: readonly number[] = [SUNDAY];
 
 /** One skill's session on a day. */
 export interface PlanItem {
@@ -20,6 +24,8 @@ export interface PlanItem {
 
 export interface PlanDay {
   date: DayKey;
+  /** A rest day: nothing is planned on it. */
+  rest: boolean;
   items: PlanItem[];
   /** Total minutes of the day's sessions. */
   minutes: number;
@@ -62,16 +68,25 @@ function addDays(day: DayKey, n: number): DayKey {
  *   levelId: The player's level, for each routine's minutes (null uses the first value).
  *   today: Any day in the week to plan; the plan runs Monday to Sunday of that week.
  *   dayMinutes: The most minutes of training on one day.
+ *   restDays: Days kept free, as indexes (0 Monday … 6 Sunday). Always at least one: an empty or
+ *     invalid list falls back to Sunday, and all seven can't be rest days.
  *
  * Each skill gets up to `sessionsPerWeek` sessions, on different days, spread as far apart as the
  * week allows. A session goes on the lightest day that has room; a heavy session also needs both
  * neighbouring days to have no heavy session (two heavy sessions may share one day). Sessions that can't go anywhere are listed in
  * `unplaced` rather than breaking a rule.
  */
-export function buildWeekPlan(skills: Skill[], levelId: string | null, today: DayKey, dayMinutes = DEFAULT_DAY_MINUTES): WeekPlan {
+export function buildWeekPlan(
+  skills: Skill[],
+  levelId: string | null,
+  today: DayKey,
+  dayMinutes = DEFAULT_DAY_MINUTES,
+  restDays: readonly number[] = DEFAULT_REST_DAYS,
+): WeekPlan {
   const limit = cleanDayMinutes(dayMinutes);
+  const rest = new Set(cleanRestDays(restDays));
   const monday = weekOf(today);
-  const days: PlanDay[] = Array.from({ length: 7 }, (_, i) => ({ date: addDays(monday, i), items: [], minutes: 0 }));
+  const days: PlanDay[] = Array.from({ length: 7 }, (_, i) => ({ date: addDays(monday, i), rest: rest.has(i), items: [], minutes: 0 }));
   const unplaced: PlanItem[] = [];
   const hasHeavy = (i: number) => i >= 0 && i < 7 && days[i].items.some((it) => it.heavy);
 
@@ -90,7 +105,7 @@ export function buildWeekPlan(skills: Skill[], levelId: string | null, today: Da
       let best = -1;
       let bestScore = -Infinity;
       for (let i = 0; i < 7; i++) {
-        if (placedOn.includes(i)) continue;
+        if (rest.has(i) || placedOn.includes(i)) continue;
         if (days[i].minutes + minutes > limit) continue;
         // Heavy sessions can share a day (time allowing), but never sit on back-to-back days.
         if (heavy && (hasHeavy(i - 1) || hasHeavy(i + 1))) continue;
@@ -142,5 +157,36 @@ export function saveDayMinutes(minutes: number): void {
     localStorage.setItem(dayMinutesKey, String(cleanDayMinutes(minutes)));
   } catch {
     // Storage can be blocked. The limit then only lasts for this visit.
+  }
+}
+
+/**
+ * Rest days the plan can use: whole numbers 0 to 6, each once. At least one, so a week always has
+ * a rest day (an empty or invalid list gives Sunday), and at most six, so there's a day to train.
+ */
+export function cleanRestDays(days: unknown): number[] {
+  const list = Array.isArray(days) ? days : [];
+  const clean = [...new Set(list.filter((d): d is number => Number.isInteger(d) && d >= 0 && d <= 6))].sort((a, b) => a - b);
+  if (clean.length === 0) return [...DEFAULT_REST_DAYS];
+  return clean.slice(0, 6);
+}
+
+const restDaysKey = "skill-tree:plan-rest-days";
+
+/** The rest days the player picked, saved in this browser for every tree. Sunday if they haven't picked. */
+export function loadRestDays(): number[] {
+  try {
+    const raw = localStorage.getItem(restDaysKey);
+    return raw === null ? [...DEFAULT_REST_DAYS] : cleanRestDays(JSON.parse(raw));
+  } catch {
+    return [...DEFAULT_REST_DAYS];
+  }
+}
+
+export function saveRestDays(days: number[]): void {
+  try {
+    localStorage.setItem(restDaysKey, JSON.stringify(cleanRestDays(days)));
+  } catch {
+    // Storage can be blocked. The choice then only lasts for this visit.
   }
 }
