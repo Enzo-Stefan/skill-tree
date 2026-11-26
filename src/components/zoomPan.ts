@@ -27,14 +27,16 @@ export const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.ma
 
 /** The whole map in view, centred, never enlarged past 100% and never smaller than `floor` (so tap targets stay 44px; a map that doesn't fit then overflows the pane). */
 export function fitView(content: Size, pane: Size, padding = 16, floor = MIN_TAP_SCALE): View {
-  const fit = Math.min(1, (pane.width - 2 * padding) / content.width, (pane.height - 2 * padding) / content.height);
-  const scale = Math.max(fit, Math.min(floor, 1));
+  const ratio = (room: number, size: number) => (size > 0 ? (room - 2 * padding) / size : 1);
+  const fit = Math.min(1, ratio(pane.width, content.width), ratio(pane.height, content.height));
+  const scale = Math.max(Number.isFinite(fit) ? fit : 1, Math.min(floor, 1));
   return { scale, x: (pane.width - content.width * scale) / 2, y: (pane.height - content.height * scale) / 2 };
 }
 
 /** The starting view: the map as wide as the pane (up to 100%), showing its base, since the tree grows upward. */
 export function baseView(content: Size, pane: Size, padding = 16, floor = MIN_TAP_SCALE): View {
-  const scale = Math.max(Math.min(1, (pane.width - 2 * padding) / content.width), Math.min(floor, 1));
+  const wide = content.width > 0 ? (pane.width - 2 * padding) / content.width : 1;
+  const scale = Math.max(Math.min(1, Number.isFinite(wide) ? wide : 1), Math.min(floor, 1));
   return { scale, x: (pane.width - content.width * scale) / 2, y: pane.height - content.height * scale - padding };
 }
 

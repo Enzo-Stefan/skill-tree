@@ -103,3 +103,14 @@ describe("minScale and centerOn", () => {
     expect(v.y + 700).toBeCloseTo(350);
   });
 });
+
+describe("degenerate sizes", () => {
+  it("never returns a non-finite scale", () => {
+    for (const content of [{ width: 0, height: 0 }, { width: 0, height: 100 }]) {
+      for (const pane of [{ width: 16, height: 16 }, { width: 0, height: 0 }, { width: 300, height: 300 }]) {
+        expect(Number.isFinite(fitView(content, pane).scale)).toBe(true);
+        expect(Number.isFinite(baseView(content, pane).scale)).toBe(true);
+      }
+    }
+  });
+});

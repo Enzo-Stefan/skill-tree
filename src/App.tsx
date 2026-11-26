@@ -8,6 +8,8 @@ import { NextUpCard } from "./components/NextUpCard";
 import { SkillPanel } from "./components/SkillPanel";
 import { SkillPage } from "./components/SkillPage";
 import { useMediaQuery } from "./components/useMediaQuery";
+import type { Toast, ToastAction } from "./components/toast";
+import { useSheetHistory } from "./components/useSheetHistory";
 import { LevelPicker } from "./components/LevelPicker";
 import { LevelUpBanner } from "./components/LevelUpBanner";
 import { LevelTestDialog } from "./components/LevelTestDialog";
@@ -82,18 +84,6 @@ import { chooseLanguage, language, t, type Language } from "./i18n";
 
 // The trees with their skill content in the app's language (English where a translation is missing).
 const trees = treesIn(language);
-
-interface ToastAction {
-  label: string;
-  /** What a screen reader says, when the visible label alone is unclear ("Undo" what?). */
-  accessibleLabel?: string;
-  run: () => void;
-}
-
-interface Toast {
-  text: string;
-  action?: ToastAction;
-}
 
 export default function App() {
   // The tree the player last chose (src/lib/activeTree.ts). Switching reloads the app.
@@ -304,19 +294,25 @@ export default function App() {
     if (link) saveActiveTree(link.tree.id);
   }, [link]);
 
+  const pageInHistory = useRef(false);
+
   /** Opens a skill's page. It gets its own history entry, so Back returns to where the player was. */
   function openPage(id: string) {
     setSelectedId(id);
     setSheetOpen(false);
     setScrollTo({ id });
     window.history.pushState({ ...window.history.state, skillPage: true }, "", skillUrl(window.location.href, id, tree.id));
+    pageInHistory.current = true;
     setPageId(id);
     window.scrollTo(0, 0);
   }
 
   /** Back to the tree. */
   function closePage() {
-    if (window.history.state?.skillPage) {
+    // Only step back over an entry this session pushed. After a reload (or a shared link) history.state can
+    // still say skillPage while the previous entry is another site, so Back would leave the app.
+    if (pageInHistory.current && window.history.state?.skillPage) {
+      pageInHistory.current = false;
       window.history.back();
       return;
     }
@@ -392,45 +388,7 @@ export default function App() {
     if (window.history.state?.skillSheet) window.history.replaceState({ ...window.history.state, skillSheet: false }, "");
   }, []);
 
-  // The phone's back gesture (Android) closes the sheet instead of leaving the app: an open sheet
-  // adds a history entry, and every other way of closing it takes that entry off again.
-  const sheetInHistory = useRef(false);
-  const closeSheetRef = useRef(closeSheet);
-  useEffect(() => {
-    closeSheetRef.current = closeSheet;
-  });
-  const sheetShown = isPhone && sheetOpen;
-  useEffect(() => {
-    if (!sheetShown) {
-      if (sheetInHistory.current) {
-        sheetInHistory.current = false;
-        window.history.back();
-      }
-      return;
-    }
-    if (!sheetInHistory.current) {
-      window.history.pushState({ ...window.history.state, skillSheet: true }, "");
-      sheetInHistory.current = true;
-    }
-    const onPop = () => {
-      sheetInHistory.current = false;
-      closeSheetRef.current();
-    };
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, [sheetShown]);
-
-  // Forward onto the sheet's entry (after Back closed it) opens the sheet again, so history and sheet agree.
-  useEffect(() => {
-    if (!isPhone) return;
-    const onPop = (e: PopStateEvent) => {
-      if (!e.state?.skillSheet || sheetInHistory.current) return;
-      sheetInHistory.current = true;
-      setSheetOpen(true);
-    };
-    window.addEventListener("popstate", onPop);
-    return () => window.removeEventListener("popstate", onPop);
-  }, [isPhone]);
+  useSheetHistory(isPhone, sheetOpen, () => closeSheet(), () => setSheetOpen(true));
 
   useEffect(() => saveProgress(tree.id, done), [tree.id, done]);
   // The toast's Undo runs after later renders (a cloud load can land in between), so it reads this.
@@ -647,7 +605,7 @@ export default function App() {
               scrollTo={scrollTo}
             />
             {/* Not kept while Train is hidden, so a playing video stops. */}
-            {tab === "train" && sheetShown && !(pickerOpen || testOpen || placementId !== null) && (
+            {tab === "train" && isPhone && sheetOpen && !(pickerOpen || testOpen || placementId !== null) && (
               <div className="sheet-backdrop" aria-hidden="true" onClick={() => closeSheet()} />
             )}
             {tab === "train" && (!isPhone || sheetOpen) && panel(true)}
