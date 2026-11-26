@@ -27,10 +27,10 @@
 /* The branch picked in the switcher. */
 .branch-col.focused { border-color: var(--c-ink); background: color-mix(in srgb, var(--c-ink) 12%, transparent); }
 .branch-head { grid-column: 1 / -1; grid-row: 1; padding: 0 4px; text-align: center; }
-.branch-head h3 { margin: 0; font-size: 0.9375rem; font-weight: 700; }
+.branch-head h3 { margin: 0; font-size: var(--fs-15); font-weight: 700; }
 .branch-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; background: var(--c-ink); }
 .branch-head h3 .branch-dot { margin-right: 6px; vertical-align: 0.1em; }
-.branch-count { margin: 0 0 8px; font-size: 0.8125rem; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.branch-count { margin: 0 0 8px; font-size: var(--fs-13); color: var(--text-2); font-variant-numeric: tabular-nums; }
 .tree.wide .branch-grid {
   grid-column: 1 / -1;
   grid-row: 2 / -1;
@@ -77,7 +77,7 @@
   border: 1.5px solid var(--glass-border-strong);
   background: var(--glass);
   font-family: var(--font-display);
-  font-size: 0.8125rem;
+  font-size: var(--fs-13);
   font-weight: 700;
   transition: box-shadow var(--dur) var(--ease), background-color var(--dur) var(--ease);
 }
@@ -111,16 +111,16 @@
 .skill.done .skill-node { border-color: var(--btn-primary-bg); background: var(--btn-primary-bg); color: var(--btn-primary-fg); box-shadow: var(--node-done-glow); }
 .skill.locked .skill-node { border: 1.5px dashed var(--fg-3); border-radius: 12%; background: var(--glass-faint); color: var(--fg-2); }
 .skill.locked .skill-name { color: var(--text-2); }
-.skill.big .skill-node { width: 4.5rem; height: 4.5rem; font-size: 1.25rem; }
+.skill.big .skill-node { width: 4.5rem; height: 4.5rem; font-size: var(--fs-20); }
 .skill-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.skill-name { font-size: 0.875rem; font-weight: 600; line-height: 1.25; text-wrap: balance; overflow-wrap: anywhere; }
-.skill-sub { font-size: 0.875rem; color: var(--text-2); }
+.skill-name { font-size: var(--fs-14); font-weight: 600; line-height: 1.25; text-wrap: balance; overflow-wrap: anywhere; }
+.skill-sub { font-size: var(--fs-14); color: var(--text-2); }
 .skill-badge {
   padding: 2px 8px;
   border-radius: var(--radius-pill);
   background: var(--btn-primary-bg);
   color: var(--btn-primary-fg);
-  font-size: 0.75rem;
+  font-size: var(--fs-12);
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -128,7 +128,7 @@
 }
 
 /* On the wide tree: circle above the name. The names are small so the longest words fit one slot. */
-.skill.card { width: 100%; min-height: 2.75rem; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0; text-align: center; }
+.skill.card { width: 100%; min-height: 2.75rem; display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: 8px 0; text-align: center; }
 .skill.card .skill-name {
   /* Scales with the tree's width (a container query unit), so the longest words fit one slot: about 10px
      when the tree is as narrow as it gets, 13px when there is plenty of room. */
@@ -139,7 +139,7 @@
 }
 .tree-end .skill.card { width: auto; min-width: 10rem; padding: 8px 16px; }
 /* Out of the flow, so the suggested skill's badge never moves the skills around it (and their lines). */
-.skill.card .skill-badge { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); padding: 1px 7px; font-size: 0.6875rem; }
+.skill.card .skill-badge { position: absolute; top: -9px; left: 50%; transform: translateX(-50%); padding: 1px 7px; font-size: var(--fs-11); }
 
 /* The phone's single column: circle, then name and status. */
 .tree.stacked { display: flex; flex-direction: column; gap: 14px; max-width: 36rem; padding: 12px max(16px, env(safe-area-inset-right)) 24px max(16px, env(safe-area-inset-left)); }
@@ -166,11 +166,11 @@
 @media (prefers-reduced-motion: reduce) {
   .skill-li.rail-grow::after { animation: none; }
 }
-.skill.row { width: 100%; display: flex; align-items: center; gap: 14px; min-height: 4.5rem; padding: 8px; text-align: left; }
+.skill.row { width: 100%; display: flex; align-items: center; gap: 14px; min-height: 4.5rem; padding: var(--space-2); text-align: left; }
 .skill.row .skill-node { width: 3.25rem; height: 3.25rem; }
 .skill.row.big .skill-node { width: 4rem; height: 4rem; }
 .skill.row .skill-text { flex: 1; }
-.skill.row .skill-name { font-size: 1.0625rem; }
+.skill.row .skill-name { font-size: var(--fs-17); }
 
 /* The suggested skill, above the tree. */
 .next-up {
@@ -188,9 +188,9 @@
 .next-up:active { transform: scale(0.99); }
 .next-up .branch-dot { width: 12px; height: 12px; }
 .next-up-text { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-.next-up-label { font-size: 0.8125rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2); }
-.next-up-name { font-size: 1.125rem; font-weight: 600; }
-.next-up-reason { font-size: 0.875rem; color: var(--text-2); }
+.next-up-label { font-size: var(--fs-13); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2); }
+.next-up-name { font-size: var(--fs-18); font-weight: 600; }
+.next-up-reason { font-size: var(--fs-14); color: var(--text-2); }
 
 /* Keep in sync with the phone media query in App.tsx. */
 @media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
@@ -213,8 +213,8 @@
 @media (prefers-reduced-motion: no-preference) {
   .zoom-map.smooth { transition: transform 0.3s var(--ease); }
 }
-.tree.wide.map { max-width: none; margin: 0; padding: 24px; box-sizing: border-box; }
-.tree.map .skill.card .skill-name { font-size: 0.875rem; }
+.tree.wide.map { max-width: none; margin: 0; padding: var(--space-6); box-sizing: border-box; }
+.tree.map .skill.card .skill-name { font-size: var(--fs-14); }
 .zoom-hint {
   position: absolute;
   left: 12px;
@@ -225,7 +225,7 @@
   border-radius: var(--radius-md);
   background: var(--glass-solid);
   border: 1px solid var(--glass-border-strong);
-  font-size: 0.8125rem;
+  font-size: var(--fs-13);
   color: var(--text-2);
   pointer-events: none;
   z-index: 3;
@@ -236,7 +236,7 @@
   bottom: 12px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--space-2);
   z-index: 3;
 }
 .zoom-btn {
@@ -268,7 +268,7 @@
   min-height: 2.75rem;
   padding: 0 16px;
   border-radius: var(--radius-pill);
-  font-size: 0.9375rem;
+  font-size: var(--fs-15);
   font-weight: 600;
   color: var(--text-2);
 }
@@ -280,31 +280,31 @@
 /* A skill's own page. The panel under the blocks drops its side-panel layout. */
 .skill-page { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
 .skill-back { align-self: flex-start; min-height: 2.75rem; }
-.skill-page-head { display: flex; flex-direction: column; gap: 8px; }
+.skill-page-head { display: flex; flex-direction: column; gap: var(--space-2); }
 .skill-page-head h1:focus { outline: none; }
-.skill-block h2 { margin: 0; font-size: 1rem; }
-.skill-block h3 { margin: 8px 0 0; font-size: 0.875rem; color: var(--text-2); }
-.skill-links, .history-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.history-list li { font-size: 0.9375rem; }
-.reward-xp { margin: 0; font-size: 1.125rem; font-weight: 700; }
+.skill-block h2 { margin: 0; font-size: var(--fs-16); }
+.skill-block h3 { margin: 8px 0 0; font-size: var(--fs-14); color: var(--text-2); }
+.skill-links, .history-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.history-list li { font-size: var(--fs-15); }
+.reward-xp { margin: 0; font-size: var(--fs-18); font-weight: 700; }
 .skill-link {
   width: 100%;
   min-height: 2.75rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--space-3);
   padding: 8px 14px;
   border-radius: var(--radius-md);
   border: 1px solid var(--glass-border-strong);
   background: var(--glass-faint);
   color: var(--fg);
-  font-size: 0.9375rem;
+  font-size: var(--fs-15);
   font-weight: 600;
   text-align: left;
 }
 .skill-link:hover { background: var(--hover); }
 .skill-link.locked { border-style: dashed; color: var(--fg-2); }
-.skill-link-state { font-size: 0.8125rem; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.skill-link-state { font-size: var(--fs-13); font-weight: 600; color: var(--text-2); white-space: nowrap; }
 .skill-page .panel { width: 100%; max-height: none; padding: 0; border-width: 0; overflow: visible; background: transparent; }
 .panel .btn, .skill-page .btn { min-height: 2.75rem; }

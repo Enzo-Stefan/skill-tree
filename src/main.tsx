@@ -1,5 +1,6 @@
 import { lazy, StrictMode, Suspense } from 'react'
 import { createRoot } from 'react-dom/client'
+import './tokens.css'
 import './index.css'
 import './nav.css'
 import './tree.css'
