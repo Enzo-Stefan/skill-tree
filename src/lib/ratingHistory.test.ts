@@ -108,14 +108,15 @@ describe("the account's copy", () => {
 describe("position and preferred foot", () => {
   it("reads them, treating anything else as not set", async () => {
     const make = (row: unknown) => ({ from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: row, error: null }) }) }) }) }) as unknown as SupabaseClient;
-    expect(await fetchCard(make({ player_position: "MID", preferred_foot: "left" }), "u1")).toEqual({ position: "MID", foot: "left" });
-    expect(await fetchCard(make(null), "u1")).toEqual({ position: null, foot: null });
-    expect(await fetchCard(make({ player_position: "STRIKER", preferred_foot: "middle" }), "u1")).toEqual({ position: null, foot: null });
+    expect(await fetchCard(make({ player_position: "MID", preferred_foot: "left", position_at: "2026-11-26T10:00:00.000Z", foot_at: null }), "u1")).toEqual({ position: "MID", foot: "left", at: { position: Date.parse("2026-11-26T10:00:00.000Z"), foot: null } });
+    const none = { position: null, foot: null, at: { position: null, foot: null } };
+    expect(await fetchCard(make(null), "u1")).toEqual(none);
+    expect(await fetchCard(make({ player_position: "STRIKER", preferred_foot: "middle", position_at: "not a date", foot_at: null }), "u1")).toEqual(none);
   });
 
   it("saves them against the player's own id", async () => {
     const upsert = vi.fn().mockResolvedValue({ error: null });
-    await saveCard({ from: () => ({ upsert }) } as unknown as SupabaseClient, "u1", { position: "GK", foot: "both" });
-    expect(upsert).toHaveBeenCalledWith({ user_id: "u1", player_position: "GK", preferred_foot: "both" }, { onConflict: "user_id" });
+    await saveCard({ from: () => ({ upsert }) } as unknown as SupabaseClient, "u1", { position: "GK", foot: null }, { position: Date.parse("2026-11-26T10:00:00.000Z"), foot: null });
+    expect(upsert).toHaveBeenCalledWith({ user_id: "u1", player_position: "GK", preferred_foot: null, position_at: "2026-11-26T10:00:00.000Z", foot_at: null }, { onConflict: "user_id" });
   });
 });

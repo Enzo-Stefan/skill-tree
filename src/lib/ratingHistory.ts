@@ -135,17 +135,36 @@ export interface PlayerCard {
   foot: PreferredFoot | null;
 }
 
-export async function fetchCard(client: SupabaseClient, userId: string): Promise<PlayerCard> {
-  const { data, error } = await client.from("player_cards").select("player_position, preferred_foot").eq("user_id", userId).maybeSingle();
+/** When each field was last changed, in epoch milliseconds; null when it never was. */
+export interface CardStamps {
+  position: number | null;
+  foot: number | null;
+}
+
+export const NO_STAMPS: CardStamps = { position: null, foot: null };
+
+/** The account's card with the time each field last changed. */
+export type StampedCard = PlayerCard & { at: CardStamps };
+
+const toMs = (v: unknown): number | null => {
+  const ms = typeof v === "string" ? Date.parse(v) : NaN;
+  return Number.isFinite(ms) ? ms : null;
+};
+const toIso = (ms: number | null): string | null => (ms === null ? null : new Date(ms).toISOString());
+
+export async function fetchCard(client: SupabaseClient, userId: string): Promise<StampedCard> {
+  const { data, error } = await client.from("player_cards").select("player_position, preferred_foot, position_at, foot_at").eq("user_id", userId).maybeSingle();
   if (error) throw new Error(error.message);
-  const p = (data as { player_position: string | null; preferred_foot: string | null } | null) ?? { player_position: null, preferred_foot: null };
+  const p = (data as { player_position: string | null; preferred_foot: string | null; position_at: string | null; foot_at: string | null } | null) ?? { player_position: null, preferred_foot: null, position_at: null, foot_at: null };
   return {
     position: POSITIONS.includes(p.player_position as PlayerPosition) ? (p.player_position as PlayerPosition) : null,
     foot: FEET.includes(p.preferred_foot as PreferredFoot) ? (p.preferred_foot as PreferredFoot) : null,
+    at: { position: toMs(p.position_at), foot: toMs(p.foot_at) },
   };
 }
 
-export async function saveCard(client: SupabaseClient, userId: string, card: PlayerCard): Promise<void> {
-  const { error } = await client.from("player_cards").upsert({ user_id: userId, player_position: card.position, preferred_foot: card.foot }, { onConflict: "user_id" });
+export async function saveCard(client: SupabaseClient, userId: string, card: PlayerCard, at: CardStamps = NO_STAMPS): Promise<void> {
+  const row = { user_id: userId, player_position: card.position, preferred_foot: card.foot, position_at: toIso(at.position), foot_at: toIso(at.foot) };
+  const { error } = await client.from("player_cards").upsert(row, { onConflict: "user_id" });
   if (error) throw new Error(error.message);
 }
