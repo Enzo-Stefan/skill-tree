@@ -40,9 +40,9 @@ export function baseView(content: Size, pane: Size, padding = 16, floor = MIN_TA
   return { scale, x: (pane.width - content.width * scale) / 2, y: pane.height - content.height * scale - padding };
 }
 
-/** The smallest scale allowed: a little under the one that fits everything. */
+/** The smallest scale allowed: the one that fits everything, never under the 44px tap size. */
 export function minScale(content: Size, pane: Size): number {
-  return fitView(content, pane).scale * 0.8;
+  return fitView(content, pane).scale;
 }
 
 /** Keeps part of the map on screen: a map smaller than the pane stays centred, a larger one can't leave it. */

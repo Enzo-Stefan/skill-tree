@@ -8,6 +8,7 @@ import { NextUpCard } from "./components/NextUpCard";
 import { SkillPanel } from "./components/SkillPanel";
 import { SkillPage } from "./components/SkillPage";
 import { useMediaQuery } from "./components/useMediaQuery";
+import { browserShare } from "./lib/browserShare";
 import type { Toast, ToastAction } from "./components/toast";
 import { useSheetHistory } from "./components/useSheetHistory";
 import { LevelPicker } from "./components/LevelPicker";
@@ -295,13 +296,14 @@ export default function App() {
   }, [link]);
 
   const pageInHistory = useRef(false);
-
+  const closingToTree = useRef(false);
   /** Opens a skill's page. It gets its own history entry, so Back returns to where the player was. */
   function openPage(id: string) {
     setSelectedId(id);
     setSheetOpen(false);
     setScrollTo({ id });
-    window.history.pushState({ ...window.history.state, skillPage: true }, "", skillUrl(window.location.href, id, tree.id));
+    const depth = (pageInHistory.current ? (window.history.state?.pageDepth ?? 0) : 0) + 1;
+    window.history.pushState({ ...window.history.state, skillPage: true, pageDepth: depth }, "", skillUrl(window.location.href, id, tree.id));
     pageInHistory.current = true;
     setPageId(id);
     window.scrollTo(0, 0);
@@ -309,11 +311,14 @@ export default function App() {
 
   /** Back to the tree. */
   function closePage() {
-    // Only step back over an entry this session pushed. After a reload (or a shared link) history.state can
-    // still say skillPage while the previous entry is another site, so Back would leave the app.
-    if (pageInHistory.current && window.history.state?.skillPage) {
+    // Only step back over entries this session pushed (after a reload history.state can still say skillPage while
+    // the previous entry is another site). Following prerequisites stacks entries, so go back over all of them.
+    const depth = pageInHistory.current ? (window.history.state?.pageDepth ?? 0) : 0;
+    if (depth > 0) {
       pageInHistory.current = false;
-      window.history.back();
+      // A shared link starts on a skill page: once back on that entry, it has to become the tree.
+      closingToTree.current = link !== null;
+      window.history.go(-depth);
       return;
     }
     window.history.replaceState(window.history.state, "", withoutSkillParam(window.location.href));
@@ -323,6 +328,12 @@ export default function App() {
   // Back and Forward between skill pages (and the tree) follow the address.
   useEffect(() => {
     const onPop = () => {
+      if (closingToTree.current) {
+        closingToTree.current = false;
+        window.history.replaceState(window.history.state, "", withoutSkillParam(window.location.href));
+        setPageId(null);
+        return;
+      }
       const open = skillFromSearch([tree], window.location.search);
       setPageId(open?.skillId ?? null);
       if (open) setSelectedId(open.skillId);
@@ -354,11 +365,7 @@ export default function App() {
     if (!skill || !better || value === undefined) return;
     const url = skillUrl(window.location.href, skillId, tree.id);
     const text = challengeText(skill.name, challengeResult(value), better, url);
-    void shareChallenge(t.challenge.title(skill.name), text, t.challenge.copyPrompt, () => showToast(t.challenge.copied), {
-      share: typeof navigator.share === "function" ? (d) => navigator.share(d) : undefined,
-      writeText: navigator.clipboard ? (v) => navigator.clipboard.writeText(v) : undefined,
-      prompt: (m, v) => window.prompt(m, v),
-    });
+    void shareChallenge(t.challenge.title(skill.name), text, t.challenge.copyPrompt, () => showToast(t.challenge.copied), browserShare());
   }
 
   function select(id: string) {

@@ -94,8 +94,9 @@ describe("wheelFactor", () => {
 });
 
 describe("minScale and centerOn", () => {
-  it("lets the player zoom out a little past the fit", () => {
-    expect(minScale(content, pane)).toBeLessThan(fitView(content, pane).scale);
+  it("never lets the player zoom out past the fit, so nodes stay at least 44px", () => {
+    expect(minScale(content, pane)).toBe(fitView(content, pane).scale);
+    expect(minScale(content, pane)).toBeGreaterThanOrEqual(MIN_TAP_SCALE);
   });
   it("puts a map point in the middle", () => {
     const v = centerOn({ x: 500, y: 700 }, 1, pane);
