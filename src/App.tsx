@@ -4,7 +4,7 @@ import { activeBranch, activeTree, saveActiveBranch, saveActiveTree, switchTree,
 import { Header } from "./components/Header";
 import { SkillTree, type ScrollRequest } from "./components/SkillTree";
 import { branchFocusSkill, revealTarget } from "./components/treeView";
-import { NextUpCard } from "./components/NextUpCard";
+import { Dashboard } from "./components/Dashboard";
 import { SkillPanel } from "./components/SkillPanel";
 import { SkillPage } from "./components/SkillPage";
 import { usePageFocus } from "./lib/usePageFocus";
@@ -608,18 +608,23 @@ export default function App() {
             />
           )}
           {nextUp && <LevelUpBanner onYes={() => setTestOpen(true)} onLater={askLater} />}
-          {suggested && (
-            <NextUpCard
-              tree={tree}
-              skill={suggested}
-              done={done}
-              onOpen={(s) => {
-                if (s.branch) chooseBranch(s.branch);
-                else setScrollTo({ id: s.id });
-                select(s.id);
-              }}
-            />
-          )}
+          <Dashboard
+            tree={tree}
+            xp={xp}
+            done={done}
+            plan={planState.plan}
+            ticks={planState.ticks}
+            sessions={sessions.sessions}
+            today={today}
+            rank={levelInfo(tree.levels, done.size).current.name}
+            suggested={suggested}
+            onOpenToday={() => goTo("plan")}
+            onOpenSkill={(s) => {
+              if (s.branch) chooseBranch(s.branch);
+              else setScrollTo({ id: s.id });
+              select(s.id);
+            }}
+          />
           <main>
             <SkillTree
               nextId={suggested?.id ?? null}
