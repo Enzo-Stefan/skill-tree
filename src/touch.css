@@ -1,0 +1,12 @@
+/* Touch targets: at least 44 x 44 px on phones and touch screens (issue #127 item 2).
+   Sizes only, so the look stays the same. Laptop mouse layouts keep their compact buttons. */
+@media (max-width: 700px), (pointer: coarse) {
+  .btn, .sheet-grabber { min-height: 44px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; }
+  /* Text links get a tall tap area; the underline stays on the text. */
+  .link-btn, .yt { display: inline-flex; align-items: center; justify-content: center; min-height: 44px; }
+  .panel .yt { padding-block: 0; }
+}
+@media (max-width: 700px), (pointer: coarse) {
+  .seg-btn { min-height: 44px; }
+}
