@@ -1,5 +1,6 @@
 import { useState, type CSSProperties, type FocusEvent, type KeyboardEvent } from "react";
 import type { Tree } from "../types";
+import { ringFraction } from "./progressRing";
 import { moveTabFocus } from "./tabKeys";
 import { TREE_PANEL_ID } from "./treeView";
 import { t } from "../i18n";
@@ -10,6 +11,20 @@ interface Props {
   /** The branch picked, or null for "All". */
   activeId: string | null;
   onChange: (branchId: string | null) => void;
+}
+
+/** A ring around a dot: the share of the branch passed, drawn as an arc (the circle is 2 * pi * 10 long). */
+function Ring({ done, total }: { done: number; total: number }) {
+  const length = 2 * Math.PI * 10;
+  return (
+    <svg className="branch-ring" viewBox="0 0 26 26" aria-hidden="true">
+      <circle className="ring-track" cx="13" cy="13" r="10" />
+      {ringFraction(done, total) > 0 && (
+        <circle className="ring-arc" cx="13" cy="13" r="10" strokeDasharray={`${ringFraction(done, total) * length} ${length}`} />
+      )}
+      <circle className="ring-dot" cx="13" cy="13" r="3.5" />
+    </svg>
+  );
 }
 
 const branchTabId = (branchId: string | null) => `branch-tab-${branchId ?? "all"}`;
@@ -51,6 +66,7 @@ export function BranchTabs({ tree, done, activeId, onChange }: Props) {
         onFocus={() => setStop(branchTabId(null))}
         onClick={() => onChange(null)}
       >
+        <Ring done={doneTotal} total={total} />
         {t.branchTabs.all}
         <span className="branch-tab-count">
           {doneTotal}/{total}
@@ -74,6 +90,7 @@ export function BranchTabs({ tree, done, activeId, onChange }: Props) {
             onFocus={() => setStop(branchTabId(b.id))}
             onClick={() => onChange(b.id)}
           >
+            <Ring done={count} total={skills.length} />
             {b.name}
             <span className="branch-tab-count">
               {count}/{skills.length}
