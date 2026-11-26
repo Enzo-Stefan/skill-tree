@@ -41,6 +41,8 @@ interface Props {
   onTogglePlan?: () => void;
   /** Copies a link that opens this skill. When missing, the button is not shown. */
   onCopyLink?: (id: string) => void;
+  /** Opens this skill's own page. When missing (on that page already), the button is not shown. */
+  onOpenPage?: (id: string) => void;
   /** Shares "beat my result" for a saved result, from test mode. */
   onChallenge?: (skillId: string) => void;
   /** Hides the sheet while a dialog is open over it, so only one shows at a time (phones). */
@@ -65,6 +67,7 @@ export function SkillPanel({
   planAdded = false,
   onTogglePlan,
   onCopyLink,
+  onOpenPage,
   onChallenge,
   hidden = false,
 }: Props) {
@@ -123,6 +126,11 @@ export function SkillPanel({
       </h2>
       <span className={`status ${state}`}>{t.panel.status[state]}</span>
       {state === "locked" && <p className="hint">{t.panel.finishFirst(missing.filter((n) => n !== undefined))}</p>}
+      {onOpenPage && (
+        <button className="link-btn" type="button" onClick={() => onOpenPage(skill.id)}>
+          {t.panel.openPage}
+        </button>
+      )}
     </>
   );
   const drill = (

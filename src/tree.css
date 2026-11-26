@@ -7,7 +7,7 @@
 
 /* Wide: a grid with half a slot per column. The branch bands and their lists are subgrids, so a skill
    placed inside a band lines up with the skills in the other bands, row by row. */
-.tree.wide { display: grid; row-gap: 30px; container-type: inline-size; }
+.tree.wide { display: grid; row-gap: 2.75rem; container-type: inline-size; }
 .tree.wide .branch-col {
   display: grid;
   grid-template-columns: subgrid;
@@ -47,8 +47,9 @@
    unlocks, so a line that grows when a skill opens moves upward. */
 .edges { position: absolute; inset: 0; z-index: 0; overflow: visible; pointer-events: none; }
 .edge { fill: none; stroke-width: 2; stroke-linecap: round; }
-.edge.base { stroke: var(--line-faint); }
-.edge.lit { stroke: var(--c-ink); }
+/* Locked: thin, dashed and dim. Open (the lower skill is passed): solid, thicker and in the branch colour. */
+.edge.base { stroke: var(--line-faint); stroke-width: 1.5; stroke-dasharray: 2 7; opacity: 0.8; }
+.edge.lit { stroke: var(--c-ink); stroke-width: 3; filter: drop-shadow(0 0 3px color-mix(in srgb, var(--c-ink) 55%, transparent)); }
 .edge.grow { stroke-dasharray: 1; animation: edge-grow 0.7s ease-out 0.35s backwards; }
 @keyframes edge-grow { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 @keyframes edge-flash { from { stroke: var(--chalk); } }
@@ -67,8 +68,8 @@
 .skill:hover { background: var(--hover); }
 .skill.selected { border-color: var(--fg); background: var(--glass-strong); }
 .skill-node {
-  width: 40px;
-  height: 40px;
+  width: 3.25rem;
+  height: 3.25rem;
   flex-shrink: 0;
   display: grid;
   place-items: center;
@@ -80,14 +81,37 @@
   font-weight: 700;
   transition: box-shadow var(--dur) var(--ease), background-color var(--dur) var(--ease);
 }
-.skill-node svg { width: 20px; height: 20px; }
+.skill-node svg { width: 1.5rem; height: 1.5rem; }
 .skill-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--fg); }
+.skill.available .skill-node svg { width: 1.25rem; height: 1.25rem; }
+
+/* Mastery on a passed skill: a medal on the circle's corner, one, two or three pips for bronze, silver, gold. */
+.skill-node { position: relative; }
+.mastery {
+  --m: #b4783c;
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding: 0 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--bg);
+  background: var(--m);
+}
+.mastery i { width: 4px; height: 4px; border-radius: 50%; background: #1a1206; }
+.mastery.silver { --m: #c3cad2; }
+.mastery.gold { --m: #f0bf3a; }
 /* Open: brighter glass and a crisp border. Passed: solid with a soft glow. Locked: dim. */
-.skill.available .skill-node { border: 2px solid var(--fg); background: var(--glass-strong); box-shadow: 0 0 0 4px var(--node-ring); }
+.skill.available .skill-node { border: 2px solid var(--fg); border-radius: 32%; background: var(--glass-strong); box-shadow: 0 0 0 4px var(--node-ring); }
 .skill.done .skill-node { border-color: var(--btn-primary-bg); background: var(--btn-primary-bg); color: var(--btn-primary-fg); box-shadow: var(--node-done-glow); }
-.skill.locked .skill-node { border: 1px dashed var(--fg-3); background: var(--glass-faint); color: var(--fg-2); }
+.skill.locked .skill-node { border: 1.5px dashed var(--fg-3); border-radius: 12%; background: var(--glass-faint); color: var(--fg-2); }
 .skill.locked .skill-name { color: var(--text-2); }
-.skill.big .skill-node { width: 56px; height: 56px; font-size: 1.125rem; }
+.skill.big .skill-node { width: 4.5rem; height: 4.5rem; font-size: 1.25rem; }
 .skill-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .skill-name { font-size: 0.875rem; font-weight: 600; line-height: 1.25; text-wrap: balance; overflow-wrap: anywhere; }
 .skill-sub { font-size: 0.875rem; color: var(--text-2); }
@@ -104,7 +128,7 @@
 }
 
 /* On the wide tree: circle above the name. The names are small so the longest words fit one slot. */
-.skill.card { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0; text-align: center; }
+.skill.card { width: 100%; min-height: 2.75rem; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0; text-align: center; }
 .skill.card .skill-name {
   /* Scales with the tree's width (a container query unit), so the longest words fit one slot: about 10px
      when the tree is as narrow as it gets, 13px when there is plenty of room. */
@@ -123,28 +147,28 @@
 .tree.stacked .branch-col { padding: 12px 6px 8px; }
 .tree.stacked .branch-head { padding: 0 8px; text-align: left; }
 .tree.stacked .skill-list { width: 100%; padding: 0; }
-.skill-list .skill-li + .skill-li { margin-top: 6px; }
+.skill-list .skill-li + .skill-li { margin-top: 14px; }
 /* The line down to the skill below, lit once that one is passed. It grows upward when the skill opens. */
 .skill-li.has-rail::after {
   content: "";
   position: absolute;
-  left: 31px;
-  bottom: -14px;
+  left: 34px;
+  bottom: -22px;
   width: 2px;
-  height: 22px;
+  height: 30px;
   background: var(--line-faint);
 }
 /* The first skill of a branch: a short line down to the edge of the branch, towards the start. */
-.skill-li.rail-stub::after { bottom: -8px; height: 16px; }
-.skill-li.rail-lit::after { background: var(--c-ink); }
+.skill-li.rail-stub::after { bottom: -10px; height: 18px; }
+.skill-li.rail-lit::after { background: var(--c-ink); width: 3px; margin-left: -0.5px; }
 .skill-li.rail-grow::after { transform-origin: bottom; animation: rail-grow 0.6s ease-out 0.35s backwards; }
 @keyframes rail-grow { from { transform: scaleY(0); } }
 @media (prefers-reduced-motion: reduce) {
   .skill-li.rail-grow::after { animation: none; }
 }
-.skill.row { width: 100%; display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 8px; text-align: left; }
-.skill.row .skill-node { width: 44px; height: 44px; }
-.skill.row.big .skill-node { width: 52px; height: 52px; }
+.skill.row { width: 100%; display: flex; align-items: center; gap: 14px; min-height: 4.5rem; padding: 8px; text-align: left; }
+.skill.row .skill-node { width: 3.25rem; height: 3.25rem; }
+.skill.row.big .skill-node { width: 4rem; height: 4rem; }
 .skill.row .skill-text { flex: 1; }
 .skill.row .skill-name { font-size: 1.0625rem; }
 
@@ -178,3 +202,109 @@
   .train .switcher { position: sticky; top: 0; z-index: 2; }
   .next-up { margin: 12px max(16px, env(safe-area-inset-right)) 4px max(16px, env(safe-area-inset-left)); }
 }
+
+/* The zoomable map: wide screens always, phones through the List / Map toggle. The map has its own fixed
+   size (set in SkillTree) and a transform scales it, so everything inside keeps its proportions. */
+.tree-wrap.zoomed { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
+.zoom-wrap { position: relative; flex: 1; min-height: 28rem; }
+.zoom-pane { position: absolute; inset: 0; overflow: clip; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
+.zoom-pane:active { cursor: grabbing; }
+.zoom-map { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+@media (prefers-reduced-motion: no-preference) {
+  .zoom-map.smooth { transition: transform 0.3s var(--ease); }
+}
+.tree.wide.map { max-width: none; margin: 0; padding: 24px; box-sizing: border-box; }
+.tree.map .skill.card .skill-name { font-size: 0.875rem; }
+.zoom-hint {
+  position: absolute;
+  left: 12px;
+  right: 72px;
+  bottom: 12px;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: var(--radius-md);
+  background: var(--glass-solid);
+  border: 1px solid var(--glass-border-strong);
+  font-size: 0.8125rem;
+  color: var(--text-2);
+  pointer-events: none;
+  z-index: 3;
+}
+.zoom-controls {
+  position: absolute;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 3;
+}
+.zoom-btn {
+  width: 2.75rem;
+  height: 2.75rem;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border-strong);
+  background: var(--bg, var(--glass-strong));
+  color: var(--fg);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+}
+.zoom-btn svg { width: 1.25rem; height: 1.25rem; }
+.zoom-btn:hover { border-color: var(--btn-border-hover); }
+
+/* List / Map, phones only. */
+.view-toggle {
+  display: flex;
+  width: max-content;
+  margin: 12px auto 0;
+  padding: 3px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--glass-border-strong);
+  background: var(--glass-faint);
+}
+.view-toggle button {
+  min-width: 5rem;
+  min-height: 2.75rem;
+  padding: 0 16px;
+  border-radius: var(--radius-pill);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-2);
+}
+.view-toggle button[aria-pressed="true"] { background: var(--btn-primary-bg); color: var(--btn-primary-fg); }
+@media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+  .zoom-wrap { flex: none; height: clamp(26rem, 68dvh, 60rem); min-height: 0; }
+}
+
+/* A skill's own page. The panel under the blocks drops its side-panel layout. */
+.skill-page { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
+.skill-back { align-self: flex-start; min-height: 2.75rem; }
+.skill-page-head { display: flex; flex-direction: column; gap: 8px; }
+.skill-page-head h1:focus { outline: none; }
+.skill-block h2 { margin: 0; font-size: 1rem; }
+.skill-block h3 { margin: 8px 0 0; font-size: 0.875rem; color: var(--text-2); }
+.skill-links, .history-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.history-list li { font-size: 0.9375rem; }
+.reward-xp { margin: 0; font-size: 1.125rem; font-weight: 700; }
+.skill-link {
+  width: 100%;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border-strong);
+  background: var(--glass-faint);
+  color: var(--fg);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-align: left;
+}
+.skill-link:hover { background: var(--hover); }
+.skill-link.locked { border-style: dashed; color: var(--fg-2); }
+.skill-link-state { font-size: 0.8125rem; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.skill-page .panel { width: 100%; max-height: none; padding: 0; border-width: 0; overflow: visible; background: transparent; }
+.panel .btn, .skill-page .btn { min-height: 2.75rem; }
