@@ -5,15 +5,15 @@ import { t } from "../i18n";
 export const SHARE_WIDTH = 1080;
 export const SHARE_HEIGHT = 1350;
 
-const BG = "#0a0a0a";
-const FG = "#f5f5f5";
-const FG_2 = "#a3a3a3";
-const FG_FAINT = "rgba(255, 255, 255, 0.16)";
-const GLOW = "rgba(255, 255, 255, 0.075)";
+export const BG = "#0a0a0a";
+export const FG = "#f5f5f5";
+export const FG_2 = "#a3a3a3";
+export const FG_FAINT = "rgba(255, 255, 255, 0.16)";
+export const GLOW = "rgba(255, 255, 255, 0.075)";
 /** Same recipe as --branch-mix and --branch-grey in index.css: a branch colour is this much itself, the rest grey. */
 const BRANCH_MIX = 0.55;
 const BRANCH_GREY = [0x8c, 0x8c, 0x8c];
-const BODY = '-apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
+export const BODY = '-apple-system, BlinkMacSystemFont, system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif';
 
 /** Mixes a "#rrggbb" branch colour toward grey, as the app does, so the image stays near-monochrome. */
 export function mutedBranchColor(hex: string): string {

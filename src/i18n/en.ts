@@ -161,6 +161,10 @@ export const en = {
     notSaved: "Couldn't save your position and foot to your account. They are still saved on this device.",
     /** Button that empties one picker. */
     clear: "Clear",
+    share: "Share my card",
+    footValue: (foot: string) => `${foot} foot`,
+    shareAlt: (overall: number) => `My player card, overall rating ${overall}`,
+    shareText: (overall: number, title: string) => `My ${title} player card: ${overall} overall.`,
   },
   progressScreen: {
     rankLabel: "Your rank",
