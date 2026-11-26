@@ -225,11 +225,13 @@ describe("useXp", () => {
     expect(result.current.total).toBe(XP_AMOUNTS.skill + XP_AMOUNTS.mastery.bronze + XP_AMOUNTS.mastery.silver);
   });
 
-  it("gives a skill passed before mastery existed bronze at step 0, and removes the tiers when it is un-ticked", () => {
+  it("gives a skill passed before mastery existed bronze at step 1 (no row, no XP), and removes the tiers when it is un-ticked", () => {
     const { result, rerender } = renderHook(({ done }) => useXp(tree, null, "off", done, []), { initialProps: { done: new Set(["a"]) } });
     expect(result.current.mastery).toEqual({ a: "bronze" });
     let outcome = "";
     act(() => void (outcome = result.current.retest("a", 4)));
+    expect(outcome).toBe("tooSoon");
+    act(() => void (outcome = result.current.retest("a", 5)));
     expect(outcome).toBe("silver");
     rerender({ done: new Set<string>() });
     expect(result.current.mastery).toEqual({});

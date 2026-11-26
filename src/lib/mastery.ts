@@ -7,8 +7,9 @@ import { amountFor, award, hasAward, masteryKey, type MasteryTier, type XpEvent 
 //   silver  passing its test again at a level step at least one level (4 steps) above the bronze pass.
 //   gold    passing its test again at a step at least one level above the silver pass.
 //
-// A skill passed before mastery existed counts as a bronze pass at step 0 ("before mastery") that pays no XP (its XP was
-// paid when it was passed), so a player at Intermediate or above can earn silver straight away. Everything is kept in the XP ledger, so it syncs like XP:
+// A skill passed before mastery existed counts as a bronze pass at step 1 (Beginner 1) that pays no XP (its XP was paid
+// when it was passed), so silver needs Intermediate 1 (step 5) or above. This bronze is worked out from the pass (see
+// masteryOf), never written as a ledger row, so it cannot overwrite a real 50-XP bronze when ledgers merge. Everything is kept in the XP ledger, so it syncs like XP:
 //   mastery:<skill>:<tier>        the tier, worth its XP (bronze 50, silver 100, gold 150)
 //   stepat:<skill>:<tier>:<step>  the step it was earned at, worth nothing
 
@@ -17,6 +18,9 @@ export const TIERS: MasteryTier[] = ["bronze", "silver", "gold"];
 export const STEPS_BETWEEN_TIERS = STEPS_PER_LEVEL;
 /** The highest level step: four levels of four steps. */
 const MAX_STEP = 16;
+
+/** The step a skill passed before mastery existed counts as having been passed at: Beginner 1. */
+export const LEGACY_STEP = 1;
 
 export const stepAtKey = (skillId: string, tier: MasteryTier, step: number) => `stepat:${skillId}:${tier}:${step}`;
 
@@ -27,9 +31,13 @@ export interface SkillMastery {
   steps: Partial<Record<MasteryTier, number>>;
 }
 
-/** The mastery of every skill, from the ledger. Only active events count, so an undone pass takes its tiers away. */
+/**
+ * The mastery of every skill, from the ledger. Only active events count, so an undone pass takes its tiers away. A skill
+ * that is passed but has no tier of its own (a pass from before mastery existed) is bronze at LEGACY_STEP, worked out
+ * here rather than stored. The result has no prototype, so a key like "mastery:__proto__:bronze" is just another id.
+ */
 export function masteryOf(events: XpEvent[]): Record<string, SkillMastery> {
-  const out: Record<string, SkillMastery> = {};
+  const out: Record<string, SkillMastery> = Object.create(null);
   for (const e of events) {
     if (!e.active) continue;
     const m = /^mastery:(.+):(bronze|silver|gold)$/.exec(e.key);
@@ -47,12 +55,16 @@ export function masteryOf(events: XpEvent[]): Record<string, SkillMastery> {
     // If a tier somehow has two step markers, the highest step counts, so nothing is easier than it should be.
     out[m[1]!]!.steps[tier] = Math.max(out[m[1]!]!.steps[tier] ?? 0, Number(m[3]));
   }
+  for (const e of events) {
+    const m = e.active ? /^skill:(.+):pass$/.exec(e.key) : null;
+    if (m && !out[m[1]!]) out[m[1]!] = { tier: "bronze", steps: { bronze: LEGACY_STEP } };
+  }
   return out;
 }
 
 /** The highest tier per skill, for the rating formula and the badge. */
 export function tiersOf(events: XpEvent[]): Record<string, MasteryTier> {
-  const out: Record<string, MasteryTier> = {};
+  const out: Record<string, MasteryTier> = Object.create(null);
   for (const [id, m] of Object.entries(masteryOf(events))) if (m.tier) out[id] = m.tier;
   return out;
 }
@@ -63,20 +75,6 @@ export function recordPass(events: XpEvent[], skillId: string, step: number, now
   const at = Math.min(MAX_STEP, Math.max(0, Math.round(step)));
   const withTier = award(events, masteryKey(skillId, "bronze"), amountFor(masteryKey(skillId, "bronze")), now);
   return award(withTier, stepAtKey(skillId, "bronze", at), 0, now);
-}
-
-/**
- * Bronze for a skill passed before mastery existed: step 0, and **no XP**. The player already earned that skill's XP,
- * and paying 50 more for every old pass would jump everyone up the Form levels on the first load. Only a pass made
- * from now on (recordPass) pays the bronze amount. Does nothing when the skill already has bronze.
- */
-export function backfillBronze(events: XpEvent[], doneSkillIds: Iterable<string>, now: string): XpEvent[] {
-  let next = events;
-  for (const id of doneSkillIds) {
-    if (hasAward(next, masteryKey(id, "bronze"))) continue;
-    next = award(award(next, masteryKey(id, "bronze"), 0, now), stepAtKey(id, "bronze", 0), 0, now);
-  }
-  return next;
 }
 
 export type RetestResult = "silver" | "gold" | "tooSoon" | "maxed" | "notPassed";
@@ -90,10 +88,11 @@ export function recordRetest(events: XpEvent[], skillId: string, step: number, n
   if (!info?.tier) return { events, result: "notPassed" };
   if (info.tier === "gold") return { events, result: "maxed" };
   const next = TIERS[TIERS.indexOf(info.tier) + 1]!;
-  const heldAt = info.steps[info.tier] ?? 0;
+  const heldAt = info.steps[info.tier] ?? LEGACY_STEP;
   const at = Math.min(MAX_STEP, Math.max(0, Math.round(step)));
-  // At the very top (step 16) the bar is capped there, so a player who earned a tier at Expert 3 can still reach the next.
-  if (at < Math.min(MAX_STEP, heldAt + STEPS_BETWEEN_TIERS)) return { events, result: "tooSoon" };
+  // The bar is capped at step 16, so a player who earned a tier at Expert 3 can still reach the next one. A tier earned at
+  // step 16 itself has nothing above it, so it cannot be followed by another: three passes at step 16 never make gold.
+  if (heldAt >= MAX_STEP || at < Math.min(MAX_STEP, heldAt + STEPS_BETWEEN_TIERS)) return { events, result: "tooSoon" };
   const withTier = award(events, masteryKey(skillId, next), amountFor(masteryKey(skillId, next)), now);
   return { events: award(withTier, stepAtKey(skillId, next, at), 0, now), result: next as "silver" | "gold" };
 }
@@ -102,5 +101,6 @@ export function recordRetest(events: XpEvent[], skillId: string, step: number, n
 export function stepNeededForNext(events: XpEvent[], skillId: string): number | null {
   const info = masteryOf(events)[skillId];
   if (!info?.tier || info.tier === "gold") return null;
-  return Math.min(MAX_STEP, (info.steps[info.tier] ?? 0) + STEPS_BETWEEN_TIERS);
+  const heldAt = info.steps[info.tier] ?? LEGACY_STEP;
+  return heldAt >= MAX_STEP ? null : Math.min(MAX_STEP, heldAt + STEPS_BETWEEN_TIERS);
 }

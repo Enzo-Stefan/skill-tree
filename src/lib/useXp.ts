@@ -5,7 +5,7 @@ import type { SyncStatus } from "./useCloudSync";
 import { award, mergeEvents, passDayKey, revoke, skillPassKey, totalXp, xpLevel, type XpEvent, type XpLevel } from "./xp";
 import { belongsToAnother, setOwner } from "./localOwner";
 import { applyStreakRewards } from "./streakRewards";
-import { backfillBronze, recordPass, recordRetest, tiersOf, type RetestResult } from "./mastery";
+import { recordPass, recordRetest, tiersOf, type RetestResult } from "./mastery";
 import type { MasteryTier } from "./xp";
 import { applyChallengeRewards, applyMissionRewards } from "./challengeRewards";
 import type { SessionEntry } from "./sessions";
@@ -48,7 +48,7 @@ export interface XpExtra {
 
 /** Reconcile the ledger with progress, then add any achievement now earned. */
 function follow(tree: Tree, current: XpEvent[], done: Set<string>, practiceDays: string[], extra: XpExtra, now: string): XpEvent[] {
-  const synced = backfillBronze(reconcile(tree, current, done, practiceDays, now), done, now);
+  const synced = reconcile(tree, current, done, practiceDays, now);
   const withTrophies = applyAchievements(synced, earnedAchievements({ tree, done, practiceDays, ...extra }), now);
   const withStreak = applyStreakRewards(withTrophies, extra.streakWeeks, extra.streakSince ?? null, now);
   const withMissions = applyMissionRewards(withStreak, extra.missionKeys ?? [], now);
@@ -139,8 +139,10 @@ export function useXp(tree: Tree, userId: string | null, status: SyncStatus, don
   }, []);
 
   const retest = useCallback((skillId: string, step: number): RetestResult => {
-    const outcome = recordRetest(latest.current.events, skillId, step, new Date().toISOString());
-    if (outcome.events !== latest.current.events) setEvents(outcome.events);
+    const now = new Date().toISOString();
+    const outcome = recordRetest(latest.current.events, skillId, step, now);
+    // Applied to the newest ledger, so a change queued meanwhile is not overwritten; the result is from the snapshot.
+    if (outcome.events !== latest.current.events) setEvents((current) => recordRetest(current, skillId, step, now).events);
     return outcome.result;
   }, []);
 
