@@ -25,7 +25,7 @@ describe("progress rules", () => {
 
   it("picks the right level", () => {
     expect(levelInfo(football.levels, 0).current.name).toBe("Sunday League");
-    expect(levelInfo(football.levels, 32).current.name).toBe("Legend");
+    expect(levelInfo(football.levels, 32).current.name).toBe("Elite");
   });
 });
 
