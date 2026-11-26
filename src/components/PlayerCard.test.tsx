@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Tree } from "../types";
 import { PlayerCard } from "./PlayerCard";
 import { chartRange, historyPoints } from "./playerCardChart";
@@ -86,6 +86,32 @@ describe("PlayerCard", () => {
     expect(points).toHaveLength(20);
     expect(container.querySelectorAll(".player-history .sr-only li")).toHaveLength(20);
     expect(container.querySelector(".card-aside")?.textContent).toBe("20 weeks tracked");
+  });
+});
+
+describe("PlayerCard pickers", () => {
+  const r = { branches: { bc: 0, ps: 0 }, overall: 0 };
+
+  it("shows the pickers even before the first skill, with the chosen ones marked", () => {
+    render(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: "MID", foot: null }} onCardChange={() => undefined} />);
+    expect(screen.getByRole("radio", { name: "MID" }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByRole("radio", { name: "GK" }).getAttribute("aria-checked")).toBe("false");
+    expect(screen.getByRole("radio", { name: "Left" }).getAttribute("aria-checked")).toBe("false");
+  });
+
+  it("picks a value, and pressing the chosen one again clears it", () => {
+    const onChange = vi.fn();
+    const { rerender } = render(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: null, foot: "left" }} onCardChange={onChange} />);
+    fireEvent.click(screen.getByRole("radio", { name: "FWD" }));
+    expect(onChange).toHaveBeenLastCalledWith({ position: "FWD", foot: "left" });
+    rerender(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: "FWD", foot: "left" }} onCardChange={onChange} />);
+    fireEvent.click(screen.getByRole("radio", { name: "Left" }));
+    expect(onChange).toHaveBeenLastCalledWith({ position: "FWD", foot: null });
+  });
+
+  it("hides the pickers when no card is given", () => {
+    render(<PlayerCard tree={tree} ratings={r} history={[]} />);
+    expect(screen.queryByRole("radiogroup")).toBeNull();
   });
 });
 

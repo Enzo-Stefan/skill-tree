@@ -11,7 +11,7 @@ import { PersonalBests } from "./PersonalBests";
 import { WeekDots } from "./WeekDots";
 import { PlayerCard } from "./PlayerCard";
 import type { Ratings } from "../lib/ratings";
-import type { RatingSnapshot } from "../lib/ratingHistory";
+import type { PlayerCard as Card, RatingSnapshot } from "../lib/ratingHistory";
 
 interface Props {
   tree: Tree;
@@ -42,11 +42,14 @@ interface Props {
   ratingHistory?: RatingSnapshot[];
   /** True once the player has passed a skill. The player card shows its prompt until then. */
   hasProgress: boolean;
+  /** Position and preferred foot, and how to change them. */
+  card?: Card;
+  onCardChange?: (next: Card) => void;
 }
 
 /** Rank, your level and streak, training this week, each branch, personal bests on lifts, and the share picture. */
 export function ProgressScreen(props: Props) {
-  const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, weekCanCount, streakWeeks, liftLog, onShare, onPickLevel, onOpenLeaderboard, xp, ratings, ratingHistory, hasProgress } = props;
+  const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, weekCanCount, streakWeeks, liftLog, onShare, onPickLevel, onOpenLeaderboard, xp, ratings, ratingHistory, hasProgress, card, onCardChange } = props;
   const daysLeft = Math.max(0, PRACTICE_DAYS_PER_WEEK - daysThisWeek);
 
   // Picking a level here removes the Pick your level button, so the picker can't hand focus back
@@ -98,7 +101,7 @@ export function ProgressScreen(props: Props) {
         </section>
       )}
 
-      {ratings && <PlayerCard tree={tree} ratings={ratings} history={ratingHistory ?? []} hasProgress={hasProgress} />}
+      {ratings && <PlayerCard tree={tree} ratings={ratings} history={ratingHistory ?? []} hasProgress={hasProgress} card={card} onCardChange={onCardChange} />}
 
       {onOpenLeaderboard && (
         <section className="card" aria-labelledby="progress-board">

@@ -130,6 +130,11 @@ export const en = {
     weekRow: (week: string, overall: number) => `Week of ${week}: overall ${overall}`,
     empty: "Pass your first skill to see your card.",
     how: "Worked out on this device from the skills you passed and your level.",
+    position: "Position",
+    foot: "Preferred foot",
+    positions: { GK: "GK", DEF: "DEF", MID: "MID", FWD: "FWD" },
+    feet: { left: "Left", right: "Right", both: "Both" },
+    private: "Only you can see this. It is saved to your account when you are signed in.",
   },
   progressScreen: {
     rankLabel: "Your rank",

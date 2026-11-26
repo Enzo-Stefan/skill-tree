@@ -73,6 +73,7 @@ import type { SavedProgress } from "./lib/cloud";
 import { useCloudSync } from "./lib/useCloudSync";
 import { useXp } from "./lib/useXp";
 import { useRatings } from "./lib/useRatings";
+import { useCard } from "./lib/useCard";
 import { LeaderboardScreen } from "./components/LeaderboardScreen";
 import { LeaderboardProfileDialog } from "./components/LeaderboardProfileDialog";
 import { useLeaderboardProfile } from "./lib/useLeaderboardProfile";
@@ -181,6 +182,7 @@ export default function App() {
     if (!hasLeaderboard) setBoardOpen(false);
   }, [hasLeaderboard]);
   const cloud = useCloudSync({ tree, userId: auth.account?.id ?? null, progress, apply: applySaved, onMessage: showToast });
+  const { card: playerCard, setCard: setPlayerCard } = useCard(auth.account?.id ?? null, cloud.status);
   const { ratings, history: ratingHistory } = useRatings(tree, auth.account?.id ?? null, cloud.status, done, playerLevelId, playerStep, today);
   const accountAuth = {
     ...auth,
@@ -640,6 +642,8 @@ export default function App() {
             ratings={hasLevels ? ratings : undefined}
             ratingHistory={ratingHistory}
             hasProgress={done.size > 0}
+            card={playerCard}
+            onCardChange={setPlayerCard}
             done={done}
             playerLevelName={playerRungName}
             playerStep={playerStep}
