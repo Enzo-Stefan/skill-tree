@@ -40,11 +40,13 @@ interface Props {
   /** Branch ratings and weekly history (#123). Left out, the player card is not shown. */
   ratings?: Ratings;
   ratingHistory?: RatingSnapshot[];
+  /** True once the player has passed a skill. The player card shows its prompt until then. */
+  hasProgress: boolean;
 }
 
 /** Rank, your level and streak, training this week, each branch, personal bests on lifts, and the share picture. */
 export function ProgressScreen(props: Props) {
-  const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, weekCanCount, streakWeeks, liftLog, onShare, onPickLevel, onOpenLeaderboard, xp, ratings, ratingHistory } = props;
+  const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, weekCanCount, streakWeeks, liftLog, onShare, onPickLevel, onOpenLeaderboard, xp, ratings, ratingHistory, hasProgress } = props;
   const daysLeft = Math.max(0, PRACTICE_DAYS_PER_WEEK - daysThisWeek);
 
   // Picking a level here removes the Pick your level button, so the picker can't hand focus back
@@ -96,7 +98,7 @@ export function ProgressScreen(props: Props) {
         </section>
       )}
 
-      {ratings && <PlayerCard tree={tree} ratings={ratings} history={ratingHistory ?? []} />}
+      {ratings && <PlayerCard tree={tree} ratings={ratings} history={ratingHistory ?? []} hasProgress={hasProgress} />}
 
       {onOpenLeaderboard && (
         <section className="card" aria-labelledby="progress-board">

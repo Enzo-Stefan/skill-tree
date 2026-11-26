@@ -824,6 +824,9 @@ a.btn { color: inherit; text-decoration: none; display: inline-flex; align-items
 .player-ratings { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 8px; }
 .player-ratings li { display: grid; grid-template-columns: minmax(84px, 38%) 1fr 2.2em; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; }
 .player-ratings strong { text-align: right; }
-.player-ratings-bar { height: 8px; border-radius: 4px; background: var(--line, rgba(128, 128, 128, 0.25)); overflow: hidden; }
+/* The track is --glass-border-strong so it stays visible on the light and dark cards. */
+.player-ratings-bar { height: 8px; border-radius: 4px; background: var(--glass-border-strong); overflow: hidden; }
 .player-ratings-bar > span { display: block; height: 100%; border-radius: 4px; }
-.player-history { width: 100%; height: 80px; margin: 4px 0 8px; color: var(--accent, currentColor); }
+.player-history { display: flex; align-items: center; gap: 8px; margin: 4px 0 8px; color: var(--fg); }
+.player-history svg { flex: 1; min-width: 0; height: 80px; }
+.player-history-value { min-width: 2ch; text-align: center; font-size: 0.9375rem; color: var(--text-2); font-variant-numeric: tabular-nums; }

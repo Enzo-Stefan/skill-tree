@@ -118,12 +118,14 @@ export const es: Strings = {
   playerCard: {
     title: "Tarjeta de jugador",
     overall: "General",
-    overallLabel: (n: number) => `Valoración general ${n} de 99`,
-    branchLabel: (name: string, n: number) => `${name} ${n} de 99`,
+    /** Visually hidden after each rating: "de 99". */
+    outOf: (max: number) => `de ${max}`,
     weeks: (n: number) => `${n} ${n === 1 ? "semana" : "semanas"} registradas`,
-    historyLabel: (n: number) => `Valoración general de las últimas ${n} semanas`,
+    /** The chart's text alternative: "La valoración general pasó de 2 a 5 en 4 semanas". */
+    historyLabel: (first: number, last: number, weeks: number) => `La valoración general pasó de ${first} a ${last} en ${weeks} ${weeks === 1 ? "semana" : "semanas"}`,
+    weekRow: (week: string, overall: number) => `Semana del ${week}: general ${overall}`,
     empty: "Pasa tu primera habilidad para ver tu tarjeta.",
-    how: "Se calcula en este dispositivo con las habilidades que has pasado, tu nivel y tu dominio.",
+    how: "Se calcula en este dispositivo con las habilidades que has pasado y tu nivel.",
   },
   progressScreen: {
     rankLabel: "Tu rango",

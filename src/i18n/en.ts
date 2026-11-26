@@ -121,12 +121,14 @@ export const en = {
   playerCard: {
     title: "Player card",
     overall: "Overall",
-    overallLabel: (n: number) => `Overall rating ${n} out of 99`,
-    branchLabel: (name: string, n: number) => `${name} ${n} out of 99`,
+    /** Visually hidden after each rating: "out of 99". */
+    outOf: (max: number) => `out of ${max}`,
     weeks: (n: number) => `${n} ${n === 1 ? "week" : "weeks"} tracked`,
-    historyLabel: (n: number) => `Overall rating over the last ${n} weeks`,
+    /** The chart's text alternative: "Overall rating went from 2 to 5 over 4 weeks". */
+    historyLabel: (first: number, last: number, weeks: number) => `Overall rating went from ${first} to ${last} over ${weeks} ${weeks === 1 ? "week" : "weeks"}`,
+    weekRow: (week: string, overall: number) => `Week of ${week}: overall ${overall}`,
     empty: "Pass your first skill to see your card.",
-    how: "Worked out on this device from the skills you passed, your level and your mastery.",
+    how: "Worked out on this device from the skills you passed and your level.",
   },
   progressScreen: {
     rankLabel: "Your rank",

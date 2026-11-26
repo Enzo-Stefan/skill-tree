@@ -181,7 +181,6 @@ export default function App() {
     if (!hasLeaderboard) setBoardOpen(false);
   }, [hasLeaderboard]);
   const cloud = useCloudSync({ tree, userId: auth.account?.id ?? null, progress, apply: applySaved, onMessage: showToast });
-  // The player's ratings and weekly history (#123). Nothing shows them yet: the player card and the career page will.
   const { ratings, history: ratingHistory } = useRatings(tree, auth.account?.id ?? null, cloud.status, done, playerLevelId, playerStep, today);
   const accountAuth = {
     ...auth,
@@ -638,6 +637,7 @@ export default function App() {
             xp={xp}
             ratings={hasLevels ? ratings : undefined}
             ratingHistory={ratingHistory}
+            hasProgress={done.size > 0}
             done={done}
             playerLevelName={playerRungName}
             playerStep={playerStep}
