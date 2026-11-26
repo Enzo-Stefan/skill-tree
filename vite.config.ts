@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
@@ -16,6 +17,12 @@ function commitSha(): string {
 
 // https://vite.dev/config/
 export default defineConfig({
+  test: {
+    // The in-memory Postgres (PGlite) tests start a database in each hook, which takes several seconds on a busy machine.
+    // Vitest's default 10 s hook limit made those suites fail intermittently under load, so give them room.
+    testTimeout: 30_000,
+    hookTimeout: 60_000,
+  },
   define: {
     // Shown under Settings > About, so a bug report says which build it came from.
     __APP_VERSION__: JSON.stringify(`${commitSha()} · ${new Date().toISOString().slice(0, 10)}`),
