@@ -26,6 +26,7 @@ export const en = {
     skillComplete: (skill: string) => `${skill} complete.`,
     copied: "Progress copied. Paste it anywhere.",
     copyFailed: "Copy didn't work in this browser.",
+    languageNotSaved: "This browser blocked saving your language, so it can't change here. Private windows often do this.",
     resetDone: "All progress for this tree is reset.",
     accountDeleted: "Your account and its saved progress are deleted.",
     undo: "Undo",

@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { en } from "./en";
 import { es } from "./es";
-import { phoneLanguage } from "./index";
+import { chooseLanguage, phoneLanguage } from "./index";
 
 const BOTH = ["en", "es"] as const;
 
@@ -84,5 +84,35 @@ describe("Spanish waits for a fluent check", () => {
   it("isn't picked from the phone yet, only from Settings", () => {
     expect(phoneLanguage(["es-MX", "en-US"])).toBe("en");
     expect(phoneLanguage(["es"])).toBe("en");
+  });
+});
+
+describe("choosing a language", () => {
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("reports a blocked save and does not reload", () => {
+    vi.stubGlobal("localStorage", {
+      getItem: () => null,
+      setItem: () => {
+        throw new DOMException("blocked", "SecurityError");
+      },
+      removeItem: () => {},
+    });
+    const reload = vi.fn();
+    expect(chooseLanguage("es", reload)).toBe("notSaved");
+    expect(reload).not.toHaveBeenCalled();
+  });
+
+  it("saves and reloads", () => {
+    const store = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (k: string) => store.get(k) ?? null,
+      setItem: (k: string, v: string) => void store.set(k, v),
+      removeItem: (k: string) => void store.delete(k),
+    });
+    const reload = vi.fn();
+    expect(chooseLanguage("es", reload)).toBe("reloading");
+    expect(reload).toHaveBeenCalledOnce();
+    expect(chooseLanguage("es", reload)).toBe("unchanged");
   });
 });

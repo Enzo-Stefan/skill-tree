@@ -60,19 +60,22 @@ if (typeof document !== "undefined") document.documentElement.lang = language;
 
 /**
  * Save the choice (null follows the phone) and reload, because text is read once when the app starts.
- * Returns false if nothing changed.
+ * "unchanged" if it is already the choice; "notSaved" if the browser blocked saving (some private
+ * windows do), in which case nothing reloads, since the reloaded app would forget the choice.
  */
-export function chooseLanguage(code: Language | null, reload: () => void = () => window.location.reload()): boolean {
-  if (code === savedLanguage()) return false;
+export function chooseLanguage(
+  code: Language | null,
+  reload: () => void = () => window.location.reload(),
+): "reloading" | "unchanged" | "notSaved" {
+  if (code === savedLanguage()) return "unchanged";
   try {
     if (code) localStorage.setItem(LANGUAGE_KEY, code);
     else localStorage.removeItem(LANGUAGE_KEY);
   } catch {
-    // Private windows can block saving; the choice then lasts until the page reloads, which is now.
-    return false;
+    return "notSaved";
   }
   reload();
-  return true;
+  return "reloading";
 }
 
 export type { Strings };
