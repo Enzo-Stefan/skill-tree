@@ -3,6 +3,7 @@ import type { Tree } from "../types";
 import { loadSupabase } from "../auth/client";
 import type { SyncStatus } from "./useCloudSync";
 import { mergeEvents, totalXp, xpLevel, type XpEvent, type XpLevel } from "./xp";
+import { belongsToAnother, setOwner } from "./localOwner";
 import { applyAchievements, earnedAchievements, earnedInLedger } from "./achievements";
 import { fetchXp, loadXp, pushXp, reconcile, saveXp, sameEvents } from "./xpSync";
 
@@ -60,12 +61,18 @@ export function useXp(tree: Tree, userId: string | null, status: SyncStatus, don
     loadSupabase()
       .then(async (client) => {
         if (!client || !active) return;
-        const merged = mergeEvents(await fetchXp(client, tree.id), latest.current.events);
+        // Another account's XP left in this browser (#139) is not this player's: start from the account's own.
+        const foreign = belongsToAnother(tree.id, "xp", userId);
+        const merged = mergeEvents(await fetchXp(client, tree.id), foreign ? [] : latest.current.events);
         const now = follow(tree, merged, latest.current.done, latest.current.practiceDays, latest.current.extra, new Date().toISOString());
         if (!active) return;
         accountReady.current = userId;
-        const next = mergeEvents(now, latest.current.events);
-        setEvents((current) => (sameEvents(current, next) ? current : mergeEvents(current, next)));
+        setOwner(tree.id, "xp", userId);
+        if (foreign) setEvents(now);
+        else {
+          const next = mergeEvents(now, latest.current.events);
+          setEvents((current) => (sameEvents(current, next) ? current : mergeEvents(current, next)));
+        }
         await pushXp(client, tree.id, now);
       })
       .catch((e: unknown) => console.warn("XP sync failed", e));

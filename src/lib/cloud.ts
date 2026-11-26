@@ -44,6 +44,11 @@ interface Row {
   sessions: unknown;
 }
 
+/** Nothing done, no level, no training: what a browser holds for someone who has not started. */
+export function emptyProgress(): SavedProgress {
+  return { done: [], playerLevel: null, playerStep: 1, practiceDays: [], streak: { since: null, askedWeek: null }, liftLog: [], results: [], sessions: [] };
+}
+
 /** True for a real calendar date written YYYY-MM-DD. "2026-02-31" is rejected, which the database would refuse. */
 export function isRealDay(d: string): boolean {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d);

@@ -2,8 +2,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { loadSupabase } from "../auth/client";
 import type { Tree } from "../types";
 import { t } from "../i18n";
-import { createCloudSaver, type SavedProgress } from "./cloud";
+import { createCloudSaver, emptyProgress, type SavedProgress } from "./cloud";
 import {
+  belongsToOtherAccount,
+  forgetOtherAccount,
   isSyncedHere,
   loadAccountCopy,
   loadAccountProgress,
@@ -13,7 +15,9 @@ import {
   saveAccountCopy,
   setUnsavedChanges,
   shouldMerge,
+  syncedAccount,
 } from "./sync";
+import { getOwner, setOwner } from "./localOwner";
 
 export type SyncStatus = "off" | "loading" | "ready" | "error";
 
@@ -85,13 +89,16 @@ export function useCloudSync({ tree, userId, progress, apply, onMessage }: Optio
     let active = true;
     setStatus("loading");
     const snapshot = latest.current.progress;
+    // Someone else's progress is left in this browser (#139): this account starts from its own data, with nothing merged in.
+    const foreign = belongsToOtherAccount(tree.id, userId);
+    const previousAccount = foreign ? syncedAccount(tree.id) : null;
     const firstHere = !isSyncedHere(tree.id, userId);
-    const merge = shouldMerge(tree.id, userId);
+    const merge = foreign ? false : shouldMerge(tree.id, userId);
     const base = loadAccountCopy(tree.id, userId);
     loadSupabase()
       .then(async (client) => {
         if (!client) throw new Error("Accounts aren't set up.");
-        const fromCloud = await loadAccountProgress(client, userId, tree, snapshot, merge, base);
+        const fromCloud = await loadAccountProgress(client, userId, tree, foreign ? emptyProgress() : snapshot, merge, base);
         // If this load was abandoned, any change made meanwhile is still marked unsaved, so the
         // next load merges it. The account copy isn't updated then: it must be one this browser
         // applied, or the next merge would read the difference as changes made here.
@@ -101,6 +108,13 @@ export function useCloudSync({ tree, userId, progress, apply, onMessage }: Optio
         // changes, so skills un-ticked on another device don't come back with them.
         const changedMeanwhile = !sameProgress(latest.current.progress, snapshot);
         const loaded = changedMeanwhile ? rebaseProgress(tree, fromCloud, snapshot, latest.current.progress) : fromCloud;
+        // Only now that this account's load has worked is the other account forgotten. If it failed or was abandoned, the
+        // marker is still there, so a retry treats the browser as foreign again and never merges the other account in.
+        if (foreign) {
+          // The XP and rating copies here belong to whoever progress last synced with, if no one claimed them yet.
+          for (const kind of ["xp", "ratings"]) if (getOwner(tree.id, kind) === null) setOwner(tree.id, kind, previousAccount!);
+          forgetOtherAccount(tree.id);
+        }
         markSyncedHere(tree.id, userId);
         saver.current = createCloudSaver(
           client,

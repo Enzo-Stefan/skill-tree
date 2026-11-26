@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { Tree } from "../types";
 import { loadSupabase } from "../auth/client";
 import type { SyncStatus } from "./useCloudSync";
+import { belongsToAnother, setOwner } from "./localOwner";
 import { computeRatings, levelStepOf, type Mastery, type Ratings } from "./ratings";
 import { fetchSnapshots, loadSnapshots, mergeSnapshots, pushSnapshots, recordWeek, sameSnapshots, saveSnapshots, type RatingSnapshot } from "./ratingHistory";
 
@@ -54,10 +55,14 @@ export function useRatings(
       .then(async (client) => {
         if (!client || !active) return;
         const { history: mine, ratings: now, today: day } = latest.current;
-        const merged = recordWeek(mergeSnapshots(await fetchSnapshots(client, tree.id), mine), day, now, new Date().toISOString());
+        // Another account's rating history left in this browser (#139) is not this player's: start from the account's own.
+        const foreign = belongsToAnother(tree.id, "ratings", userId);
+        const merged = recordWeek(mergeSnapshots(await fetchSnapshots(client, tree.id), foreign ? [] : mine), day, now, new Date().toISOString());
         if (!active) return;
         accountReady.current = userId;
-        setHistory((current) => (sameSnapshots(current, merged) ? current : mergeSnapshots(current, merged)));
+        setOwner(tree.id, "ratings", userId);
+        if (foreign) setHistory(merged);
+        else setHistory((current) => (sameSnapshots(current, merged) ? current : mergeSnapshots(current, merged)));
         await pushSnapshots(client, tree.id, merged);
       })
       .catch((e: unknown) => console.warn("Rating history sync failed", e));
