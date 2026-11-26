@@ -20,6 +20,7 @@ export const es: Strings = {
     skillComplete: (skill: string) => `${skill} completada.`,
     copied: "Progreso copiado. Pégalo donde quieras.",
     copyFailed: "No se pudo copiar en este navegador.",
+    languageNotSaved: "Este navegador no deja guardar el idioma, así que no se puede cambiar aquí. Suele pasar en ventanas privadas.",
     resetDone: "Se ha borrado todo el progreso de este árbol.",
     accountDeleted: "Tu cuenta y su progreso guardado se han borrado.",
     undo: "Deshacer",

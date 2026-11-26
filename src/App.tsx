@@ -154,7 +154,7 @@ export default function App() {
   /** Like switching trees: send any waiting save first, then reload in the new language. */
   async function switchLanguage(code: Language | null) {
     await Promise.race([cloud.flush(), new Promise((resolve) => window.setTimeout(resolve, 3000))]);
-    chooseLanguage(code);
+    if (chooseLanguage(code) === "notSaved") showToast(t.app.languageNotSaved);
   }
 
   /** Show progress loaded from the account, and keep it in the browser too. */
