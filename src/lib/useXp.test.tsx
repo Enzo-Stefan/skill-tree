@@ -86,9 +86,11 @@ describe("useXp", () => {
   it("earns achievements from progress, keeps them after an undo, and adds no XP for them", () => {
     const { result, rerender } = renderHook(({ done }) => useXp(tree, null, "off", done, [], { streakWeeks: 4, levelIndex: 1, results: 0 }), { initialProps: { done: new Set(["a"]) } });
     expect(result.current.earned).toEqual(expect.arrayContaining(["first-skill", "streak-4", "pick-level", "intermediate"]));
-    expect(result.current.total).toBe(XP_AMOUNTS.skill);
+    // The skill, plus the 4-week streak bonus: the achievements themselves add nothing.
+    expect(result.current.total).toBe(XP_AMOUNTS.skill + XP_AMOUNTS.streak[4]!);
     rerender({ done: new Set<string>() });
     expect(result.current.earned).toContain("first-skill");
-    expect(result.current.total).toBe(0);
+    // The skill's XP goes with the undo; the streak bonus stays, because the milestone was reached.
+    expect(result.current.total).toBe(XP_AMOUNTS.streak[4]);
   });
 });

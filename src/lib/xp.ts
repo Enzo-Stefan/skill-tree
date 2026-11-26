@@ -35,7 +35,11 @@ export const sessionKey = (day: string) => `session:${day}`;
 export const missionKey = (day: string, skillId: string) => `mission:${day}:${skillId}`;
 export const challengeKey = (challengeId: string, period: string) => `challenge:${challengeId}:${period}`;
 export const masteryKey = (skillId: string, tier: MasteryTier) => `mastery:${skillId}:${tier}`;
-export const streakKey = (weeks: number) => `streak:${weeks}`;
+/**
+ * A streak milestone. `run` says which streak it belongs to: the week the streak started after (a level step restarts
+ * the streak), or nothing for the first one. One award per milestone per run, so a new streak can earn them again.
+ */
+export const streakKey = (weeks: number, run?: string | null) => `streak:${weeks}${run === undefined ? "" : `:${run ?? "start"}`}`;
 export const achievementKey = (id: string) => `achievement:${id}`;
 
 const KEY = /^[a-z]+:[A-Za-z0-9_.:-]{1,90}$/;
@@ -57,12 +61,15 @@ export function amountFor(key: string, weekly = false): number | null {
     case "mission":
       return XP_AMOUNTS.mission;
     case "challenge":
+      if (b?.startsWith("season-")) return XP_AMOUNTS.challengeSeason;
       return weekly ? XP_AMOUNTS.challengeWeekly : XP_AMOUNTS.challengeDaily;
     case "mastery":
       return b === "bronze" || b === "silver" || b === "gold" ? XP_AMOUNTS.mastery[b] : null;
     case "streak": {
-      // Only the exact shape streakKey makes ("streak:4"), not "streak:04" or "streak:4:x".
-      if (key.split(":").length !== 2 || String(Number(a)) !== a) return null;
+      // Only the shapes streakKey makes ("streak:4", "streak:4:start", "streak:4:2026-11-02"), not "streak:04" or "streak:4:x".
+      const parts = key.split(":");
+      if (parts.length > 3 || String(Number(a)) !== a) return null;
+      if (parts.length === 3 && !/^(start|\d{4}-\d{2}-\d{2})$/.test(parts[2]!)) return null;
       return XP_AMOUNTS.streak[Number(a)] ?? null;
     }
     case "achievement":

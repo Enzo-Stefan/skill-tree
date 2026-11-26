@@ -16,8 +16,13 @@ export const XP_AMOUNTS = {
   challengeWeekly: 100,
   /** Passing a skill's test again at a higher step, by mastery tier. */
   mastery: { bronze: 50, silver: 100, gold: 150 },
-  /** A bonus at a streak milestone, by the number of weeks. */
-  streak: { 4: 200, 8: 400, 12: 600 } as Record<number, number>,
+  /**
+   * A bonus at a streak milestone, by the number of weeks. The streak only counts the last RECENT_WEEKS (8) weeks
+   * (src/lib/streak.ts), so 8 is the longest milestone that can be reached; a later one needs that window to grow.
+   */
+  streak: { 4: 200, 8: 400 } as Record<number, number>,
+  /** Finishing a seasonal challenge (src/data/seasons.ts). */
+  challengeSeason: 250,
   /** An achievement can carry XP too. Zero until the list exists (#121 item 4). */
   achievement: 0,
 } as const;
