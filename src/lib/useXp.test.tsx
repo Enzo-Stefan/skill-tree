@@ -14,7 +14,7 @@ vi.mock("./xpSync", async (importOriginal) => ({
   pushXp: vi.fn(),
 }));
 
-const tree = { id: "football", skills: [{ id: "a" }, { id: "b" }] } as unknown as Tree;
+const tree = { id: "football", branches: [], skills: [{ id: "a" }, { id: "b" }] } as unknown as Tree;
 const T0 = "2026-11-20T10:00:00.000Z";
 
 beforeEach(() => {
@@ -82,5 +82,13 @@ describe("useXp", () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+  it("earns achievements from progress, keeps them after an undo, and adds no XP for them", () => {
+    const { result, rerender } = renderHook(({ done }) => useXp(tree, null, "off", done, [], { streakWeeks: 4, levelIndex: 1, results: 0 }), { initialProps: { done: new Set(["a"]) } });
+    expect(result.current.earned).toEqual(expect.arrayContaining(["first-skill", "streak-4", "pick-level", "intermediate"]));
+    expect(result.current.total).toBe(XP_AMOUNTS.skill);
+    rerender({ done: new Set<string>() });
+    expect(result.current.earned).toContain("first-skill");
+    expect(result.current.total).toBe(0);
   });
 });

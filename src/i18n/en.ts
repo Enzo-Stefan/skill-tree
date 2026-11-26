@@ -115,6 +115,7 @@ export const en = {
     form: "Form",
     level: (n: number) => `Form level ${n}`,
     total: (n: number) => `${n} XP`,
+    trophies: (n: number, total: number) => `Trophies ${n} / ${total}`,
     toNext: (n: number) => `${n} XP to the next level`,
   },
   progressScreen: {

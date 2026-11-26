@@ -180,7 +180,6 @@ export default function App() {
     if (!hasLeaderboard) setBoardOpen(false);
   }, [hasLeaderboard]);
   const cloud = useCloudSync({ tree, userId: auth.account?.id ?? null, progress, apply: applySaved, onMessage: showToast });
-  const xp = useXp(tree, auth.account?.id ?? null, cloud.status, done, practiceDays);
   const accountAuth = {
     ...auth,
     // Send any waiting save before signing out, while the account can still be written to.
@@ -479,6 +478,11 @@ export default function App() {
   }
 
   const streak = streakWeeks(practiceDays, streakState.since, today);
+  const xp = useXp(tree, auth.account?.id ?? null, cloud.status, done, practiceDays, {
+    streakWeeks: streak,
+    levelIndex: (tree.playerLevels ?? []).findIndex((l) => l.id === playerLevelId),
+    results: results.results.length,
+  });
   const suggested = nextSkill(tree, done);
 
   /** Train's two scroll areas: the whole tab (phones) and the tree (wider screens). */
