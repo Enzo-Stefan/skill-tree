@@ -7,7 +7,7 @@
 
 /* Wide: a grid with half a slot per column. The branch bands and their lists are subgrids, so a skill
    placed inside a band lines up with the skills in the other bands, row by row. */
-.tree.wide { display: grid; row-gap: 30px; container-type: inline-size; }
+.tree.wide { display: grid; row-gap: 2.75rem; container-type: inline-size; }
 .tree.wide .branch-col {
   display: grid;
   grid-template-columns: subgrid;
@@ -67,8 +67,8 @@
 .skill:hover { background: var(--hover); }
 .skill.selected { border-color: var(--fg); background: var(--glass-strong); }
 .skill-node {
-  width: 40px;
-  height: 40px;
+  width: 3.25rem;
+  height: 3.25rem;
   flex-shrink: 0;
   display: grid;
   place-items: center;
@@ -80,14 +80,14 @@
   font-weight: 700;
   transition: box-shadow var(--dur) var(--ease), background-color var(--dur) var(--ease);
 }
-.skill-node svg { width: 20px; height: 20px; }
+.skill-node svg { width: 1.5rem; height: 1.5rem; }
 .skill-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--fg); }
 /* Open: brighter glass and a crisp border. Passed: solid with a soft glow. Locked: dim. */
 .skill.available .skill-node { border: 2px solid var(--fg); background: var(--glass-strong); box-shadow: 0 0 0 4px var(--node-ring); }
 .skill.done .skill-node { border-color: var(--btn-primary-bg); background: var(--btn-primary-bg); color: var(--btn-primary-fg); box-shadow: var(--node-done-glow); }
 .skill.locked .skill-node { border: 1px dashed var(--fg-3); background: var(--glass-faint); color: var(--fg-2); }
 .skill.locked .skill-name { color: var(--text-2); }
-.skill.big .skill-node { width: 56px; height: 56px; font-size: 1.125rem; }
+.skill.big .skill-node { width: 4.5rem; height: 4.5rem; font-size: 1.25rem; }
 .skill-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .skill-name { font-size: 0.875rem; font-weight: 600; line-height: 1.25; text-wrap: balance; overflow-wrap: anywhere; }
 .skill-sub { font-size: 0.875rem; color: var(--text-2); }
@@ -104,7 +104,7 @@
 }
 
 /* On the wide tree: circle above the name. The names are small so the longest words fit one slot. */
-.skill.card { width: 100%; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 0; text-align: center; }
+.skill.card { width: 100%; min-height: 2.75rem; display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 8px 0; text-align: center; }
 .skill.card .skill-name {
   /* Scales with the tree's width (a container query unit), so the longest words fit one slot: about 10px
      when the tree is as narrow as it gets, 13px when there is plenty of room. */
@@ -123,28 +123,28 @@
 .tree.stacked .branch-col { padding: 12px 6px 8px; }
 .tree.stacked .branch-head { padding: 0 8px; text-align: left; }
 .tree.stacked .skill-list { width: 100%; padding: 0; }
-.skill-list .skill-li + .skill-li { margin-top: 6px; }
+.skill-list .skill-li + .skill-li { margin-top: 14px; }
 /* The line down to the skill below, lit once that one is passed. It grows upward when the skill opens. */
 .skill-li.has-rail::after {
   content: "";
   position: absolute;
-  left: 31px;
-  bottom: -14px;
+  left: 34px;
+  bottom: -22px;
   width: 2px;
-  height: 22px;
+  height: 30px;
   background: var(--line-faint);
 }
 /* The first skill of a branch: a short line down to the edge of the branch, towards the start. */
-.skill-li.rail-stub::after { bottom: -8px; height: 16px; }
+.skill-li.rail-stub::after { bottom: -10px; height: 18px; }
 .skill-li.rail-lit::after { background: var(--c-ink); }
 .skill-li.rail-grow::after { transform-origin: bottom; animation: rail-grow 0.6s ease-out 0.35s backwards; }
 @keyframes rail-grow { from { transform: scaleY(0); } }
 @media (prefers-reduced-motion: reduce) {
   .skill-li.rail-grow::after { animation: none; }
 }
-.skill.row { width: 100%; display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 8px; text-align: left; }
-.skill.row .skill-node { width: 44px; height: 44px; }
-.skill.row.big .skill-node { width: 52px; height: 52px; }
+.skill.row { width: 100%; display: flex; align-items: center; gap: 14px; min-height: 4.5rem; padding: 8px; text-align: left; }
+.skill.row .skill-node { width: 3.25rem; height: 3.25rem; }
+.skill.row.big .skill-node { width: 4rem; height: 4rem; }
 .skill.row .skill-text { flex: 1; }
 .skill.row .skill-name { font-size: 1.0625rem; }
 
