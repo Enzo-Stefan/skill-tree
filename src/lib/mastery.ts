@@ -3,12 +3,12 @@ import { amountFor, award, hasAward, masteryKey, type MasteryTier, type XpEvent 
 
 // Skill mastery (#121 item 5, rule chosen by Stefan: one full level above the previous tier).
 //
-//   bronze  passing the skill. The player's level step (1 to 16) at that pass is kept.
+//   bronze  passing the skill. The player's level step (1 to 16) at that pass is kept. 50 XP for a pass made now.
 //   silver  passing its test again at a level step at least one level (4 steps) above the bronze pass.
 //   gold    passing its test again at a step at least one level above the silver pass.
 //
-// A skill passed before mastery existed counts as a bronze pass at step 0 ("before mastery"), so a player at
-// Intermediate or above can earn silver straight away. Everything is kept in the XP ledger, so it syncs like XP:
+// A skill passed before mastery existed counts as a bronze pass at step 0 ("before mastery") that pays no XP (its XP was
+// paid when it was passed), so a player at Intermediate or above can earn silver straight away. Everything is kept in the XP ledger, so it syncs like XP:
 //   mastery:<skill>:<tier>        the tier, worth its XP (bronze 50, silver 100, gold 150)
 //   stepat:<skill>:<tier>:<step>  the step it was earned at, worth nothing
 
@@ -65,10 +65,17 @@ export function recordPass(events: XpEvent[], skillId: string, step: number, now
   return award(withTier, stepAtKey(skillId, "bronze", at), 0, now);
 }
 
-/** Bronze for a skill passed before mastery existed: step 0. Does nothing when the skill already has a tier. */
+/**
+ * Bronze for a skill passed before mastery existed: step 0, and **no XP**. The player already earned that skill's XP,
+ * and paying 50 more for every old pass would jump everyone up the Form levels on the first load. Only a pass made
+ * from now on (recordPass) pays the bronze amount. Does nothing when the skill already has bronze.
+ */
 export function backfillBronze(events: XpEvent[], doneSkillIds: Iterable<string>, now: string): XpEvent[] {
   let next = events;
-  for (const id of doneSkillIds) next = recordPass(next, id, 0, now);
+  for (const id of doneSkillIds) {
+    if (hasAward(next, masteryKey(id, "bronze"))) continue;
+    next = award(award(next, masteryKey(id, "bronze"), 0, now), stepAtKey(id, "bronze", 0), 0, now);
+  }
   return next;
 }
 

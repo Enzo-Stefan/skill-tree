@@ -16,8 +16,8 @@ vi.mock("./xpSync", async (importOriginal) => ({
 
 const tree = { id: "football", branches: [], skills: [{ id: "a" }, { id: "b" }] } as unknown as Tree;
 const T0 = "2026-11-20T10:00:00.000Z";
-/** What one passed skill earns: the pass itself and the bronze mastery that comes with it. */
-const PASS = XP_AMOUNTS.skill + XP_AMOUNTS.mastery.bronze;
+/** What a skill that was already passed when the app loaded earns: the pass only (its bronze mastery pays no XP). */
+const PASS = XP_AMOUNTS.skill;
 
 beforeEach(() => {
   localStorage.clear();

@@ -30,11 +30,17 @@ describe("bronze", () => {
     expect(recordPass(once, "bc1", 9, T2)).toBe(once);
   });
 
-  it("is given as step 0 to skills passed before mastery existed, and only once", () => {
+  it("is given as step 0 to skills passed before mastery existed, pays no XP, and only once", () => {
     const ledger = backfillBronze([], ["bc1", "bc2"], T1);
     expect(tiersOf(ledger)).toEqual({ bc1: "bronze", bc2: "bronze" });
     expect(masteryOf(ledger).bc1!.steps).toEqual({ bronze: 0 });
+    expect(totalXp(ledger)).toBe(0);
     expect(backfillBronze(ledger, ["bc1", "bc2"], T2)).toBe(ledger);
+  });
+
+  it("a backfilled bronze still lets silver pay in full", () => {
+    const silver = recordRetest(backfillBronze([], ["bc1"], T1), "bc1", 5, T2).events;
+    expect(totalXp(silver)).toBe(XP_AMOUNTS.mastery.silver);
   });
 
   it("keeps a real step over the backfill when the pass was recorded first", () => {
