@@ -133,7 +133,7 @@ export function PlayerCard({ tree, ratings, history, hasProgress, card, onCardCh
           )}
           <p className="card-note">{t.playerCard.how}</p>
           {onShareCard && (
-            <button className="btn" type="button" onClick={onShareCard}>
+            <button className="btn player-share" type="button" onClick={onShareCard}>
               {t.playerCard.share}
             </button>
           )}

@@ -28,7 +28,7 @@ export function cardShareStats(tree: Tree, ratings: Ratings, card: PlayerCard, l
 }
 
 /** Smallest size the fit helper shrinks to before it truncates. */
-const MIN_FONT_PX = 22;
+export const MIN_FONT_PX = 22;
 const MARGIN = 90;
 const TEXT_GAP = 40;
 
@@ -36,7 +36,7 @@ const TEXT_GAP = 40;
  * Picks the largest font size (from maxPx down to MIN_FONT_PX) at which the text fits in maxWidth, and truncates
  * with an ellipsis when even the smallest size is too wide. Leaves ctx.font at the chosen size.
  */
-function fitText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, weight: number, maxPx: number): string {
+export function fitText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, weight: number, maxPx: number): string {
   for (let px = maxPx; px >= MIN_FONT_PX; px -= 2) {
     ctx.font = `${weight} ${px}px ${BODY}`;
     if (ctx.measureText(text).width <= maxWidth) return text;

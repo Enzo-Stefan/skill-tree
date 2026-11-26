@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Tree } from "../types";
@@ -183,5 +184,33 @@ describe("chartRange", () => {
     expect(chartRange([snap("2026-11-16", 0), snap("2026-11-23", 99)])).toEqual({ low: 0, high: 99 });
     expect(chartRange([snap("2026-11-16", 99), snap("2026-11-23", 99)])).toEqual({ low: 91, high: 99 });
     expect(chartRange([snap("2026-11-16", 46), snap("2026-11-23", 46)])).toEqual({ low: 42, high: 50 });
+  });
+});
+
+describe("PlayerCard share button", () => {
+  const ratings = { overall: 50, branches: { bc: 50, ps: 50 } };
+  const base = { tree, ratings, history: climb, hasProgress: true };
+
+  it("shows a share button that calls onShareCard", () => {
+    const onShareCard = vi.fn();
+    render(<PlayerCard {...base} onShareCard={onShareCard} />);
+    fireEvent.click(screen.getByRole("button", { name: "Share my card" }));
+    expect(onShareCard).toHaveBeenCalledTimes(1);
+  });
+
+  it("has no share button without a handler, or before the first skill", () => {
+    const { unmount } = render(<PlayerCard {...base} />);
+    expect(screen.queryByRole("button", { name: "Share my card" })).toBeNull();
+    unmount();
+    render(<PlayerCard {...base} hasProgress={false} onShareCard={() => {}} />);
+    expect(screen.queryByRole("button", { name: "Share my card" })).toBeNull();
+  });
+
+  it("makes the share button a 44px target in the stylesheet", () => {
+    render(<PlayerCard {...base} onShareCard={() => {}} />);
+    const button = screen.getByRole("button", { name: "Share my card" });
+    expect(button.classList.contains("player-share")).toBe(true);
+    const css = readFileSync("src/index.css", "utf8");
+    expect(css).toMatch(/\.player-share[^{]*\{\s*min-height:\s*44px/);
   });
 });
