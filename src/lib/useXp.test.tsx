@@ -16,6 +16,8 @@ vi.mock("./xpSync", async (importOriginal) => ({
 
 const tree = { id: "football", branches: [], skills: [{ id: "a" }, { id: "b" }] } as unknown as Tree;
 const T0 = "2026-11-20T10:00:00.000Z";
+/** What one passed skill earns: the pass itself and the bronze mastery that comes with it. */
+const PASS = XP_AMOUNTS.skill + XP_AMOUNTS.mastery.bronze;
 
 beforeEach(() => {
   localStorage.clear();
@@ -27,7 +29,7 @@ afterEach(cleanup);
 describe("useXp", () => {
   it("works out XP from the finished skills and training days, signed out", () => {
     const { result } = renderHook(() => useXp(tree, null, "off", new Set(["a"]), ["2026-11-25"]));
-    expect(result.current.total).toBe(XP_AMOUNTS.skill + XP_AMOUNTS.session);
+    expect(result.current.total).toBe(PASS + XP_AMOUNTS.session);
     expect(result.current.level.level).toBe(2);
     expect(fetchXp).not.toHaveBeenCalled();
   });
@@ -40,9 +42,9 @@ describe("useXp", () => {
 
   it("removes the XP when a skill is un-ticked", () => {
     const { result, rerender } = renderHook(({ done }) => useXp(tree, null, "off", done, []), { initialProps: { done: new Set(["a", "b"]) } });
-    expect(result.current.total).toBe(2 * XP_AMOUNTS.skill);
+    expect(result.current.total).toBe(2 * PASS);
     rerender({ done: new Set(["a"]) });
-    expect(result.current.total).toBe(XP_AMOUNTS.skill);
+    expect(result.current.total).toBe(PASS);
   });
 
   it("merges the account's ledger once progress is ready, without paying twice, and sends the result", async () => {
@@ -53,7 +55,7 @@ describe("useXp", () => {
     vi.mocked(fetchXp).mockResolvedValue(fromAccount);
     const { result } = renderHook(() => useXp(tree, "u1", "ready", new Set(["a", "b"]), []));
     await waitFor(() => expect(pushXp).toHaveBeenCalled());
-    expect(result.current.total).toBe(2 * XP_AMOUNTS.skill + 200);
+    expect(result.current.total).toBe(2 * PASS + 200);
     const sent = vi.mocked(pushXp).mock.calls[0]![2];
     expect(sent.filter((e) => e.key === "skill:a:pass")).toHaveLength(1);
   });
@@ -63,7 +65,7 @@ describe("useXp", () => {
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { result } = renderHook(() => useXp(tree, "u1", "ready", new Set(["a"]), []));
     await waitFor(() => expect(warn).toHaveBeenCalled());
-    expect(result.current.total).toBe(XP_AMOUNTS.skill);
+    expect(result.current.total).toBe(PASS);
     expect(pushXp).not.toHaveBeenCalled();
     warn.mockRestore();
   });
@@ -87,7 +89,7 @@ describe("useXp", () => {
     const { result, rerender } = renderHook(({ done }) => useXp(tree, null, "off", done, [], { streakWeeks: 4, levelIndex: 1, results: 0 }), { initialProps: { done: new Set(["a"]) } });
     expect(result.current.earned).toEqual(expect.arrayContaining(["first-skill", "streak-4", "pick-level", "intermediate"]));
     // The skill, plus the 4-week streak bonus: the achievements themselves add nothing.
-    expect(result.current.total).toBe(XP_AMOUNTS.skill + XP_AMOUNTS.streak[4]!);
+    expect(result.current.total).toBe(PASS + XP_AMOUNTS.streak[4]!);
     rerender({ done: new Set<string>() });
     expect(result.current.earned).toContain("first-skill");
     // The skill's XP goes with the undo; the streak bonus stays, because the milestone was reached.
@@ -108,7 +110,7 @@ describe("useXp", () => {
     const { result, rerender } = renderHook(({ done, weeks }) => useXp(tree, null, "off", done, [], { streakWeeks: weeks, streakSince: null, levelIndex: -1, results: 0 }), {
       initialProps: { done: new Set(["a"]), weeks: 4 },
     });
-    expect(result.current.total).toBe(XP_AMOUNTS.skill + XP_AMOUNTS.streak[4]!);
+    expect(result.current.total).toBe(PASS + XP_AMOUNTS.streak[4]!);
     // "Reset everything": progress and streak are cleared, then the ledger is switched off.
     rerender({ done: new Set<string>(), weeks: 0 });
     act(() => result.current.reset());
@@ -204,5 +206,33 @@ describe("useXp", () => {
     // If the ticks were NOT cleared, the mission key would come back and pay again: this is what clearTicks guards.
     rerender({ done: new Set<string>(), keys: [key] });
     expect(result.current.total).toBe(XP_AMOUNTS.mission);
+  });
+
+  it("records the step a skill was passed at, earns silver from a retest a level higher, and refuses a retest that is too soon", () => {
+    const { result, rerender } = renderHook(({ done }) => useXp(tree, null, "off", done, []), { initialProps: { done: new Set<string>() } });
+    // Like the app's pass handler: the step is recorded in the same update that ticks the skill.
+    act(() => {
+      result.current.recordPass("a", 2);
+      rerender({ done: new Set(["a"]) });
+    });
+    expect(result.current.mastery).toEqual({ a: "bronze" });
+    let outcome = "";
+    act(() => void (outcome = result.current.retest("a", 4)));
+    expect(outcome).toBe("tooSoon");
+    act(() => void (outcome = result.current.retest("a", 6)));
+    expect(outcome).toBe("silver");
+    expect(result.current.mastery).toEqual({ a: "silver" });
+    expect(result.current.total).toBe(XP_AMOUNTS.skill + XP_AMOUNTS.mastery.bronze + XP_AMOUNTS.mastery.silver);
+  });
+
+  it("gives a skill passed before mastery existed bronze at step 0, and removes the tiers when it is un-ticked", () => {
+    const { result, rerender } = renderHook(({ done }) => useXp(tree, null, "off", done, []), { initialProps: { done: new Set(["a"]) } });
+    expect(result.current.mastery).toEqual({ a: "bronze" });
+    let outcome = "";
+    act(() => void (outcome = result.current.retest("a", 4)));
+    expect(outcome).toBe("silver");
+    rerender({ done: new Set<string>() });
+    expect(result.current.mastery).toEqual({});
+    expect(result.current.total).toBe(0);
   });
 });

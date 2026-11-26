@@ -5,6 +5,8 @@ import type { SyncStatus } from "./useCloudSync";
 import { award, mergeEvents, passDayKey, revoke, skillPassKey, totalXp, xpLevel, type XpEvent, type XpLevel } from "./xp";
 import { belongsToAnother, setOwner } from "./localOwner";
 import { applyStreakRewards } from "./streakRewards";
+import { backfillBronze, recordPass, recordRetest, tiersOf, type RetestResult } from "./mastery";
+import type { MasteryTier } from "./xp";
 import { applyChallengeRewards, applyMissionRewards } from "./challengeRewards";
 import type { SessionEntry } from "./sessions";
 import { applyAchievements, earnedAchievements, earnedInLedger } from "./achievements";
@@ -18,6 +20,12 @@ export interface XpState {
   reset: () => void;
   /** A skill was just passed on this day: remembers the day of its first-ever pass, so challenges count only passes made from now on. */
   recordPassDay: (skillId: string, day: string) => void;
+  /** The highest mastery tier of each passed skill (#121 item 5). */
+  mastery: Record<string, MasteryTier>;
+  /** A skill was just passed at this level step (1 to 16, 0 with no level): earns bronze and remembers the step. */
+  recordPass: (skillId: string, step: number) => void;
+  /** A test passed again at this level step: earns the next tier if the step is a full level above the last one. */
+  retest: (skillId: string, step: number) => RetestResult;
   /** Ids of the achievements earned (#121 item 4), from the ledger, so trophies from another device count too. */
   earned: string[];
 }
@@ -40,7 +48,7 @@ export interface XpExtra {
 
 /** Reconcile the ledger with progress, then add any achievement now earned. */
 function follow(tree: Tree, current: XpEvent[], done: Set<string>, practiceDays: string[], extra: XpExtra, now: string): XpEvent[] {
-  const synced = reconcile(tree, current, done, practiceDays, now);
+  const synced = backfillBronze(reconcile(tree, current, done, practiceDays, now), done, now);
   const withTrophies = applyAchievements(synced, earnedAchievements({ tree, done, practiceDays, ...extra }), now);
   const withStreak = applyStreakRewards(withTrophies, extra.streakWeeks, extra.streakSince ?? null, now);
   const withMissions = applyMissionRewards(withStreak, extra.missionKeys ?? [], now);
@@ -126,8 +134,18 @@ export function useXp(tree: Tree, userId: string | null, status: SyncStatus, don
     );
   }, []);
 
+  const recordPassNow = useCallback((skillId: string, step: number) => {
+    setEvents((current) => recordPass(current, skillId, step, new Date().toISOString()));
+  }, []);
+
+  const retest = useCallback((skillId: string, step: number): RetestResult => {
+    const outcome = recordRetest(latest.current.events, skillId, step, new Date().toISOString());
+    if (outcome.events !== latest.current.events) setEvents(outcome.events);
+    return outcome.result;
+  }, []);
+
   return useMemo(() => {
     const total = totalXp(events);
-    return { events, total, level: xpLevel(total), earned: earnedInLedger(events), reset, recordPassDay };
-  }, [events, reset, recordPassDay]);
+    return { events, total, level: xpLevel(total), earned: earnedInLedger(events), reset, recordPassDay, mastery: tiersOf(events), recordPass: recordPassNow, retest };
+  }, [events, reset, recordPassDay, recordPassNow, retest]);
 }
