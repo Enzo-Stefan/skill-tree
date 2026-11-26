@@ -3,11 +3,19 @@ import { renderShareImage, type ShareStats } from "./shareImage";
 import { useModalFocus } from "./useModalFocus";
 import { t } from "../i18n";
 
+/** Another picture in the same dialog (the player card, #123). */
+export interface ShareCustom {
+  render: () => Promise<Blob>;
+  alt: string;
+  text: string;
+  fileName: string;
+}
+
 interface Props {
   stats: ShareStats;
   onClose: () => void;
-  /** Another picture in the same dialog (the player card, #123). Without it the progress image is drawn. */
-  custom?: { render: () => Promise<Blob>; alt: string; text: string; fileName: string };
+  /** Without it the progress image is drawn. The caller passes a snapshot so the image is not redrawn on every render. */
+  custom?: ShareCustom;
 }
 
 const FILE_NAME = "my-skill-tree.png";

@@ -1,5 +1,5 @@
 import type { Tree } from "../types";
-import type { Ratings } from "../lib/ratings";
+import { MAX_RATING, type Ratings } from "../lib/ratings";
 import type { PlayerCard } from "../lib/ratingHistory";
 import { BG, BODY, FG, FG_2, FG_FAINT, GLOW, SHARE_HEIGHT, SHARE_WIDTH, mutedBranchColor } from "./shareImage";
 import { t } from "../i18n";
@@ -16,7 +16,7 @@ export interface CardShareStats {
 }
 
 export function cardShareStats(tree: Tree, ratings: Ratings, card: PlayerCard, levelName: string | null, site: string): CardShareStats {
-  const parts = [card.position ? t.playerCard.positions[card.position] : null, card.foot ? t.playerCard.footValue(t.playerCard.feet[card.foot]) : null].filter((p): p is string => p !== null);
+  const parts = [card.position ? t.playerCard.positions[card.position] : null, card.foot ? t.playerCard.footLabel[card.foot] : null].filter((p): p is string => p !== null);
   return {
     title: tree.title,
     levelName,
@@ -25,6 +25,26 @@ export function cardShareStats(tree: Tree, ratings: Ratings, card: PlayerCard, l
     branches: tree.branches.map((b) => ({ name: b.name, color: b.color, value: ratings.branches[b.id] ?? 0 })),
     site,
   };
+}
+
+/** Smallest size the fit helper shrinks to before it truncates. */
+const MIN_FONT_PX = 22;
+const MARGIN = 90;
+const TEXT_GAP = 40;
+
+/**
+ * Picks the largest font size (from maxPx down to MIN_FONT_PX) at which the text fits in maxWidth, and truncates
+ * with an ellipsis when even the smallest size is too wide. Leaves ctx.font at the chosen size.
+ */
+function fitText(ctx: CanvasRenderingContext2D, text: string, maxWidth: number, weight: number, maxPx: number): string {
+  for (let px = maxPx; px >= MIN_FONT_PX; px -= 2) {
+    ctx.font = `${weight} ${px}px ${BODY}`;
+    if (ctx.measureText(text).width <= maxWidth) return text;
+  }
+  ctx.font = `${weight} ${MIN_FONT_PX}px ${BODY}`;
+  const chars = Array.from(text);
+  while (chars.length > 0 && ctx.measureText(`${chars.join("")}…`).width > maxWidth) chars.pop();
+  return `${chars.join("")}…`;
 }
 
 export function drawCardImage(ctx: CanvasRenderingContext2D, stats: CardShareStats): void {
@@ -39,8 +59,9 @@ export function drawCardImage(ctx: CanvasRenderingContext2D, stats: CardShareSta
   ctx.textAlign = "left";
 
   ctx.fillStyle = FG_2;
-  ctx.font = `600 34px ${BODY}`;
-  ctx.fillText(`${stats.title} · ${t.playerCard.title}`.toUpperCase(), 90, 120);
+  const contentWidth = SHARE_WIDTH - 2 * MARGIN;
+  const header = fitText(ctx, `${stats.title} · ${t.playerCard.title}`.toUpperCase(), contentWidth, 600, 34);
+  ctx.fillText(header, MARGIN, 120);
 
   ctx.fillStyle = "#ffffff";
   ctx.font = `700 300px ${BODY}`;
@@ -50,25 +71,26 @@ export function drawCardImage(ctx: CanvasRenderingContext2D, stats: CardShareSta
   ctx.fillText(t.playerCard.overall.toUpperCase(), 94, 490);
 
   ctx.fillStyle = FG;
-  ctx.font = `600 40px ${BODY}`;
   const line = [stats.levelName, stats.details].filter(Boolean).join(" · ");
-  if (line) ctx.fillText(line, 90, 560);
+  if (line) ctx.fillText(fitText(ctx, line, contentWidth, 600, 40), MARGIN, 560);
 
   let y = 700;
   for (const b of stats.branches) {
     ctx.fillStyle = FG;
-    ctx.font = `600 32px ${BODY}`;
+    ctx.font = `700 40px ${BODY}`;
+    const value = String(b.value);
+    const valueWidth = ctx.measureText(value).width;
     ctx.textAlign = "left";
-    ctx.fillText(b.name.toUpperCase(), 90, y);
+    const name = fitText(ctx, b.name.toUpperCase(), contentWidth - valueWidth - TEXT_GAP, 600, 32);
+    ctx.fillText(name, MARGIN, y);
     ctx.textAlign = "right";
     ctx.font = `700 40px ${BODY}`;
-    ctx.fillText(String(b.value), SHARE_WIDTH - 90, y);
+    ctx.fillText(value, SHARE_WIDTH - MARGIN, y);
     const barY = y + 16;
-    const barW = SHARE_WIDTH - 180;
     ctx.fillStyle = FG_FAINT;
-    ctx.fillRect(90, barY, barW, 14);
+    ctx.fillRect(MARGIN, barY, contentWidth, 14);
     ctx.fillStyle = mutedBranchColor(b.color);
-    ctx.fillRect(90, barY, (barW * Math.min(99, Math.max(0, b.value))) / 99, 14);
+    ctx.fillRect(MARGIN, barY, (contentWidth * Math.min(MAX_RATING, Math.max(0, b.value))) / MAX_RATING, 14);
     y += 100;
   }
 

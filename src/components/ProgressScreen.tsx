@@ -103,7 +103,7 @@ export function ProgressScreen(props: Props) {
         </section>
       )}
 
-      {ratings && <PlayerCard tree={tree} ratings={ratings} history={ratingHistory ?? []} hasProgress={hasProgress} card={card} onCardChange={onCardChange} onShare={onShareCard} />}
+      {ratings && <PlayerCard tree={tree} ratings={ratings} history={ratingHistory ?? []} hasProgress={hasProgress} card={card} onCardChange={onCardChange} onShareCard={onShareCard} />}
 
       {onOpenLeaderboard && (
         <section className="card" aria-labelledby="progress-board">

@@ -162,7 +162,7 @@ export const en = {
     /** Button that empties one picker. */
     clear: "Clear",
     share: "Share my card",
-    footValue: (foot: string) => `${foot} foot`,
+    footLabel: { left: "Left foot", right: "Right foot", both: "Both feet" },
     shareAlt: (overall: number) => `My player card, overall rating ${overall}`,
     shareText: (overall: number, title: string) => `My ${title} player card: ${overall} overall.`,
   },

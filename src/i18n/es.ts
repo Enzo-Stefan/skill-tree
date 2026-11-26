@@ -159,7 +159,7 @@ export const es: Strings = {
     /** Button that empties one picker. */
     clear: "Quitar",
     share: "Compartir mi tarjeta",
-    footValue: (foot: string) => `Pie ${foot.toLowerCase()}`,
+    footLabel: { left: "Pie izquierdo", right: "Pie derecho", both: "Ambos pies" },
     shareAlt: (overall: number) => `Mi tarjeta de jugador, valoración general ${overall}`,
     shareText: (overall: number, title: string) => `Mi tarjeta de jugador de ${title}: ${overall} de general.`,
   },
