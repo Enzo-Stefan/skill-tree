@@ -116,7 +116,7 @@ export function saveAccountCopy(treeId: string, userId: string, p: SavedProgress
  *
  * Unlike mergeProgress, skills and training days removed here since `base` stay removed, so an
  * un-tick or a reset made offline sticks, while changes from other devices are kept. If the
- * level, step or streak changed here, all three come from this browser (they belong together);
+ * level, step or streak start changed here, all three come from this browser (they belong together);
  * otherwise from the account. Lift log entries, test results and training sessions work like
  * skills: added here is added, undone or reset here is removed, and entries from other devices stay.
  */
@@ -136,15 +136,16 @@ export function rebaseProgress(tree: Tree, account: SavedProgress | null, base: 
   const rungChanged =
     l.playerLevel !== b.playerLevel ||
     l.playerStep !== b.playerStep ||
-    l.streak.since !== b.streak.since ||
-    l.streak.askedWeek !== b.streak.askedWeek;
+    l.streak.since !== b.streak.since;
   const rung = rungChanged ? l : a;
+  // "Ask me later" alone (askedWeek) isn't a step move, so it must not carry this browser's older step over the account's.
+  const askedWeek = l.streak.askedWeek !== b.streak.askedWeek ? l.streak.askedWeek : rung.streak.askedWeek;
   return {
     done: replay(a.done, b.done, l.done),
     playerLevel: rung.playerLevel,
     playerStep: rung.playerStep,
     practiceDays: replay(a.practiceDays, b.practiceDays, l.practiceDays).sort(),
-    streak: rung.streak,
+    streak: { since: rung.streak.since, askedWeek },
     liftLog: replayLiftLog(tree, a.liftLog ?? [], b.liftLog ?? [], l.liftLog ?? []),
     results: replayResults(tree, a.results ?? [], b.results ?? [], l.results ?? []),
     sessions: replaySessions(tree, a.sessions ?? [], b.sessions ?? [], l.sessions ?? []),
