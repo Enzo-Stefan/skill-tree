@@ -221,6 +221,7 @@ export const en = {
   panel: {
     status: { done: "Completed", available: "Ready to train", locked: "Locked" },
     startHere: "Start here",
+    testRequired: "Pass this skill by taking its test. Start the test, and a pass marks it done.",
     copyLink: "Copy link to this skill",
     finalSkill: "Final skill",
     close: "Close",

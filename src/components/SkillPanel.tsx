@@ -6,6 +6,7 @@ import { LiftLogBlock } from "./LiftLogBlock";
 import { TestMode } from "./TestMode";
 import { RoutineBlock } from "./RoutineBlock";
 import { isRunnable } from "./testRun";
+import { needsTest } from "../lib/testGate";
 import type { LiftLog } from "./useLiftLog";
 import type { Results } from "./useResults";
 import { bestResult, resultDirection } from "../lib/results";
@@ -107,6 +108,8 @@ export function SkillPanel({
   const best = keepsTimes ? bestResult(tree, keepsTimes.results, skill.id) : null;
   const query = encodeURIComponent(t.panel.youtubeSearch(tree.id, skill.name));
   const runnable = isRunnable(skill.check) && state !== "locked";
+  // From the fourth tier on, a skill is passed by taking its test, so there is no "I passed" button (#126).
+  const testOnly = needsTest(skill) && isRunnable(skill.check);
   // Phones say "Swipe up…"; a narrow window with a mouse says "Show…". The button works by tap or click either way.
   const touch = typeof window !== "undefined" && window.matchMedia?.("(pointer: coarse)").matches;
 
@@ -166,11 +169,12 @@ export function SkillPanel({
   );
   const passOrUndo = (
     <>
-      {state === "available" && (
+      {state === "available" && !testOnly && (
         <button className="btn primary" type="button" onClick={() => onComplete(skill.id)}>
           {t.panel.passed}
         </button>
       )}
+      {state === "available" && testOnly && <p className="hint">{t.panel.testRequired}</p>}
       {isSheet && startTest}
       {state === "done" &&
         (dependents.length ? (

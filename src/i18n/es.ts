@@ -213,6 +213,7 @@ export const es: Strings = {
   panel: {
     status: { done: "Completada", available: "Lista para entrenar", locked: "Bloqueada" },
     startHere: "Empieza aquí",
+    testRequired: "Para pasar esta habilidad, haz su prueba. Empieza la prueba y, si la pasas, queda hecha.",
     copyLink: "Copiar enlace a esta habilidad",
     finalSkill: "Habilidad final",
     close: "Cerrar",
