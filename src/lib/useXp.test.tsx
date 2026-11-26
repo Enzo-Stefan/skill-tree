@@ -93,4 +93,31 @@ describe("useXp", () => {
     // The skill's XP goes with the undo; the streak bonus stays, because the milestone was reached.
     expect(result.current.total).toBe(XP_AMOUNTS.streak[4]);
   });
+
+  it("pays a streak bonus once per run, and a new run (a different start week) pays again", () => {
+    const { result, rerender } = renderHook(({ since }) => useXp(tree, null, "off", new Set<string>(), [], { streakWeeks: 4, streakSince: since, levelIndex: -1, results: 0 }), { initialProps: { since: null as string | null } });
+    expect(result.current.total).toBe(XP_AMOUNTS.streak[4]);
+    rerender({ since: null });
+    expect(result.current.total).toBe(XP_AMOUNTS.streak[4]);
+    rerender({ since: "2026-11-02" });
+    expect(result.current.total).toBe(2 * XP_AMOUNTS.streak[4]!);
+    expect(result.current.events.map((e) => e.key).filter((k) => k.startsWith("streak:")).sort()).toEqual(["streak:4:2026-11-02", "streak:4:start"]);
+  });
+
+  it("reset switches everything off, and a new streak after the reset earns its bonus again", () => {
+    const { result, rerender } = renderHook(({ done, weeks }) => useXp(tree, null, "off", done, [], { streakWeeks: weeks, streakSince: null, levelIndex: -1, results: 0 }), {
+      initialProps: { done: new Set(["a"]), weeks: 4 },
+    });
+    expect(result.current.total).toBe(XP_AMOUNTS.skill + XP_AMOUNTS.streak[4]!);
+    // "Reset everything": progress and streak are cleared, then the ledger is switched off.
+    rerender({ done: new Set<string>(), weeks: 0 });
+    act(() => result.current.reset());
+    expect(result.current.total).toBe(0);
+    expect(result.current.earned).toEqual([]);
+    // Four good weeks again: the same start-of-run key pays again, once.
+    rerender({ done: new Set<string>(), weeks: 4 });
+    expect(result.current.total).toBe(XP_AMOUNTS.streak[4]);
+    rerender({ done: new Set<string>(), weeks: 4 });
+    expect(result.current.total).toBe(XP_AMOUNTS.streak[4]);
+  });
 });

@@ -471,6 +471,7 @@ export default function App() {
     lifts.clear();
     results.clear();
     sessions.clear();
+    xp.reset();
     setTestOpen(false);
     setSelectedId(tree.skills[0].id);
     setBranchId(null);

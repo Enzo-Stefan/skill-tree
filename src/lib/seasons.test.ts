@@ -3,7 +3,7 @@ import { SEASONS, type Season } from "../data/seasons";
 import { XP_AMOUNTS } from "../data/xp";
 import type { ChallengeContext } from "./challenges";
 import { activeSeason, seasonAwardKey, seasonChallengeDone, seasonProgress } from "./seasons";
-import { amountFor, isEventKey } from "./xp";
+import { amountFor, award, isEventKey, totalXp } from "./xp";
 
 const season: Season = {
   id: "test-season",
@@ -81,5 +81,13 @@ describe("award keys", () => {
     expect(key).toBe("challenge:t-days:season-test-season");
     expect(amountFor(key)).toBe(XP_AMOUNTS.challengeSeason);
     expect(seasonAwardKey({ ...season, id: "next" }, c("t-days"))).not.toBe(key);
+  });
+
+  it("reaches the ledger once: awarding the key twice pays the seasonal amount once", () => {
+    const key = seasonAwardKey(season, c("t-days"));
+    let ledger = award([], key, amountFor(key), "2026-12-20T10:00:00.000Z");
+    ledger = award(ledger, key, amountFor(key), "2026-12-21T10:00:00.000Z");
+    expect(totalXp(ledger)).toBe(XP_AMOUNTS.challengeSeason);
+    expect(ledger).toHaveLength(1);
   });
 });

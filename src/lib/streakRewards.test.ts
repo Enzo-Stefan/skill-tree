@@ -22,18 +22,16 @@ describe("the milestones", () => {
 });
 
 describe("keys and amounts", () => {
-  it("makes valid keys that name the run, and keeps the old plain form working", () => {
-    expect(streakKey(4)).toBe("streak:4");
+  it("makes valid keys that name the run", () => {
     expect(streakKey(4, null)).toBe("streak:4:start");
     expect(streakKey(8, "2026-11-02")).toBe("streak:8:2026-11-02");
-    for (const k of [streakKey(4), streakKey(4, null), streakKey(8, "2026-11-02")]) expect(isEventKey(k), k).toBe(true);
+    for (const k of [streakKey(4, null), streakKey(8, "2026-11-02")]) expect(isEventKey(k), k).toBe(true);
   });
 
   it("pays the milestone amount for every accepted shape, and nothing for odd ones", () => {
-    expect(amountFor(streakKey(4))).toBe(XP_AMOUNTS.streak[4]);
     expect(amountFor(streakKey(4, null))).toBe(XP_AMOUNTS.streak[4]);
     expect(amountFor(streakKey(8, "2026-11-02"))).toBe(XP_AMOUNTS.streak[8]);
-    for (const k of ["streak:04", "streak:4:x", "streak:4:2026-13-45x", "streak:5", "streak:12", "streak:4:start:extra"]) expect(amountFor(k), k).toBeNull();
+    for (const k of ["streak:4", "streak:04", "streak:4:x", "streak:4:2026-13-45x", "streak:5", "streak:12", "streak:4:start:extra"]) expect(amountFor(k), k).toBeNull();
   });
 });
 

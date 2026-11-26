@@ -24,7 +24,7 @@ const T3 = "2026-11-25T12:00:00.000Z";
 
 describe("event keys and amounts", () => {
   it("builds keys the cleaner accepts, and rejects other strings", () => {
-    for (const k of [skillPassKey("bc1"), sessionKey("2026-11-25"), challengeKey("c-juggle", "2026-11-25"), masteryKey("bc1", "gold"), streakKey(4)]) {
+    for (const k of [skillPassKey("bc1"), sessionKey("2026-11-25"), challengeKey("c-juggle", "2026-11-25"), masteryKey("bc1", "gold"), streakKey(4, null)]) {
       expect(isEventKey(k), k).toBe(true);
     }
     for (const k of ["", "skill", "Skill:bc1:pass", "skill:bc 1:pass", "skill:" + "x".repeat(100), 42, null]) expect(isEventKey(k), String(k)).toBe(false);
@@ -36,8 +36,8 @@ describe("event keys and amounts", () => {
     expect(amountFor(challengeKey("c1", "2026-11-25"))).toBe(XP_AMOUNTS.challengeDaily);
     expect(amountFor(challengeKey("c1", "2026-11-23"), true)).toBe(XP_AMOUNTS.challengeWeekly);
     expect(amountFor(masteryKey("bc1", "silver"))).toBe(XP_AMOUNTS.mastery.silver);
-    expect(amountFor(streakKey(8))).toBe(XP_AMOUNTS.streak[8]);
-    expect(amountFor(streakKey(5))).toBeNull();
+    expect(amountFor(streakKey(8, null))).toBe(XP_AMOUNTS.streak[8]);
+    expect(amountFor(streakKey(5, null))).toBeNull();
     expect(amountFor("skill:bc1:fail")).toBeNull();
     expect(amountFor("mastery:bc1:platinum")).toBeNull();
     expect(amountFor("nonsense")).toBeNull();
@@ -204,8 +204,9 @@ describe("review fixes (#129)", () => {
   });
 
   it("only pays for the exact keys the builders make", () => {
-    expect(amountFor("streak:4")).toBe(XP_AMOUNTS.streak[4]);
-    for (const key of ["streak:04", "streak:4.0", "streak:4:extra", "streak:+4", "skill:bc1:pass:x", "skill:bc1"]) {
+    expect(amountFor(streakKey(4, null))).toBe(XP_AMOUNTS.streak[4]);
+    expect(amountFor(streakKey(4, "2026-11-02"))).toBe(XP_AMOUNTS.streak[4]);
+    for (const key of ["streak:4", "streak:04:start", "streak:4.0:start", "streak:4:extra", "streak:+4:start", "skill:bc1:pass:x", "skill:bc1"]) {
       expect(amountFor(key)).toBeNull();
     }
     expect(amountFor(skillPassKey("bc1"))).toBe(XP_AMOUNTS.skill);

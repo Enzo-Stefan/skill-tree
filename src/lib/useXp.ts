@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Tree } from "../types";
 import { loadSupabase } from "../auth/client";
 import type { SyncStatus } from "./useCloudSync";
-import { mergeEvents, totalXp, xpLevel, type XpEvent, type XpLevel } from "./xp";
+import { mergeEvents, revoke, totalXp, xpLevel, type XpEvent, type XpLevel } from "./xp";
 import { belongsToAnother, setOwner } from "./localOwner";
 import { applyStreakRewards } from "./streakRewards";
 import { applyAchievements, earnedAchievements, earnedInLedger } from "./achievements";
@@ -12,6 +12,8 @@ export interface XpState {
   events: XpEvent[];
   total: number;
   level: XpLevel;
+  /** Switches every award off, for "Reset everything": XP, trophies and streak bonuses start again from the reset progress. */
+  reset: () => void;
   /** Ids of the achievements earned (#121 item 4), from the ledger, so trophies from another device count too. */
   earned: string[];
 }
@@ -96,8 +98,15 @@ export function useXp(tree: Tree, userId: string | null, status: SyncStatus, don
     return () => window.clearTimeout(timer);
   }, [tree, userId, status, events]);
 
+  // Reset everything: every active award is switched off (not deleted), so the account's copy follows, and a new
+  // streak after the reset can earn its bonuses again.
+  const reset = useCallback(() => {
+    const now = new Date().toISOString();
+    setEvents((current) => current.reduce((next, e) => (e.active ? revoke(next, e.key, now) : next), current));
+  }, []);
+
   return useMemo(() => {
     const total = totalXp(events);
-    return { events, total, level: xpLevel(total), earned: earnedInLedger(events) };
-  }, [events]);
+    return { events, total, level: xpLevel(total), earned: earnedInLedger(events), reset };
+  }, [events, reset]);
 }
