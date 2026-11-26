@@ -31,6 +31,8 @@ export type MasteryTier = "bronze" | "silver" | "gold";
 export const skillPassKey = (skillId: string) => `skill:${skillId}:pass`;
 export const sessionKey = (day: string) => `session:${day}`;
 /** period is the day for a daily challenge and the week's Monday for a weekly one. */
+/** One award per day and skill for completing that day's mission. */
+export const missionKey = (day: string, skillId: string) => `mission:${day}:${skillId}`;
 export const challengeKey = (challengeId: string, period: string) => `challenge:${challengeId}:${period}`;
 export const masteryKey = (skillId: string, tier: MasteryTier) => `mastery:${skillId}:${tier}`;
 export const streakKey = (weeks: number) => `streak:${weeks}`;
@@ -52,6 +54,8 @@ export function amountFor(key: string, weekly = false): number | null {
       return b === "pass" ? XP_AMOUNTS.skill : null;
     case "session":
       return XP_AMOUNTS.session;
+    case "mission":
+      return XP_AMOUNTS.mission;
     case "challenge":
       return weekly ? XP_AMOUNTS.challengeWeekly : XP_AMOUNTS.challengeDaily;
     case "mastery":
