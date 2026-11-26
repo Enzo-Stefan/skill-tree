@@ -72,6 +72,7 @@ import { undoPass, withoutSkill } from "./components/undoPass";
 import type { SavedProgress } from "./lib/cloud";
 import { useCloudSync } from "./lib/useCloudSync";
 import { useXp } from "./lib/useXp";
+import { useRatings } from "./lib/useRatings";
 import { LeaderboardScreen } from "./components/LeaderboardScreen";
 import { LeaderboardProfileDialog } from "./components/LeaderboardProfileDialog";
 import { useLeaderboardProfile } from "./lib/useLeaderboardProfile";
@@ -180,6 +181,8 @@ export default function App() {
     if (!hasLeaderboard) setBoardOpen(false);
   }, [hasLeaderboard]);
   const cloud = useCloudSync({ tree, userId: auth.account?.id ?? null, progress, apply: applySaved, onMessage: showToast });
+  // The player's ratings and weekly history (#123). Nothing shows them yet: the player card and the career page will.
+  useRatings(tree, auth.account?.id ?? null, cloud.status, done, playerLevelId, playerStep, today);
   const accountAuth = {
     ...auth,
     // Send any waiting save before signing out, while the account can still be written to.
