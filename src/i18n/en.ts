@@ -211,6 +211,13 @@ export const en = {
     after: (skills: string[]) => (skills.length > 2 ? `After ${skills.length} more skills` : `After ${listAnd(skills)}`),
     branchCount: (done: number, total: number) => `${done} of ${total} done`,
     nextUp: "Next up",
+    zoomControls: "Zoom the tree",
+    zoomIn: "Zoom in",
+    zoomOut: "Zoom out",
+    fit: "Fit to screen",
+    viewLabel: "How to show the tree",
+    viewList: "List",
+    viewMap: "Map",
   },
   nextUp: {
     start: "Start here. Every branch opens after it.",

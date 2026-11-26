@@ -204,6 +204,13 @@ export const es: Strings = {
       skills.length > 2 ? `Después de ${skills.length} habilidades más` : `Después de ${listAnd(skills)}`,
     branchCount: (done: number, total: number) => `${done} de ${total} hechas`,
     nextUp: "La siguiente",
+    zoomControls: "Zoom del árbol",
+    zoomIn: "Acercar",
+    zoomOut: "Alejar",
+    fit: "Ajustar a la pantalla",
+    viewLabel: "Cómo mostrar el árbol",
+    viewList: "Lista",
+    viewMap: "Mapa",
   },
   nextUp: {
     start: "Empieza aquí. Todas las ramas se abren después.",
