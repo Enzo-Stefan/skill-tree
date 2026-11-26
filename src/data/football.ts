@@ -569,7 +569,7 @@ const footballContent: Tree = {
     },
     {
       "at": 32,
-      "name": "Legend"
+      "name": "Elite"
     }
   ]
 };

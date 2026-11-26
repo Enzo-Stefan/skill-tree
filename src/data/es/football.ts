@@ -17,7 +17,7 @@ const footballContent: TreeTranslation = {
     df: "Defensa",
     ft: "Físico",
   },
-  levels: ["Liga de barrio", "Cantera", "Semiprofesional", "Profesional", "Primer equipo", "Leyenda"],
+  levels: ["Liga de barrio", "Cantera", "Semiprofesional", "Profesional", "Primer equipo", "Élite"],
   playerLevels: {
     beginner: { name: "Principiante", hint: "Nuevo en el fútbol o empezando a entrenar" },
     intermediate: { name: "Intermedio", hint: "Juegas a menudo en un equipo del colegio o del barrio" },
