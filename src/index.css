@@ -723,8 +723,9 @@ a.btn { color: inherit; text-decoration: none; display: inline-flex; align-items
 .player-trophies { margin-top: 12px; }
 .player-trophies summary { cursor: pointer; font-weight: 600; }
 .player-trophy-list { list-style: none; margin: 10px 0 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
-.trophy { display: grid; gap: 2px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line, rgba(128, 128, 128, 0.25)); }
+.trophy { display: grid; gap: 2px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--glass-border-strong); }
 .trophy.earned .trophy-name { font-weight: 600; }
-.trophy.locked { opacity: 0.6; }
-.trophy-state { font-size: 0.75em; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.75; }
+/* Locked is dimmed by colour and a dashed border, not opacity: opacity would also fade the text below AA contrast. */
+.trophy.locked { color: var(--fg-2); border-style: dashed; border-color: var(--glass-border); }
+.trophy-state { font-size: 0.75em; text-transform: uppercase; letter-spacing: 0.04em; color: var(--fg-2); }
 .trophy-hint { font-size: 0.85em; }

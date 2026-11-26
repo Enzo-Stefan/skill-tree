@@ -5,6 +5,7 @@ import type { Tree } from "../types";
 import { ACHIEVEMENTS } from "../data/achievements";
 import { en } from "../i18n/en";
 import { es } from "../i18n/es";
+import { t } from "../i18n";
 import { PlayerCard } from "./PlayerCard";
 import { PlayerTrophies } from "./PlayerTrophies";
 
@@ -36,10 +37,30 @@ describe("PlayerTrophies", () => {
     expect(screen.getByText(`Trophies 2 / ${ACHIEVEMENTS.length}`)).toBeTruthy();
   });
 
-  it("says so when no trophy is earned yet", () => {
-    render(<PlayerTrophies earned={[]} />);
+  it("is open when at least one trophy is earned", () => {
+    const { container } = render(<PlayerTrophies earned={["first-skill"]} />);
+    expect(container.querySelector("details")?.open).toBe(true);
+  });
+
+  it("is closed when no trophy is earned yet, and says so", () => {
+    const { container } = render(<PlayerTrophies earned={[]} />);
+    expect(container.querySelector("details")?.open).toBe(false);
     expect(screen.getByText("No trophies yet. Pass your first skill to earn one.")).toBeTruthy();
     expect(screen.getByText(`Trophies 0 / ${ACHIEVEMENTS.length}`)).toBeTruthy();
+  });
+
+  it("falls back to the data file's text for an achievement with no translation", () => {
+    const names = t.trophyText as Partial<Record<string, { title: string; text: string }>>;
+    const saved = names["first-skill"];
+    delete names["first-skill"];
+    try {
+      const { container } = render(<PlayerTrophies earned={[]} />);
+      const li = [...container.querySelectorAll(".trophy.locked")].find((el) => el.textContent?.includes("Pass your first skill."));
+      expect(li, "falls back to the data text").toBeTruthy();
+      expect(li?.textContent).toContain(ACHIEVEMENTS[0].title);
+    } finally {
+      names["first-skill"] = saved;
+    }
   });
 });
 
@@ -57,11 +78,15 @@ describe("PlayerCard trophies", () => {
 });
 
 describe("trophy text", () => {
-  it("has a name and hint in both languages for every achievement, with the English matching the rules file", () => {
+  it("has a Spanish name and hint for exactly the achievements in the data file", () => {
+    const ids = ACHIEVEMENTS.map((a) => a.id).sort();
+    expect(Object.keys(es.trophyText).sort()).toEqual(ids);
+  });
+
+  it("takes the English name and hint from the data file", () => {
     for (const a of ACHIEVEMENTS) {
-      expect(en.trophyText[a.id as keyof typeof en.trophyText], a.id).toEqual({ title: a.title, text: a.text });
-      expect(es.trophyText[a.id as keyof typeof es.trophyText], a.id).toBeDefined();
+      expect(en.trophyText[a.id], a.id).toEqual({ title: a.title, text: a.text });
     }
-    expect(Object.keys(es.trophyText).sort()).toEqual(Object.keys(en.trophyText).sort());
+    expect(Object.keys(en.trophyText).sort()).toEqual(ACHIEVEMENTS.map((a) => a.id).sort());
   });
 });

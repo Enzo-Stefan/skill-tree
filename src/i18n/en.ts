@@ -1,4 +1,5 @@
 import { formatNumber } from "../lib/progress";
+import { ACHIEVEMENTS } from "../data/achievements";
 
 /**
  * Every piece of app text in English, grouped by the screen it appears on.
@@ -574,28 +575,8 @@ export const en = {
     headline: (title: string, done: number, total: number, rank: string) => `My ${title}: ${done}/${total} skills, rank ${rank}.`,
     training: (rung: string) => ` Training at ${rung}.`,
   },
-  trophyText: {
-  "first-skill": { title: "First skill", text: "Pass your first skill." },
-  "five-skills": { title: "Getting going", text: "Pass 5 skills." },
-  "ten-skills": { title: "On a roll", text: "Pass 10 skills." },
-  "twenty-skills": { title: "Serious player", text: "Pass 20 skills." },
-  "every-skill": { title: "Complete player", text: "Pass every skill in the tree." },
-  "first-branch": { title: "Branch done", text: "Finish a whole branch." },
-  "three-branches": { title: "Three branches", text: "Finish three whole branches." },
-  "well-rounded": { title: "Well rounded", text: "Pass at least one skill in every branch." },
-  "first-day": { title: "First session", text: "Train for the first time." },
-  "ten-days": { title: "Ten days", text: "Train on 10 different days." },
-  "fifty-days": { title: "Fifty days", text: "Train on 50 different days." },
-  "streak-4": { title: "Four-week streak", text: "Train on three days a week for 4 weeks." },
-  "streak-8": { title: "Eight-week streak", text: "Keep a training streak for 8 weeks." },
-  "pick-level": { title: "Know your level", text: "Pick your player level." },
-  "intermediate": { title: "Intermediate", text: "Reach the Intermediate level." },
-  "advanced": { title: "Advanced", text: "Reach the Advanced level." },
-  "expert": { title: "Expert", text: "Reach the Expert level." },
-  "first-result": { title: "On the clock", text: "Save a test result from test mode." },
-  "five-results": { title: "Tracking progress", text: "Save 5 test results." },
-  "twenty-results": { title: "Data driven", text: "Save 20 test results." },
-  },
+  /** Trophy names and hints, read from the achievement data so English is not kept in two places. Spanish is in es.ts. */
+  trophyText: Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, { title: a.title, text: a.text }])) as Record<string, { title: string; text: string }>,
 };
 
 /** The shape every language file must have. */
