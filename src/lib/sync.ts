@@ -28,6 +28,40 @@ const liftsSyncedKey = (treeId: string) => `skill-tree:${treeId}:synced-lifts`;
 const resultsSyncedKey = (treeId: string) => `skill-tree:${treeId}:synced-results`;
 const unsavedKey = (treeId: string) => `skill-tree:${treeId}:unsaved`;
 
+/** The account this browser's progress last synced with for a tree, or null for a guest who never signed in. */
+export function syncedAccount(treeId: string): string | null {
+  try {
+    return localStorage.getItem(syncedKey(treeId));
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * True when this browser's progress belongs to a different account than `userId` (#139): someone else signed in
+ * here before. Their leftover progress must not be merged into this account. A guest (no account ever synced)
+ * is not "another account", so a guest's progress still merges on first sign-in.
+ */
+export function belongsToOtherAccount(treeId: string, userId: string): boolean {
+  const owner = syncedAccount(treeId);
+  return owner !== null && owner !== userId;
+}
+
+/**
+ * Forgets that this browser's copy was synced with another account: the marker, the unsaved-changes flag and the
+ * lift and result markers, so this account's load starts clean and its own markers are set after it.
+ */
+export function forgetOtherAccount(treeId: string): void {
+  try {
+    localStorage.removeItem(syncedKey(treeId));
+    localStorage.removeItem(unsavedKey(treeId));
+    localStorage.removeItem(liftsSyncedKey(treeId));
+    localStorage.removeItem(resultsSyncedKey(treeId));
+  } catch {
+    // Storage can be blocked; there is then nothing stored to forget.
+  }
+}
+
 /** True once this account's progress has been merged into this browser for this tree. */
 export function isSyncedHere(treeId: string, userId: string): boolean {
   try {
