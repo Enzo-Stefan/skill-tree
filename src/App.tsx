@@ -708,6 +708,7 @@ export default function App() {
               setSharingCard({
                 stats: shareStats(tree, done, playerRungName, streak, window.location.host),
                 custom: {
+                  title: t.playerCard.share,
                   render: () => renderCardImage(card),
                   alt: t.playerCard.shareAlt(card.overall),
                   text: t.playerCard.shareText(card.overall, card.title),

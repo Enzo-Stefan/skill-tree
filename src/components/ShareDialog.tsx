@@ -5,6 +5,8 @@ import { t } from "../i18n";
 
 /** Another picture in the same dialog (the player card, #123). */
 export interface ShareCustom {
+  /** The dialog heading. */
+  title: string;
   render: () => Promise<Blob>;
   alt: string;
   text: string;
@@ -68,7 +70,7 @@ export function ShareDialog({ stats, onClose, custom }: Props) {
         aria-labelledby="share-title"
         onClick={(e) => e.stopPropagation()}
       >
-        <h2 id="share-title">{t.share.title}</h2>
+        <h2 id="share-title">{custom?.title ?? t.share.title}</h2>
         <div className="share-preview">
           {image ? <img src={image.url} alt={custom?.alt ?? t.share.imageAlt(stats.rank, stats.done, stats.total)} /> : <span>{t.share.drawing}</span>}
         </div>
