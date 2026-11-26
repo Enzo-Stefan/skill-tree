@@ -121,6 +121,16 @@ describe("useCard", () => {
     expect(saveCard).not.toHaveBeenCalled();
   });
 
+  it("syncs again on the next change after the first fetch failed, so the change is saved", async () => {
+    vi.mocked(fetchCard).mockRejectedValueOnce(new Error("offline"));
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const { result } = renderHook(() => useCard("u1", "ready"));
+    await waitFor(() => expect(console.warn).toHaveBeenCalled());
+    act(() => result.current.setCard({ position: "MID", foot: null }));
+    await waitFor(() => expect(saveCard).toHaveBeenCalledTimes(1));
+    expect(vi.mocked(saveCard).mock.calls[0][2]).toEqual({ position: "MID", foot: null });
+  });
+
   it("keeps a field cleared on this device cleared when another device still holds the old choice", async () => {
     const { result } = renderHook(() => useCard("u1", "ready"));
     await waitFor(() => expect(fetchCard).toHaveBeenCalledTimes(1));

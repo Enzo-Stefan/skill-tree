@@ -12,7 +12,7 @@ const UNTOUCHED: Touched = { position: false, foot: false };
  * browser's card only fills the account's empty fields when it is a signed-out card or the same user's. Another
  * user's card is replaced by the account's. Each field carries the time it was last changed, so the newer change wins
  * on every device and a field cleared on one device is not refilled from another. Later changes are saved to the account one after another.
- * If the calls fail the choice stays in this browser.
+ * If the calls fail the choice stays in this browser, and the next change tries the account again.
  */
 export function useCard(userId: string | null, status: SyncStatus): { card: PlayerCard; setCard: (next: PlayerCard) => void } {
   const [initial] = useState(loadStored);
@@ -24,6 +24,7 @@ export function useCard(userId: string | null, status: SyncStatus): { card: Play
   const accountReady = useRef<string | null>(null);
   const saves = useRef<Promise<void>>(Promise.resolve());
   const mounted = useRef(false);
+  const retrySync = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     latest.current = card;
@@ -51,26 +52,37 @@ export function useCard(userId: string | null, status: SyncStatus): { card: Play
       return;
     }
     let active = true;
+    let inflight = false;
     touched.current = UNTOUCHED;
-    loadSupabase()
-      .then(async (client) => {
-        if (!client || !active) return;
-        const fetched = await fetchCard(client, userId);
-        if (!active) return;
-        const account: StampedCard = { ...fetched, at: fetched.at ?? NO_STAMPS };
-        const merged = reconcileCard(account, { ...latest.current, at: stamps.current }, owner.current, userId, touched.current);
-        owner.current = userId;
-        accountReady.current = userId;
-        const value: PlayerCard = { position: merged.position, foot: merged.foot };
-        latest.current = value;
-        stamps.current = merged.at;
-        setCardState((current) => (sameCard(current, value) ? current : value));
-        storeCard(value, userId, merged.at);
-        if (!sameStamped(merged, account)) await enqueueSave(userId, value, merged.at);
-      })
-      .catch((e: unknown) => console.warn("Player card sync failed", e));
+    const sync = (): void => {
+      if (inflight) return;
+      inflight = true;
+      loadSupabase()
+        .then(async (client) => {
+          if (!client || !active) return;
+          const fetched = await fetchCard(client, userId);
+          if (!active) return;
+          const account: StampedCard = { ...fetched, at: fetched.at ?? NO_STAMPS };
+          const merged = reconcileCard(account, { ...latest.current, at: stamps.current }, owner.current, userId, touched.current);
+          owner.current = userId;
+          accountReady.current = userId;
+          const value: PlayerCard = { position: merged.position, foot: merged.foot };
+          latest.current = value;
+          stamps.current = merged.at;
+          setCardState((current) => (sameCard(current, value) ? current : value));
+          storeCard(value, userId, merged.at);
+          if (!sameStamped(merged, account)) await enqueueSave(userId, value, merged.at);
+        })
+        .catch((e: unknown) => console.warn("Player card sync failed", e))
+        .finally(() => {
+          inflight = false;
+        });
+    };
+    retrySync.current = sync;
+    sync();
     return () => {
       active = false;
+      retrySync.current = null;
     };
   }, [userId, status, enqueueSave]);
 
@@ -82,7 +94,11 @@ export function useCard(userId: string | null, status: SyncStatus): { card: Play
       stamps.current = { position: next.position !== before.position ? now : stamps.current.position, foot: next.foot !== before.foot ? now : stamps.current.foot };
       latest.current = next;
       setCardState(next);
-      if (userId && status === "ready" && accountReady.current === userId) void enqueueSave(userId, next, stamps.current);
+      if (userId && status === "ready") {
+        // After a failed first fetch the account is not reconciled yet: sync again so this change is not lost.
+        if (accountReady.current === userId) void enqueueSave(userId, next, stamps.current);
+        else retrySync.current?.();
+      }
     },
     [userId, status, enqueueSave],
   );
