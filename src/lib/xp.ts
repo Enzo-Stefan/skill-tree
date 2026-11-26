@@ -51,7 +51,7 @@ export function amountFor(key: string, weekly = false): number | null {
   const [kind, a, b] = key.split(":");
   switch (kind) {
     case "skill":
-      return b === "pass" ? XP_AMOUNTS.skill : null;
+      return b === "pass" && key.split(":").length === 3 ? XP_AMOUNTS.skill : null;
     case "session":
       return XP_AMOUNTS.session;
     case "mission":
@@ -61,8 +61,9 @@ export function amountFor(key: string, weekly = false): number | null {
     case "mastery":
       return b === "bronze" || b === "silver" || b === "gold" ? XP_AMOUNTS.mastery[b] : null;
     case "streak": {
-      const bonus = XP_AMOUNTS.streak[Number(a)];
-      return bonus ?? null;
+      // Only the exact shape streakKey makes ("streak:4"), not "streak:04" or "streak:4:x".
+      if (key.split(":").length !== 2 || String(Number(a)) !== a) return null;
+      return XP_AMOUNTS.streak[Number(a)] ?? null;
     }
     case "achievement":
       return XP_AMOUNTS.achievement;
@@ -82,7 +83,7 @@ export function amountFor(key: string, weekly = false): number | null {
 export function award(events: XpEvent[], key: string, xp: number | null, now: string): XpEvent[] {
   const existing = events.find((e) => e.key === key);
   if (existing?.active) return events;
-  if (existing) return events.map((e) => (e.key === key ? { ...e, active: true, at: now } : e));
+  if (existing) return events.map((e) => (e.key === key ? { ...e, active: true, at: changedAt(existing.at, now) } : e));
   if (xp === null || !isEventKey(key) || !Number.isInteger(xp) || xp < 0 || xp > MAX_EVENT_XP) return events;
   return [...events, { key, xp, active: true, at: now }];
 }
@@ -91,7 +92,19 @@ export function award(events: XpEvent[], key: string, xp: number | null, now: st
 export function revoke(events: XpEvent[], key: string, now: string): XpEvent[] {
   const existing = events.find((e) => e.key === key);
   if (!existing || !existing.active) return events;
-  return events.map((e) => (e.key === key ? { ...e, active: false, at: now } : e));
+  return events.map((e) => (e.key === key ? { ...e, active: false, at: changedAt(existing.at, now) } : e));
+}
+
+/**
+ * The time to stamp on a change to an event that was last changed at `previous`: now, but never earlier than
+ * 1 ms after `previous`. A device whose clock is behind (or an event that came from a device whose clock was
+ * ahead) still wins against the version it replaces, so an undo or a re-pass made here is never lost to it.
+ */
+function changedAt(previous: string, now: string): string {
+  const p = Date.parse(previous);
+  const n = Date.parse(now);
+  if (Number.isNaN(n)) return Number.isNaN(p) ? now : new Date(p + 1).toISOString();
+  return Number.isNaN(p) || n > p ? now : new Date(p + 1).toISOString();
 }
 
 export function totalXp(events: XpEvent[]): number {
@@ -116,7 +129,7 @@ export interface XpLevel {
 
 /** The XP level for a total: level 1 from 0 XP, then XP_LEVEL_STEP * (n - 1)^2 to reach level n. */
 export function xpLevel(total: number): XpLevel {
-  const xp = Math.max(0, Math.floor(total));
+  const xp = Number.isFinite(total) ? Math.max(0, Math.floor(total)) : 0;
   const level = Math.floor(Math.sqrt(xp / XP_LEVEL_STEP)) + 1;
   const start = XP_LEVEL_STEP * (level - 1) ** 2;
   const span = XP_LEVEL_STEP * level ** 2 - start;
@@ -136,20 +149,27 @@ export function cleanEvents(raw: unknown): XpEvent[] {
     const { key, xp, active, at } = e as Partial<XpEvent>;
     if (!isEventKey(key) || typeof xp !== "number" || !Number.isInteger(xp) || xp < 0 || xp > MAX_EVENT_XP) continue;
     if (typeof active !== "boolean" || !isIso(at)) continue;
-    const next = { key, xp, active, at };
+    const next = { key, xp, active, at: new Date(at).toISOString() };
     const prev = byKey.get(key);
-    if (!prev || winner(prev, next) === next) byKey.set(key, next);
+    byKey.set(key, prev ? winner(prev, next) : next);
   }
-  return [...byKey.values()].sort((a, b) => a.key.localeCompare(b.key)).slice(0, MAX_XP_EVENTS);
+  return [...byKey.values()].sort((a, b) => (a.key < b.key ? -1 : a.key > b.key ? 1 : 0)).slice(0, MAX_XP_EVENTS);
 }
 
-/** The event that wins for one key: the later change; on the same instant the switched-off one, so a tie never over-awards. */
+/**
+ * The event that wins for one key. The later change decides `active` and `at`; on the same instant the switched-off
+ * one wins, so a tie never over-awards. The amount is always the smaller of the two: an event is worth what it
+ * was first given, and a copy carrying a bigger amount (a retune, a bad client) never raises it. The database
+ * (supabase/migrations/009_xp_fixes.sql) applies the same rule, so both sides end with the same row.
+ */
 function winner(a: XpEvent, b: XpEvent): XpEvent {
   const ta = Date.parse(a.at);
   const tb = Date.parse(b.at);
-  if (ta !== tb) return ta > tb ? a : b;
-  if (a.active !== b.active) return a.active ? b : a;
-  return a.xp >= b.xp ? a : b;
+  let w: XpEvent;
+  if (ta !== tb) w = ta > tb ? a : b;
+  else if (a.active !== b.active) w = a.active ? b : a;
+  else w = a;
+  return { key: w.key, xp: Math.min(a.xp, b.xp), active: w.active, at: w.at };
 }
 
 /**
