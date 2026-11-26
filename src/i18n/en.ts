@@ -216,6 +216,7 @@ export const en = {
     zoomControls: "Zoom the tree",
     zoomIn: "Zoom in",
     zoomOut: "Zoom out",
+    zoomHint: "Use two fingers to move the map. One finger scrolls the page.",
     fit: "Fit to screen",
     viewLabel: "How to show the tree",
     viewList: "List",

@@ -18,6 +18,7 @@ interface Props {
 /** Finger or mouse movement (px) before a press becomes a drag. Below it, a tap still opens the skill. */
 const DRAG_PX = 6;
 const ZOOM_STEP = 1.4;
+const HINT_KEY = "zoom-hint-seen";
 const NONE: Size = { width: 0, height: 0 };
 
 /**
@@ -36,6 +37,20 @@ export function ZoomPane({ ref, children, className = "" }: Props) {
   const gesture = useRef<{ view: View; from: Pt[] } | null>(null);
   const dragged = useRef(false);
   const smoothTimer = useRef<number | undefined>(undefined);
+  const [hint, setHint] = useState(false);
+
+  // Touch screens: say once that moving the map takes two fingers (one finger scrolls the page).
+  useEffect(() => {
+    try {
+      if (!window.matchMedia("(pointer: coarse)").matches || localStorage.getItem(HINT_KEY)) return;
+      localStorage.setItem(HINT_KEY, "1");
+    } catch {
+      return;
+    }
+    setHint(true);
+    const timer = window.setTimeout(() => setHint(false), 6000);
+    return () => window.clearTimeout(timer);
+  }, []);
 
   const setView = useCallback((next: View, animate = false) => {
     const { pane, content } = sizes.current;
@@ -100,6 +115,7 @@ export function ZoomPane({ ref, children, className = "" }: Props) {
   function onPointerDown(e: PointerEvent) {
     if (e.pointerType === "mouse" && e.button !== 0) return;
     pointers.current.set(e.pointerId, local(e));
+    if (pointers.current.size >= 2) setHint(false);
     if (pointers.current.size === 1) dragged.current = false;
     restart();
   }
@@ -188,6 +204,7 @@ export function ZoomPane({ ref, children, className = "" }: Props) {
           {children}
         </div>
       </div>
+      {hint && <p className="zoom-hint" role="status">{t.tree.zoomHint}</p>}
       <div className="zoom-controls" role="group" aria-label={t.tree.zoomControls}>
         <button type="button" className="zoom-btn" aria-label={t.tree.zoomIn} onClick={() => zoomBy(ZOOM_STEP)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.4} strokeLinecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>

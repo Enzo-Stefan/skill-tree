@@ -7,6 +7,7 @@ import { branchFocusSkill, revealTarget } from "./components/treeView";
 import { NextUpCard } from "./components/NextUpCard";
 import { SkillPanel } from "./components/SkillPanel";
 import { SkillPage } from "./components/SkillPage";
+import { usePageFocus } from "./lib/usePageFocus";
 import { useMediaQuery } from "./components/useMediaQuery";
 import { browserShare } from "./lib/browserShare";
 import type { Toast, ToastAction } from "./components/toast";
@@ -342,10 +343,7 @@ export default function App() {
     return () => window.removeEventListener("popstate", onPop);
   }, [tree]);
 
-  // The page's title gets focus when it opens, so a screen reader starts at the skill's name.
-  useEffect(() => {
-    if (pageId) document.getElementById("skill-page-title")?.focus({ preventScroll: true });
-  }, [pageId]);
+  usePageFocus(pageId, focusSkill);
 
   function copySkillLink(id: string) {
     const url = skillUrl(window.location.href, id, tree.id);

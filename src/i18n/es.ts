@@ -209,6 +209,7 @@ export const es: Strings = {
     zoomControls: "Zoom del árbol",
     zoomIn: "Acercar",
     zoomOut: "Alejar",
+    zoomHint: "Usa dos dedos para mover el mapa. Con un dedo se desplaza la página.",
     fit: "Ajustar a la pantalla",
     viewLabel: "Cómo mostrar el árbol",
     viewList: "Lista",
