@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import './nav.css'
 import './tree.css'
+import './motion.css'
 import App from './App.tsx'
 
 // /#admin loads the admin page as its own chunk, so players never download it. Anyone who is not an admin
