@@ -4,6 +4,8 @@
 @keyframes screen-in { from { opacity: 0; transform: translateX(20px); } }
 @keyframes fade-in { from { opacity: 0; } }
 @keyframes sheet-in { from { transform: translateY(100%); } }
+@keyframes sheet-out { to { transform: translateY(100%); } }
+@keyframes fade-out { to { opacity: 0; } }
 @keyframes dialog-in { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
 
 @media (prefers-reduced-motion: no-preference) {
@@ -15,6 +17,11 @@
   @media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
     .panel.sheet { animation: sheet-in var(--dur) var(--ease); transition-duration: var(--dur); }
   }
+  /* Exit: the sheet drops away and its backdrop fades while App keeps them mounted (useExitTransition). */
+  @media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+    main[data-sheet-closing] .panel.sheet { animation: sheet-out var(--dur-fast) var(--ease) forwards; pointer-events: none; }
+    main[data-sheet-closing] .sheet-backdrop { animation: fade-out var(--dur-fast) var(--ease) forwards; pointer-events: none; }
+  }
   .overlay > * { animation: dialog-in var(--dur-fast) var(--ease); }
   .toast { transition-duration: var(--dur-fast); }
 }
@@ -23,3 +30,6 @@
   .sheet-backdrop, .overlay { animation: none; }
   .panel.sheet { transition: none; }
 }
+
+.content { position: relative; }
+.screen-leaving { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 1; }

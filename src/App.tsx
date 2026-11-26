@@ -12,6 +12,7 @@ import { useMediaQuery } from "./components/useMediaQuery";
 import { browserShare } from "./lib/browserShare";
 import type { Toast, ToastAction } from "./components/toast";
 import { useSheetHistory } from "./components/useSheetHistory";
+import { leaveScreen, useExitTransition } from "./lib/exitTransition";
 import { LevelPicker } from "./components/LevelPicker";
 import { LevelUpBanner } from "./components/LevelUpBanner";
 import { LevelTestDialog } from "./components/LevelTestDialog";
@@ -134,6 +135,8 @@ export default function App() {
   // A skill's own page, shown instead of the tree. A shared link opens it, and its address stays in the address bar.
   const [pageId, setPageId] = useState<string | null>(link?.skillId ?? null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // Stays mounted briefly after closing so the sheet can slide away.
+  const sheetExit = useExitTransition(sheetOpen);
   const [playerLevelId, setPlayerLevelId] = useState<string | null>(() => loadPlayerLevel(tree));
   const hasLevels = (tree.playerLevels?.length ?? 0) > 0;
   // Ask on first visit; after that, only when the player asks to change.
@@ -527,6 +530,7 @@ export default function App() {
   const treeName = tree.shortName ?? tree.title;
 
   function goTo(next: Tab) {
+    if (next !== tab) leaveScreen(document.querySelector<HTMLElement>(".content"));
     if (tab === "train") trainScroll.current = trainScrollers().map((e) => e.scrollTop);
     setTab(next);
     setBoardOpen(false);
@@ -620,7 +624,7 @@ export default function App() {
               }}
             />
           )}
-          <main>
+          <main data-sheet-closing={sheetExit.closing || undefined}>
             <SkillTree
               nextId={suggested?.id ?? null}
               tree={tree}
@@ -632,10 +636,10 @@ export default function App() {
               scrollTo={scrollTo}
             />
             {/* Not kept while Train is hidden, so a playing video stops. */}
-            {tab === "train" && isPhone && sheetOpen && !(pickerOpen || testOpen || placementId !== null) && (
+            {tab === "train" && isPhone && sheetExit.mounted && !(pickerOpen || testOpen || placementId !== null) && (
               <div className="sheet-backdrop" aria-hidden="true" onClick={() => closeSheet()} />
             )}
-            {tab === "train" && (!isPhone || sheetOpen) && panel(true)}
+            {tab === "train" && (!isPhone || sheetExit.mounted) && panel(true)}
           </main>
         </div>
         {tab === "train" && pageId && (
