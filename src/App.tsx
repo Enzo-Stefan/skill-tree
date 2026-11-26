@@ -5,6 +5,7 @@ import { Header } from "./components/Header";
 import { SkillTree, type ScrollRequest } from "./components/SkillTree";
 import { branchFocusSkill, revealTarget } from "./components/treeView";
 import { Dashboard } from "./components/Dashboard";
+import { passDaysFromLedger } from "./lib/challengeRewards";
 import { SkillPanel } from "./components/SkillPanel";
 import { SkillPage } from "./components/SkillPage";
 import { usePageFocus } from "./lib/usePageFocus";
@@ -618,6 +619,7 @@ export default function App() {
             ticks={planState.ticks}
             sessions={sessions.sessions}
             today={today}
+            challengeContext={{ practiceDays, sessions: sessions.sessions, passDays: passDaysFromLedger(xp.events) }}
             rank={levelInfo(tree.levels, done.size).current.name}
             suggested={suggested}
             onOpenToday={() => goTo("plan")}

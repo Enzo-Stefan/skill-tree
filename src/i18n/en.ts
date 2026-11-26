@@ -140,6 +140,13 @@ export const en = {
     passed: "Passed",
     trained: "Trained",
     todayWord: "Today",
+    challenges: "Challenges",
+    challengeDaily: "Today",
+    challengeWeekly: "This week",
+    challengeSeason: (title: string) => `Season: ${title}`,
+    challengeProgress: (have: number, need: number) => `${have} of ${need}`,
+    challengeDone: "Done",
+    challengeOpen: "Not done yet",
   },
   playerCard: {
     title: "Player card",

@@ -365,3 +365,10 @@
 .dash-list li.done .dash-check { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .dash-check + span { flex: 1; }
 @media (max-width: 700px) { .dash { margin-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right)); } }
+
+/* Challenges on the dashboard: each is a stacked block (kind and progress, title, text, bar), not a one-line row. */
+.dash-list.challenge-list li { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 4px; padding: 10px 0; }
+.dash-list.challenge-list li + li { border-top: 1px solid var(--glass-border); }
+.challenge-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.challenge-kind { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-2); }
+.challenge-title { font-weight: 600; }
