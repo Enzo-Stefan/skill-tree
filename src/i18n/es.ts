@@ -112,6 +112,7 @@ export const es: Strings = {
     form: "Forma",
     level: (n: number) => `Nivel de forma ${n}`,
     total: (n: number) => `${n} XP`,
+    trophies: (n: number, total: number) => `Trofeos ${n} / ${total}`,
     toNext: (n: number) => `${n} XP para el siguiente nivel`,
   },
   progressScreen: {

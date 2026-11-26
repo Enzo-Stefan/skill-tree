@@ -2,6 +2,7 @@ import { useEffect, useRef, type CSSProperties } from "react";
 import type { Tree } from "../types";
 import { RankProgress } from "./Header";
 import type { XpState } from "../lib/useXp";
+import { ACHIEVEMENTS } from "../data/achievements";
 import { PRACTICE_DAYS_PER_WEEK, STREAK_WEEKS, type DayKey } from "../lib/streak";
 import { STEPS_PER_LEVEL } from "../lib/progress";
 import { t } from "../i18n";
@@ -85,6 +86,7 @@ export function ProgressScreen(props: Props) {
             <span style={{ width: `${xp.level.progress * 100}%` }} />
           </div>
           <p className="card-note">{t.xp.toNext(xp.level.span - xp.level.into)}</p>
+          <p className="card-note">{t.xp.trophies(xp.earned.length, ACHIEVEMENTS.length)}</p>
         </section>
       )}
 
