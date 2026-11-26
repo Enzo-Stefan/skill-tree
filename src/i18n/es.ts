@@ -115,6 +115,16 @@ export const es: Strings = {
     trophies: (n: number, total: number) => `Trofeos ${n} / ${total}`,
     toNext: (n: number) => `${n} XP para el siguiente nivel`,
   },
+  playerCard: {
+    title: "Tarjeta de jugador",
+    overall: "General",
+    overallLabel: (n: number) => `Valoración general ${n} de 99`,
+    branchLabel: (name: string, n: number) => `${name} ${n} de 99`,
+    weeks: (n: number) => `${n} ${n === 1 ? "semana" : "semanas"} registradas`,
+    historyLabel: (n: number) => `Valoración general de las últimas ${n} semanas`,
+    empty: "Pasa tu primera habilidad para ver tu tarjeta.",
+    how: "Se calcula en este dispositivo con las habilidades que has pasado, tu nivel y tu dominio.",
+  },
   progressScreen: {
     rankLabel: "Tu rango",
     thisWeek: "Esta semana",

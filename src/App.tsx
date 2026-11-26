@@ -182,7 +182,7 @@ export default function App() {
   }, [hasLeaderboard]);
   const cloud = useCloudSync({ tree, userId: auth.account?.id ?? null, progress, apply: applySaved, onMessage: showToast });
   // The player's ratings and weekly history (#123). Nothing shows them yet: the player card and the career page will.
-  useRatings(tree, auth.account?.id ?? null, cloud.status, done, playerLevelId, playerStep, today);
+  const { ratings, history: ratingHistory } = useRatings(tree, auth.account?.id ?? null, cloud.status, done, playerLevelId, playerStep, today);
   const accountAuth = {
     ...auth,
     // Send any waiting save before signing out, while the account can still be written to.
@@ -636,6 +636,8 @@ export default function App() {
           <ProgressScreen
             tree={tree}
             xp={xp}
+            ratings={hasLevels ? ratings : undefined}
+            ratingHistory={ratingHistory}
             done={done}
             playerLevelName={playerRungName}
             playerStep={playerStep}

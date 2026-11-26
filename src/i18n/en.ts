@@ -118,6 +118,16 @@ export const en = {
     trophies: (n: number, total: number) => `Trophies ${n} / ${total}`,
     toNext: (n: number) => `${n} XP to the next level`,
   },
+  playerCard: {
+    title: "Player card",
+    overall: "Overall",
+    overallLabel: (n: number) => `Overall rating ${n} out of 99`,
+    branchLabel: (name: string, n: number) => `${name} ${n} out of 99`,
+    weeks: (n: number) => `${n} ${n === 1 ? "week" : "weeks"} tracked`,
+    historyLabel: (n: number) => `Overall rating over the last ${n} weeks`,
+    empty: "Pass your first skill to see your card.",
+    how: "Worked out on this device from the skills you passed, your level and your mastery.",
+  },
   progressScreen: {
     rankLabel: "Your rank",
     thisWeek: "This week",

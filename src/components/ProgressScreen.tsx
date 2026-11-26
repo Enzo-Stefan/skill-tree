@@ -9,6 +9,9 @@ import { t } from "../i18n";
 import type { LiftEntry } from "../lib/lifts";
 import { PersonalBests } from "./PersonalBests";
 import { WeekDots } from "./WeekDots";
+import { PlayerCard } from "./PlayerCard";
+import type { Ratings } from "../lib/ratings";
+import type { RatingSnapshot } from "../lib/ratingHistory";
 
 interface Props {
   tree: Tree;
@@ -34,11 +37,14 @@ interface Props {
   onOpenLeaderboard?: () => void;
   /** Form XP and level (#121). Left out, the card is not shown. */
   xp?: XpState;
+  /** Branch ratings and weekly history (#123). Left out, the player card is not shown. */
+  ratings?: Ratings;
+  ratingHistory?: RatingSnapshot[];
 }
 
 /** Rank, your level and streak, training this week, each branch, personal bests on lifts, and the share picture. */
 export function ProgressScreen(props: Props) {
-  const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, weekCanCount, streakWeeks, liftLog, onShare, onPickLevel, onOpenLeaderboard, xp } = props;
+  const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, weekCanCount, streakWeeks, liftLog, onShare, onPickLevel, onOpenLeaderboard, xp, ratings, ratingHistory } = props;
   const daysLeft = Math.max(0, PRACTICE_DAYS_PER_WEEK - daysThisWeek);
 
   // Picking a level here removes the Pick your level button, so the picker can't hand focus back
@@ -89,6 +95,8 @@ export function ProgressScreen(props: Props) {
           <p className="card-note">{t.xp.trophies(xp.earned.length, ACHIEVEMENTS.length)}</p>
         </section>
       )}
+
+      {ratings && <PlayerCard tree={tree} ratings={ratings} history={ratingHistory ?? []} />}
 
       {onOpenLeaderboard && (
         <section className="card" aria-labelledby="progress-board">
