@@ -23,18 +23,48 @@ export function mergeCard(account: PlayerCard, local: PlayerCard): PlayerCard {
 
 export const sameCard = (a: PlayerCard, b: PlayerCard): boolean => a.position === b.position && a.foot === b.foot;
 
-export function loadCard(): PlayerCard {
+/** Which fields the player changed by hand since the account sync started. */
+export interface Touched {
+  position: boolean;
+  foot: boolean;
+}
+
+/** The card this browser holds and whose account it belongs to; null when it was made while signed out. */
+export interface StoredCard {
+  card: PlayerCard;
+  userId: string | null;
+}
+
+const EMPTY_STORED: StoredCard = { card: EMPTY_CARD, userId: null };
+
+/**
+ * The card to show after the account's card has been fetched. This browser's card only fills the account's empty
+ * fields when it was made signed out or belongs to this same user; another user's card is ignored. Fields the player
+ * changed during the fetch keep the player's value.
+ */
+export function reconcileCard(account: PlayerCard, local: PlayerCard, owner: string | null, userId: string, touched: Touched): PlayerCard {
+  const base = owner === null || owner === userId ? mergeCard(account, local) : account;
+  return { position: touched.position ? local.position : base.position, foot: touched.foot ? local.foot : base.foot };
+}
+
+export function loadStored(): StoredCard {
   try {
     const raw = localStorage.getItem(KEY);
-    return raw ? cleanCard(JSON.parse(raw)) : EMPTY_CARD;
+    if (!raw) return EMPTY_STORED;
+    const parsed: unknown = JSON.parse(raw);
+    const id = parsed && typeof parsed === "object" ? (parsed as Record<string, unknown>).userId : null;
+    // A card saved before owners were recorded has no userId and counts as made signed out.
+    return { card: cleanCard(parsed), userId: typeof id === "string" && id !== "" ? id : null };
   } catch {
-    return EMPTY_CARD;
+    return EMPTY_STORED;
   }
 }
 
-export function storeCard(card: PlayerCard): void {
+export const loadCard = (): PlayerCard => loadStored().card;
+
+export function storeCard(card: PlayerCard, userId: string | null = null): void {
   try {
-    localStorage.setItem(KEY, JSON.stringify(card));
+    localStorage.setItem(KEY, JSON.stringify({ ...card, userId }));
   } catch {
     // Storage can be full or blocked. The choice is still kept in memory and in the account.
   }

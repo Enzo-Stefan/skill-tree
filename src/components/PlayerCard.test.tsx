@@ -109,6 +109,28 @@ describe("PlayerCard pickers", () => {
     expect(onChange).toHaveBeenLastCalledWith({ position: "FWD", foot: null });
   });
 
+  it("makes only the chosen button (or the first) a tab stop", () => {
+    const { rerender } = render(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: null, foot: null }} onCardChange={() => undefined} />);
+    expect(screen.getByRole("radio", { name: "GK" }).tabIndex).toBe(0);
+    expect(screen.getByRole("radio", { name: "DEF" }).tabIndex).toBe(-1);
+    rerender(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: "MID", foot: null }} onCardChange={() => undefined} />);
+    expect(screen.getByRole("radio", { name: "GK" }).tabIndex).toBe(-1);
+    expect(screen.getByRole("radio", { name: "MID" }).tabIndex).toBe(0);
+  });
+
+  it("moves and chooses with the arrow keys, wrapping around, and clears with Backspace or Delete", () => {
+    const onChange = vi.fn();
+    render(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: "FWD", foot: "left" }} onCardChange={onChange} />);
+    fireEvent.keyDown(screen.getByRole("radio", { name: "FWD" }), { key: "ArrowRight" });
+    expect(onChange).toHaveBeenLastCalledWith({ position: "GK", foot: "left" });
+    fireEvent.keyDown(screen.getByRole("radio", { name: "FWD" }), { key: "ArrowLeft" });
+    expect(onChange).toHaveBeenLastCalledWith({ position: "MID", foot: "left" });
+    fireEvent.keyDown(screen.getByRole("radio", { name: "Left" }), { key: "Backspace" });
+    expect(onChange).toHaveBeenLastCalledWith({ position: "FWD", foot: null });
+    fireEvent.keyDown(screen.getByRole("radio", { name: "FWD" }), { key: "Delete" });
+    expect(onChange).toHaveBeenLastCalledWith({ position: null, foot: "left" });
+  });
+
   it("hides the pickers when no card is given", () => {
     render(<PlayerCard tree={tree} ratings={r} history={[]} />);
     expect(screen.queryByRole("radiogroup")).toBeNull();

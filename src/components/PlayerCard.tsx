@@ -1,4 +1,4 @@
-import type { CSSProperties } from "react";
+import { useRef, type CSSProperties, type KeyboardEvent } from "react";
 import type { Tree } from "../types";
 import { MAX_RATING, type Ratings } from "../lib/ratings";
 import type { RatingSnapshot } from "../lib/ratingHistory";
@@ -18,13 +18,45 @@ interface Props {
   onCardChange?: (next: Card) => void;
 }
 
-/** One optional choice. Pressing the chosen button again clears it. */
+/**
+ * One optional choice, as a radio group: the chosen button (or the first when none is chosen) is the only tab stop,
+ * arrow keys move to the next or previous button and choose it, and Backspace or Delete clears the choice.
+ * Pressing the chosen button again also clears it.
+ */
 function Pick<T extends string>({ label, options, names, value, onPick }: { label: string; options: readonly T[]; names: Record<T, string>; value: T | null; onPick: (next: T | null) => void }) {
+  const buttons = useRef<(HTMLButtonElement | null)[]>([]);
+  const stop = value === null ? 0 : options.indexOf(value);
+
+  const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const step = e.key === "ArrowRight" || e.key === "ArrowDown" ? 1 : e.key === "ArrowLeft" || e.key === "ArrowUp" ? -1 : 0;
+    if (step !== 0) {
+      e.preventDefault();
+      const to = (index + step + options.length) % options.length;
+      onPick(options[to]);
+      buttons.current[to]?.focus();
+    } else if (e.key === "Backspace" || e.key === "Delete") {
+      e.preventDefault();
+      onPick(null);
+    }
+  };
+
   return (
     <div className="player-pick" role="radiogroup" aria-label={label}>
       <span className="player-pick-label">{label}</span>
-      {options.map((o) => (
-        <button key={o} type="button" role="radio" aria-checked={value === o} className={value === o ? "btn on" : "btn"} onClick={() => onPick(value === o ? null : o)}>
+      {options.map((o, i) => (
+        <button
+          key={o}
+          ref={(el) => {
+            buttons.current[i] = el;
+          }}
+          type="button"
+          role="radio"
+          aria-checked={value === o}
+          tabIndex={i === stop ? 0 : -1}
+          className={value === o ? "btn on" : "btn"}
+          onClick={() => onPick(value === o ? null : o)}
+          onKeyDown={(e) => onKeyDown(e, i)}
+        >
           {names[o]}
         </button>
       ))}
