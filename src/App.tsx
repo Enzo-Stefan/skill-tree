@@ -698,6 +698,9 @@ export default function App() {
             xp={xp}
             ratings={hasLevels ? ratings : undefined}
             ratingHistory={ratingHistory}
+            sessions={sessions.sessions}
+            results={results.results}
+            playerLevelId={playerLevelId}
             hasProgress={done.size > 0}
             card={playerCard}
             onCardChange={setPlayerCard}

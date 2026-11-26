@@ -1,4 +1,4 @@
-import { useEffect, useRef, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import type { Tree } from "../types";
 import { RankProgress } from "./Header";
 import type { XpState } from "../lib/useXp";
@@ -9,6 +9,9 @@ import { t } from "../i18n";
 import type { LiftEntry } from "../lib/lifts";
 import { PersonalBests } from "./PersonalBests";
 import { WeekDots } from "./WeekDots";
+import { CareerView } from "./CareerView";
+import type { SessionEntry } from "../lib/sessions";
+import type { TestResult } from "../lib/results";
 import { PlayerCard } from "./PlayerCard";
 import type { Ratings } from "../lib/ratings";
 import type { PlayerCard as Card, RatingSnapshot } from "../lib/ratingHistory";
@@ -40,6 +43,10 @@ interface Props {
   /** Branch ratings and weekly history (#123). Left out, the player card is not shown. */
   ratings?: Ratings;
   ratingHistory?: RatingSnapshot[];
+  /** Saved sessions, results and the player's level, for the Career view (#124). */
+  sessions?: SessionEntry[];
+  results?: TestResult[];
+  playerLevelId?: string | null;
   /** True once the player has passed a skill. The player card shows its prompt until then. */
   hasProgress: boolean;
   /** Position and preferred foot, and how to change them. */
@@ -49,7 +56,8 @@ interface Props {
 
 /** Rank, your level and streak, training this week, each branch, personal bests on lifts, and the share picture. */
 export function ProgressScreen(props: Props) {
-  const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, weekCanCount, streakWeeks, liftLog, onShare, onPickLevel, onOpenLeaderboard, xp, ratings, ratingHistory, hasProgress, card, onCardChange } = props;
+  const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, weekCanCount, streakWeeks, liftLog, onShare, onPickLevel, onOpenLeaderboard, xp, ratings, ratingHistory, hasProgress, card, onCardChange, sessions = [], results = [], playerLevelId = null } = props;
+  const [view, setView] = useState<"overview" | "career">("overview");
   const daysLeft = Math.max(0, PRACTICE_DAYS_PER_WEEK - daysThisWeek);
 
   // Picking a level here removes the Pick your level button, so the picker can't hand focus back
@@ -77,6 +85,19 @@ export function ProgressScreen(props: Props) {
         </button>
       </div>
 
+      <div className="seg career-seg" role="group" aria-label={t.career.viewLabel}>
+        {(["overview", "career"] as const).map((v) => (
+          <button key={v} type="button" className="seg-btn" aria-pressed={view === v} onClick={() => setView(v)}>
+            {t.career[v]}
+          </button>
+        ))}
+      </div>
+
+      {view === "career" && (
+        <CareerView tree={tree} done={done} practiceDays={practiceDays} today={today} sessions={sessions} results={results} playerLevelId={playerLevelId} xpEvents={xp?.events ?? []} ratingHistory={ratingHistory ?? []} liftLog={liftLog} />
+      )}
+      {view === "overview" && (
+        <>
       <section className="card" aria-labelledby="progress-rank">
         <h2 className="card-label" id="progress-rank">
           {t.progressScreen.rankLabel}
@@ -194,6 +215,8 @@ export function ProgressScreen(props: Props) {
       </section>
 
       <PersonalBests tree={tree} log={liftLog} />
+        </>
+      )}
     </div>
   );
 }
