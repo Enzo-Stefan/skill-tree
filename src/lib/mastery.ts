@@ -7,6 +7,11 @@ import { amountFor, award, hasAward, masteryKey, type MasteryTier, type XpEvent 
 //   silver  passing its test again at a level step at least one level (4 steps) above the bronze pass.
 //   gold    passing its test again at a step at least one level above the silver pass.
 //
+// The bar is capped at step 16, and a tier earned at step 16 is the last one. So gold needs a silver pass below step 16,
+// which needs a bronze pass at step 11 or below: gold is for players who passed the skill early and came back twice,
+// spread over three levels (for example bronze at Beginner, silver at Intermediate, gold at Advanced or Expert).
+// A skill first passed at Advanced 4 or higher can reach silver at best.
+//
 // A skill passed before mastery existed counts as a bronze pass at step 1 (Beginner 1) that pays no XP (its XP was paid
 // when it was passed), so silver needs Intermediate 1 (step 5) or above. This bronze is worked out from the pass (see
 // masteryOf), never written as a ledger row, so it cannot overwrite a real 50-XP bronze when ledgers merge. Everything is kept in the XP ledger, so it syncs like XP:
@@ -72,7 +77,8 @@ export function tiersOf(events: XpEvent[]): Record<string, MasteryTier> {
 /** The ledger with the bronze tier (and the step it was earned at) awarded. Does nothing when bronze is already held. */
 export function recordPass(events: XpEvent[], skillId: string, step: number, now: string): XpEvent[] {
   if (hasAward(events, masteryKey(skillId, "bronze"))) return events;
-  const at = Math.min(MAX_STEP, Math.max(0, Math.round(step)));
+  // No level picked is step 0; a pass is never recorded below Beginner 1 (LEGACY_STEP), or silver would come a step early.
+  const at = Math.min(MAX_STEP, Math.max(LEGACY_STEP, Math.round(step)));
   const withTier = award(events, masteryKey(skillId, "bronze"), amountFor(masteryKey(skillId, "bronze")), now);
   return award(withTier, stepAtKey(skillId, "bronze", at), 0, now);
 }

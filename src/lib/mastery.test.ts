@@ -170,3 +170,34 @@ describe("hostile keys", () => {
     expect(tiersOf(evil)["constructor"]).toBe("silver");
   });
 });
+
+describe("a pass with no level picked, and the top of the range", () => {
+  it("is recorded as step 1 at the lowest, so silver still needs Intermediate 1", () => {
+    const bronze = recordPass([], "bc1", 0, T1);
+    expect(masteryOf(bronze).bc1!.steps).toEqual({ bronze: LEGACY_STEP });
+    expect(recordRetest(bronze, "bc1", 4, T2).result).toBe("tooSoon");
+    expect(recordRetest(bronze, "bc1", 5, T2).result).toBe("silver");
+    expect(masteryOf(recordPass([], "bc2", -3, T1)).bc2!.steps).toEqual({ bronze: LEGACY_STEP });
+  });
+
+  it("gold is reachable when bronze was passed at step 11 or below, in three passes over three levels", () => {
+    const bronze = recordPass([], "bc1", 11, T1);
+    const silver = recordRetest(bronze, "bc1", 15, T2);
+    expect(silver.result).toBe("silver");
+    const gold = recordRetest(silver.events, "bc1", 16, T3);
+    expect(gold.result).toBe("gold");
+    expect(tiersOf(gold.events).bc1).toBe("gold");
+    const early = recordPass([], "bc2", 2, T1);
+    const s2 = recordRetest(early, "bc2", 6, T2).events;
+    expect(recordRetest(s2, "bc2", 10, T3).result).toBe("gold");
+  });
+
+  it("gold is not reachable when bronze was passed at step 12 or higher: silver then needs step 16, the last tier", () => {
+    const bronze = recordPass([], "bc1", 12, T1);
+    expect(recordRetest(bronze, "bc1", 15, T2).result).toBe("tooSoon");
+    const silver = recordRetest(bronze, "bc1", 16, T2);
+    expect(silver.result).toBe("silver");
+    expect(recordRetest(silver.events, "bc1", 16, T3).result).toBe("tooSoon");
+    expect(stepNeededForNext(silver.events, "bc1")).toBeNull();
+  });
+});
