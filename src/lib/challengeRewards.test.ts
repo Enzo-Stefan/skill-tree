@@ -33,14 +33,12 @@ describe("passDaysFromLedger", () => {
     expect(rewards.some((e) => e.key.startsWith("challenge:"))).toBe(false);
   });
 
-  it("an undo removes the marker, and a pass again on a later day counts for that later day only", () => {
+  it("an undo removes the marker", () => {
     const tree = { id: "football", skills: [{ id: "bc1" }] } as never;
     let ledger = award(reconcile(tree, [], ["bc1"], [], NOW), passDayKey("bc1", "2026-11-20"), 0, NOW);
     expect(passDaysFromLedger(ledger)).toEqual(["2026-11-20"]);
     ledger = reconcile(tree, ledger, [], [], "2026-11-21T10:00:00.000Z");
     expect(passDaysFromLedger(ledger)).toEqual([]);
-    ledger = award(reconcile(tree, ledger, ["bc1"], [], "2026-11-26T10:00:00.000Z"), passDayKey("bc1", "2026-11-26"), 0, "2026-11-26T10:00:00.000Z");
-    expect(passDaysFromLedger(ledger)).toEqual(["2026-11-26"]);
   });
 });
 

@@ -160,15 +160,49 @@ describe("useXp", () => {
     expect(fresh.result.current.events.some((e) => e.key === "passday:a:2026-11-26" && e.active)).toBe(true);
   });
 
-  it("after Reset everything the same mission is not paid again once its ticks are cleared", () => {
+  it("an undo and re-pass never moves a pass to a later day: only a skill's first-ever pass gets a day", () => {
     const base = { streakWeeks: 0, levelIndex: -1, results: 0 };
-    const { result, rerender } = renderHook(({ keys }) => useXp(tree, null, "off", new Set<string>(), [], { ...base, missionKeys: keys }), { initialProps: { keys: ["mission:2026-11-26:a"] } });
+    const { result, rerender } = renderHook(({ done }) => useXp(tree, null, "off", done, [], base), { initialProps: { done: new Set<string>() } });
+    act(() => {
+      result.current.recordPassDay("a", "2026-11-24");
+      rerender({ done: new Set(["a"]) });
+    });
+    const days = () => result.current.events.filter((e) => e.active && e.key.startsWith("passday:")).map((e) => e.key);
+    expect(days()).toEqual(["passday:a:2026-11-24"]);
+    // Undo, then pass again on a later day: no new day is written.
+    rerender({ done: new Set<string>() });
+    expect(days()).toEqual([]);
+    act(() => {
+      result.current.recordPassDay("a", "2026-11-26");
+      rerender({ done: new Set(["a"]) });
+    });
+    expect(days()).toEqual([]);
+  });
+
+  it("a skill that was already passed when the app loaded never gets a day, even after an undo and re-pass", () => {
+    const base = { streakWeeks: 0, levelIndex: -1, results: 0 };
+    const { result, rerender } = renderHook(({ done }) => useXp(tree, null, "off", done, [], base), { initialProps: { done: new Set(["a"]) } });
+    rerender({ done: new Set<string>() });
+    act(() => {
+      result.current.recordPassDay("a", "2026-11-26");
+      rerender({ done: new Set(["a"]) });
+    });
+    expect(result.current.events.some((e) => e.key.startsWith("passday:"))).toBe(false);
+  });
+
+  it("Reset everything: the ticks and the ledger are cleared together, so today's mission is not paid again", () => {
+    const base = { streakWeeks: 0, levelIndex: -1, results: 0 };
+    const key = "mission:2026-11-26:a";
+    const { result, rerender } = renderHook(({ done, keys }) => useXp(tree, null, "off", done, [], { ...base, missionKeys: keys }), { initialProps: { done: new Set(["a"]), keys: [key] } });
+    expect(result.current.total).toBe(XP_AMOUNTS.skill + XP_AMOUNTS.mission);
+    // The app does all of this in one handler: progress, ticks (so no mission key) and the ledger are reset together.
+    act(() => {
+      rerender({ done: new Set<string>(), keys: [] });
+      result.current.reset();
+    });
+    expect(result.current.total).toBe(0);
+    // If the ticks were NOT cleared, the mission key would come back and pay again: this is what clearTicks guards.
+    rerender({ done: new Set<string>(), keys: [key] });
     expect(result.current.total).toBe(XP_AMOUNTS.mission);
-    // The app clears the plan's ticks and then switches the ledger off.
-    rerender({ keys: [] });
-    act(() => result.current.reset());
-    expect(result.current.total).toBe(0);
-    rerender({ keys: [] });
-    expect(result.current.total).toBe(0);
   });
 });

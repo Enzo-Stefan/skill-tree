@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Tree } from "../types";
 import { loadSupabase } from "../auth/client";
 import type { SyncStatus } from "./useCloudSync";
-import { award, mergeEvents, passDayKey, revoke, totalXp, xpLevel, type XpEvent, type XpLevel } from "./xp";
+import { award, mergeEvents, passDayKey, revoke, skillPassKey, totalXp, xpLevel, type XpEvent, type XpLevel } from "./xp";
 import { belongsToAnother, setOwner } from "./localOwner";
 import { applyStreakRewards } from "./streakRewards";
 import { applyChallengeRewards, applyMissionRewards } from "./challengeRewards";
@@ -16,7 +16,7 @@ export interface XpState {
   level: XpLevel;
   /** Switches every award off, for "Reset everything": XP, trophies and streak bonuses start again from the reset progress. */
   reset: () => void;
-  /** A skill was just passed on this day: remembers the day, so challenges count only passes made from now on. */
+  /** A skill was just passed on this day: remembers the day of its first-ever pass, so challenges count only passes made from now on. */
   recordPassDay: (skillId: string, day: string) => void;
   /** Ids of the achievements earned (#121 item 4), from the ledger, so trophies from another device count too. */
   earned: string[];
@@ -117,9 +117,13 @@ export function useXp(tree: Tree, userId: string | null, status: SyncStatus, don
     setEvents((current) => current.reduce((next, e) => (e.active ? revoke(next, e.key, now) : next), current));
   }, []);
 
+  // Only a skill's first-ever pass gets a day. A skill-pass event is switched off by an undo, never deleted, so its
+  // existence says the skill was passed before: an undo and re-pass (of a new or an old skill) must not move the pass
+  // to today, or a pass goal could be met every day by undoing and passing again.
   const recordPassDay = useCallback((skillId: string, day: string) => {
-    const key = passDayKey(skillId, day);
-    setEvents((current) => award(current, key, 0, new Date().toISOString()));
+    setEvents((current) =>
+      current.some((e) => e.key === skillPassKey(skillId)) ? current : award(current, passDayKey(skillId, day), 0, new Date().toISOString()),
+    );
   }, []);
 
   return useMemo(() => {
