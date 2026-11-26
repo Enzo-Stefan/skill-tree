@@ -111,6 +111,12 @@ export const en = {
     upFrom: (kg: string, times: number) => `Up from ${kg} · logged ${times} ${times === 1 ? "time" : "times"}`,
     timesLogged: (times: number) => `Logged ${times} ${times === 1 ? "time" : "times"}`,
   },
+  xp: {
+    form: "Form",
+    level: (n: number) => `Form level ${n}`,
+    total: (n: number) => `${n} XP`,
+    toNext: (n: number) => `${n} XP to the next level`,
+  },
   progressScreen: {
     rankLabel: "Your rank",
     thisWeek: "This week",

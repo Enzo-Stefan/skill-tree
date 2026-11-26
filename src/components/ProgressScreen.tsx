@@ -1,6 +1,7 @@
 import { useEffect, useRef, type CSSProperties } from "react";
 import type { Tree } from "../types";
 import { RankProgress } from "./Header";
+import type { XpState } from "../lib/useXp";
 import { PRACTICE_DAYS_PER_WEEK, STREAK_WEEKS, type DayKey } from "../lib/streak";
 import { STEPS_PER_LEVEL } from "../lib/progress";
 import { t } from "../i18n";
@@ -30,11 +31,13 @@ interface Props {
   onPickLevel?: () => void;
   /** Opens the leaderboard; leave undefined for trees that don't have one. */
   onOpenLeaderboard?: () => void;
+  /** Form XP and level (#121). Left out, the card is not shown. */
+  xp?: XpState;
 }
 
 /** Rank, your level and streak, training this week, each branch, personal bests on lifts, and the share picture. */
 export function ProgressScreen(props: Props) {
-  const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, weekCanCount, streakWeeks, liftLog, onShare, onPickLevel, onOpenLeaderboard } = props;
+  const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, weekCanCount, streakWeeks, liftLog, onShare, onPickLevel, onOpenLeaderboard, xp } = props;
   const daysLeft = Math.max(0, PRACTICE_DAYS_PER_WEEK - daysThisWeek);
 
   // Picking a level here removes the Pick your level button, so the picker can't hand focus back
@@ -68,6 +71,22 @@ export function ProgressScreen(props: Props) {
         </h2>
         <RankProgress tree={tree} doneCount={done.size} />
       </section>
+
+      {xp && (
+        <section className="card" aria-labelledby="progress-form">
+          <div className="card-row">
+            <h2 className="card-label" id="progress-form">
+              {t.xp.form}
+            </h2>
+            <strong className="card-aside strong">{t.xp.total(xp.total)}</strong>
+          </div>
+          <span className="card-big">{t.xp.level(xp.level.level)}</span>
+          <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={xp.level.span} aria-valuenow={xp.level.into} aria-label={t.xp.level(xp.level.level)}>
+            <span style={{ width: `${xp.level.progress * 100}%` }} />
+          </div>
+          <p className="card-note">{t.xp.toNext(xp.level.span - xp.level.into)}</p>
+        </section>
+      )}
 
       {onOpenLeaderboard && (
         <section className="card" aria-labelledby="progress-board">
