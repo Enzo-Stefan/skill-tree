@@ -77,6 +77,7 @@ import { undoPass, withoutSkill } from "./components/undoPass";
 import type { SavedProgress } from "./lib/cloud";
 import { useCloudSync } from "./lib/useCloudSync";
 import { useXp } from "./lib/useXp";
+import { completedMissionKeys } from "./lib/missions";
 import { useRatings } from "./lib/useRatings";
 import { LeaderboardScreen } from "./components/LeaderboardScreen";
 import { LeaderboardProfileDialog } from "./components/LeaderboardProfileDialog";
@@ -416,6 +417,7 @@ export default function App() {
     const skill = tree.skills.find((s) => s.id === id)!;
     const unlocked = newlyUnlocked(tree, done, id);
     const next = new Set(done).add(id);
+    xp.recordPassDay(id, today);
     const before = levelInfo(tree.levels, done.size).current.name;
     const after = levelInfo(tree.levels, next.size).current.name;
     setDone(next);
@@ -473,6 +475,7 @@ export default function App() {
     results.clear();
     sessions.clear();
     xp.reset();
+    planState.clearTicks();
     setTestOpen(false);
     setSelectedId(tree.skills[0].id);
     setBranchId(null);
@@ -483,9 +486,14 @@ export default function App() {
   }
 
   const streak = streakWeeks(practiceDays, streakState.since, today);
+  // Sessions from today's plan whose exercises are all ticked: each pays its mission XP once.
+  const missionKeys = useMemo(() => completedMissionKeys(tree, planState.plan, planState.ticks, today), [tree, planState.plan, planState.ticks, today]);
   const xp = useXp(tree, auth.account?.id ?? null, cloud.status, done, practiceDays, {
     streakWeeks: streak,
     streakSince: streakState.since,
+    sessions: sessions.sessions,
+    today,
+    missionKeys,
     levelIndex: (tree.playerLevels ?? []).findIndex((l) => l.id === playerLevelId),
     results: results.results.length,
   });

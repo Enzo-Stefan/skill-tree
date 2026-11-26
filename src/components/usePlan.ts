@@ -17,6 +17,8 @@ export interface PlanState {
   /** Exercises ticked off today, as "<day>|<skill>|<exercise index>", so yesterday's ticks never show today. */
   ticks: Set<string>;
   toggleTick: (key: string) => void;
+  /** Un-ticks everything, for "Reset everything". */
+  clearTicks: () => void;
 }
 
 const addedKey = (treeId: string) => `skill-tree:plan-added:${treeId}`;
@@ -83,5 +85,7 @@ export function usePlan(tree: Tree, done: Set<string>, levelId: string | null, t
     [],
   );
 
-  return { plan, added, toggleAdded, dayMinutes, setDayMinutes, restDays, toggleRestDay, ticks, toggleTick };
+  const clearTicks = useCallback(() => setTicks(new Set()), []);
+
+  return { plan, added, toggleAdded, dayMinutes, setDayMinutes, restDays, toggleRestDay, ticks, toggleTick, clearTicks };
 }

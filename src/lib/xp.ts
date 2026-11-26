@@ -40,6 +40,11 @@ export const masteryKey = (skillId: string, tier: MasteryTier) => `mastery:${ski
  * the streak), or nothing for the first one. One award per milestone per run, so a new streak can earn them again.
  */
 export const streakKey = (weeks: number, run: string | null) => `streak:${weeks}:${run ?? "start"}`;
+/**
+ * The day a skill was passed, written when the pass happens (a marker worth nothing). Challenges count passes from
+ * these, not from the time the app first noticed a pass, so old passes never count toward today's goals.
+ */
+export const passDayKey = (skillId: string, day: string) => `passday:${skillId}:${day}`;
 export const achievementKey = (id: string) => `achievement:${id}`;
 
 const KEY = /^[a-z]+:[A-Za-z0-9_.:-]{1,90}$/;
@@ -71,6 +76,8 @@ export function amountFor(key: string, weekly = false): number | null {
       if (parts.length !== 3 || String(Number(a)) !== a || !/^(start|\d{4}-\d{2}-\d{2})$/.test(parts[2]!)) return null;
       return XP_AMOUNTS.streak[Number(a)] ?? null;
     }
+    case "passday":
+      return key.split(":").length === 3 && /^\d{4}-\d{2}-\d{2}$/.test(b ?? "") ? 0 : null;
     case "achievement":
       return XP_AMOUNTS.achievement;
     default:
