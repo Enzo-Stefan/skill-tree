@@ -12,6 +12,7 @@ import { useCloudSync } from "./useCloudSync";
 // left behind. Supabase is faked with one saved row per account; browser storage is the one jsdom localStorage.
 
 const rows = new Map<string, Record<string, unknown>>();
+const failing = { current: false };
 const fakeClient = {
   from: () => {
     let user = "";
@@ -21,7 +22,7 @@ const fakeClient = {
         if (column === "user_id") user = value;
         return query;
       },
-      maybeSingle: async () => ({ data: rows.get(user) ?? null, error: null }),
+      maybeSingle: async () => (failing.current ? { data: null, error: { message: "offline" } } : { data: rows.get(user) ?? null, error: null }),
       upsert: async (value: Record<string, unknown>) => {
         rows.set(value.user_id as string, value);
         return { error: null };
@@ -67,6 +68,7 @@ beforeEach(() => {
   vi.useFakeTimers();
   vi.spyOn(console, "warn").mockImplementation(() => {});
   rows.clear();
+  failing.current = false;
   localStorage.clear();
 });
 afterEach(() => {
@@ -120,6 +122,49 @@ describe("a different account signs in on the same browser", () => {
     await flush();
     expect([...b.shown().done]).toEqual(["root"]);
     expect(savedDone("B")).toEqual(["root"]);
+  });
+
+  it("does not let the first account's progress leak in when the new account's first load fails and is retried (#139 review)", async () => {
+    rows.set("A", toRow("A", A_PROGRESS));
+    rows.set("B", toRow("B", { done: ["root"] }));
+    const a = openApp("A", emptyProgress());
+    await flush();
+    a.unmount();
+    expect(syncedAccount(T)).toBe("A");
+
+    // B signs in on the same browser while it is offline: the load fails.
+    failing.current = true;
+    const b = openApp("B", A_PROGRESS);
+    await flush();
+    expect(b.result.current.status).toBe("error");
+    expect(b.apply).not.toHaveBeenCalled();
+    // The marker still names A, so the retry is still treated as foreign.
+    expect(syncedAccount(T)).toBe("A");
+    expect(savedDone("B")).toEqual(["root"]);
+
+    // The connection comes back and the load is retried.
+    failing.current = false;
+    act(() => void window.dispatchEvent(new Event("online")));
+    await flush();
+    expect(b.result.current.status).toBe("ready");
+    expect([...b.shown().done]).toEqual(["root"]);
+    expect(savedDone("B")).toEqual(["root"]);
+    expect(syncedAccount(T)).toBe("B");
+  });
+
+  it("keeps the XP and rating owner handoff for after a failed first load too", async () => {
+    rows.set("B", toRow("B", { done: ["root"] }));
+    markSyncedHere(T, "A");
+    failing.current = true;
+    const b = openApp("B", { ...emptyProgress(), done: ["root", "bc1"] });
+    await flush();
+    expect(b.result.current.status).toBe("error");
+    expect(getOwner(T, "xp")).toBeNull();
+    failing.current = false;
+    act(() => void window.dispatchEvent(new Event("online")));
+    await flush();
+    expect(getOwner(T, "xp")).toBe("A");
+    expect(syncedAccount(T)).toBe("B");
   });
 
   it("lets the first account sign back in and get its own data again", async () => {

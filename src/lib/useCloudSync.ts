@@ -91,12 +91,7 @@ export function useCloudSync({ tree, userId, progress, apply, onMessage }: Optio
     const snapshot = latest.current.progress;
     // Someone else's progress is left in this browser (#139): this account starts from its own data, with nothing merged in.
     const foreign = belongsToOtherAccount(tree.id, userId);
-    if (foreign) {
-      // The XP and rating copies here belong to whoever progress last synced with, if no one claimed them yet.
-      const previous = syncedAccount(tree.id)!;
-      for (const kind of ["xp", "ratings"]) if (getOwner(tree.id, kind) === null) setOwner(tree.id, kind, previous);
-      forgetOtherAccount(tree.id);
-    }
+    const previousAccount = foreign ? syncedAccount(tree.id) : null;
     const firstHere = !isSyncedHere(tree.id, userId);
     const merge = foreign ? false : shouldMerge(tree.id, userId);
     const base = loadAccountCopy(tree.id, userId);
@@ -113,6 +108,13 @@ export function useCloudSync({ tree, userId, progress, apply, onMessage }: Optio
         // changes, so skills un-ticked on another device don't come back with them.
         const changedMeanwhile = !sameProgress(latest.current.progress, snapshot);
         const loaded = changedMeanwhile ? rebaseProgress(tree, fromCloud, snapshot, latest.current.progress) : fromCloud;
+        // Only now that this account's load has worked is the other account forgotten. If it failed or was abandoned, the
+        // marker is still there, so a retry treats the browser as foreign again and never merges the other account in.
+        if (foreign) {
+          // The XP and rating copies here belong to whoever progress last synced with, if no one claimed them yet.
+          for (const kind of ["xp", "ratings"]) if (getOwner(tree.id, kind) === null) setOwner(tree.id, kind, previousAccount!);
+          forgetOtherAccount(tree.id);
+        }
         markSyncedHere(tree.id, userId);
         saver.current = createCloudSaver(
           client,
