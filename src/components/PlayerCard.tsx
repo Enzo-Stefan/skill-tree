@@ -143,8 +143,6 @@ export function PlayerCard({ tree, ratings, history, hasProgress, card, onCardCh
         </>
       )}
 
-      {earned && <PlayerTrophies earned={earned} />}
-
       {card && onCardChange && (
         <div className="player-picks">
           <Pick label={t.playerCard.position} options={POSITIONS} names={t.playerCard.positions} value={card.position} onPick={(position) => onCardChange({ ...card, position })} />
@@ -152,6 +150,8 @@ export function PlayerCard({ tree, ratings, history, hasProgress, card, onCardCh
           <p className="card-note">{t.playerCard.private}</p>
         </div>
       )}
+
+      {earned && <PlayerTrophies earned={earned} />}
     </section>
   );
 }

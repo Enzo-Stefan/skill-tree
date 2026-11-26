@@ -12,15 +12,16 @@ const names: Partial<Record<string, { title: string; text: string }>> = t.trophy
 /**
  * The achievements as trophies on the player card (#123). Earned ones show their name; locked ones are dimmed
  * and show how to earn them. Each one also says Earned or Locked in text, so the state does not rely on colour.
- * The list is open by default once at least one trophy is earned.
+ * Nothing is drawn until the first trophy is earned. The list starts open; after that it keeps whatever the player
+ * chose, because the open attribute is only written when the element mounts.
  */
 export function PlayerTrophies({ earned }: Props) {
   const won = new Set(earned);
   const count = ACHIEVEMENTS.filter((a) => won.has(a.id)).length;
+  if (count === 0) return null;
   return (
-    <details className="player-trophies" open={count > 0}>
+    <details className="player-trophies" open>
       <summary>{t.xp.trophies(count, ACHIEVEMENTS.length)}</summary>
-      {count === 0 && <p className="card-note">{t.playerCard.noTrophies}</p>}
       <ul className="player-trophy-list">
         {ACHIEVEMENTS.map((a) => {
           const done = won.has(a.id);

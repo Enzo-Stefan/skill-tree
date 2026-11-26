@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { readFileSync } from "node:fs";
 import { cleanup, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import type { Tree } from "../types";
@@ -42,11 +43,24 @@ describe("PlayerTrophies", () => {
     expect(container.querySelector("details")?.open).toBe(true);
   });
 
-  it("is closed when no trophy is earned yet, and says so", () => {
-    const { container } = render(<PlayerTrophies earned={[]} />);
-    expect(container.querySelector("details")?.open).toBe(false);
-    expect(screen.getByText("No trophies yet. Pass your first skill to earn one.")).toBeTruthy();
-    expect(screen.getByText(`Trophies 0 / ${ACHIEVEMENTS.length}`)).toBeTruthy();
+  it("draws nothing until a trophy is earned, and ignores ids that are not achievements", () => {
+    expect(render(<PlayerTrophies earned={[]} />).container.firstChild).toBeNull();
+    cleanup();
+    expect(render(<PlayerTrophies earned={["not-a-real-id"]} />).container.firstChild).toBeNull();
+  });
+
+  it("keeps the player's choice to close it when another trophy is earned", () => {
+    const { container, rerender } = render(<PlayerTrophies earned={["first-skill"]} />);
+    const details = container.querySelector("details")!;
+    details.open = false;
+    rerender(<PlayerTrophies earned={["first-skill", "expert"]} />);
+    expect(container.querySelector("details")).toBe(details);
+    expect(details.open).toBe(false);
+  });
+
+  it("makes the summary a 44px target in the stylesheet", () => {
+    const css = readFileSync("src/index.css", "utf8");
+    expect(css).toMatch(/\.player-trophies summary\s*\{[^}]*min-height:\s*44px/);
   });
 
   it("falls back to the data file's text for an achievement with no translation", () => {
@@ -54,7 +68,7 @@ describe("PlayerTrophies", () => {
     const saved = names["first-skill"];
     delete names["first-skill"];
     try {
-      const { container } = render(<PlayerTrophies earned={[]} />);
+      const { container } = render(<PlayerTrophies earned={["expert"]} />);
       const li = [...container.querySelectorAll(".trophy.locked")].find((el) => el.textContent?.includes("Pass your first skill."));
       expect(li, "falls back to the data text").toBeTruthy();
       expect(li?.textContent).toContain(ACHIEVEMENTS[0].title);
@@ -65,14 +79,25 @@ describe("PlayerTrophies", () => {
 });
 
 describe("PlayerCard trophies", () => {
-  it("shows the trophies before the first rating, not only after", () => {
-    const { container } = render(<PlayerCard tree={tree} ratings={noRating} history={[]} earned={[]} />);
+  const base = { tree, ratings: noRating, history: [], hasProgress: false };
+
+  it("leaves the trophies out while nothing is earned, even with an earned list", () => {
+    const { container } = render(<PlayerCard {...base} earned={[]} />);
     expect(screen.getByText(/Pass your first skill to see your card/)).toBeTruthy();
-    expect(container.querySelector(".player-trophies")).not.toBeNull();
+    expect(container.querySelector(".player-trophies")).toBeNull();
+  });
+
+  it("shows them after the ratings and the pickers once one is earned", () => {
+    const { container } = render(<PlayerCard {...base} hasProgress ratings={{ branches: {}, overall: 10 }} card={{ position: null, foot: null }} onCardChange={() => {}} earned={["first-skill"]} />);
+    const ratings = container.querySelector(".player-overall")!;
+    const picks = container.querySelector(".player-picks")!;
+    const trophies = container.querySelector(".player-trophies")!;
+    expect(ratings.compareDocumentPosition(trophies) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(picks.compareDocumentPosition(trophies) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
   it("leaves the trophies out when no earned list is given", () => {
-    const { container } = render(<PlayerCard tree={tree} ratings={noRating} history={[]} />);
+    const { container } = render(<PlayerCard {...base} />);
     expect(container.querySelector(".player-trophies")).toBeNull();
   });
 });
