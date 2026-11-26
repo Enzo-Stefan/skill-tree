@@ -6,6 +6,8 @@ import { SkillTree, type ScrollRequest } from "./components/SkillTree";
 import { branchFocusSkill, revealTarget } from "./components/treeView";
 import { NextUpCard } from "./components/NextUpCard";
 import { SkillPanel } from "./components/SkillPanel";
+import { SkillPage } from "./components/SkillPage";
+import { masteryTier } from "./components/mastery";
 import { useMediaQuery } from "./components/useMediaQuery";
 import { LevelPicker } from "./components/LevelPicker";
 import { LevelUpBanner } from "./components/LevelUpBanner";
@@ -136,7 +138,9 @@ export default function App() {
   }, [slide]);
   // Where the tree should scroll to next (after picking a branch, or when a skill opens).
   const [scrollTo, setScrollTo] = useState<ScrollRequest | null>(link ? { id: link.skillId } : null);
-  const [sheetOpen, setSheetOpen] = useState(link !== null);
+  // A skill's own page, shown instead of the tree. A shared link opens it, and its address stays in the address bar.
+  const [pageId, setPageId] = useState<string | null>(link?.skillId ?? null);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const [playerLevelId, setPlayerLevelId] = useState<string | null>(() => loadPlayerLevel(tree));
   const hasLevels = (tree.playerLevels?.length ?? 0) > 0;
   // Ask on first visit; after that, only when the player asks to change.
@@ -165,7 +169,6 @@ export default function App() {
   const nextForTest = levelUpDue(tree, rung, practiceDays, today, streakState);
   const testItems = testTargets(tree, nextForTest, language);
   const placementRung: Rung | null = placementId ? { levelId: placementId, step: 1 } : null;
-  const selectedSkill = tree.skills.find((s) => s.id === selectedId)!;
 
   // Everything that is saved to a signed-in player's account.
   const progress: SavedProgress = useMemo(
@@ -205,6 +208,8 @@ export default function App() {
   /** Send any waiting save to the account (up to 3 seconds), then reload into the other tree. */
   async function switchToTree(id: string) {
     await Promise.race([cloud.flush(), new Promise((resolve) => window.setTimeout(resolve, 3000))]);
+    // The reload must not reopen this tree's skill page in the other tree.
+    window.history.replaceState(window.history.state, "", withoutSkillParam(window.location.href));
     switchTree(trees, tree, id);
   }
 
@@ -294,12 +299,47 @@ export default function App() {
     if (target) setScrollTo({ id: target.id });
   }
 
-  // Take ?skill= out of the address bar once it's been read, so a reload or a tree switch doesn't reopen it.
+  // A shared link makes its tree the active one. Its ?skill= stays in the address bar while the skill's page is open,
+  // and comes out when the page closes (see closePage) or the tree changes (see switchToTree).
   useEffect(() => {
-    if (!link) return;
-    saveActiveTree(link.tree.id);
-    window.history.replaceState(window.history.state, "", withoutSkillParam(window.location.href));
+    if (link) saveActiveTree(link.tree.id);
   }, [link]);
+
+  /** Opens a skill's page. It gets its own history entry, so Back returns to where the player was. */
+  function openPage(id: string) {
+    setSelectedId(id);
+    setSheetOpen(false);
+    setScrollTo({ id });
+    window.history.pushState({ ...window.history.state, skillPage: true }, "", skillUrl(window.location.href, id, tree.id));
+    setPageId(id);
+    window.scrollTo(0, 0);
+  }
+
+  /** Back to the tree. */
+  function closePage() {
+    if (window.history.state?.skillPage) {
+      window.history.back();
+      return;
+    }
+    window.history.replaceState(window.history.state, "", withoutSkillParam(window.location.href));
+    setPageId(null);
+  }
+
+  // Back and Forward between skill pages (and the tree) follow the address.
+  useEffect(() => {
+    const onPop = () => {
+      const open = skillFromSearch([tree], window.location.search);
+      setPageId(open?.skillId ?? null);
+      if (open) setSelectedId(open.skillId);
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [tree]);
+
+  // The page's title gets focus when it opens, so a screen reader starts at the skill's name.
+  useEffect(() => {
+    if (pageId) document.getElementById("skill-page-title")?.focus({ preventScroll: true });
+  }, [pageId]);
 
   function copySkillLink(id: string) {
     const url = skillUrl(window.location.href, id, tree.id);
@@ -508,6 +548,43 @@ export default function App() {
     setTab(next);
     setBoardOpen(false);
     setSheetOpen(false);
+    if (pageId) {
+      window.history.replaceState(window.history.state, "", withoutSkillParam(window.location.href));
+      setPageId(null);
+    }
+  }
+
+  /**
+   * The skill panel: as the sheet or side panel beside the tree (asSheet), or on a skill's own page.
+   * Beside the tree it is the selected skill; on the page it is the page's skill, with no "open the page" link.
+   */
+  function panel(beside: boolean) {
+    const id = beside ? selectedId : pageId!;
+    const skill = tree.skills.find((s) => s.id === id)!;
+    return (
+      <SkillPanel
+        tree={tree}
+        done={done}
+        skillId={id}
+        onComplete={complete}
+        onUndo={undo}
+        onClose={beside && isPhone ? () => closeSheet() : undefined}
+        playerLevelName={playerRungName}
+        target={targetFor(tree, skill, rung, language)}
+        onChangeLevel={openPicker}
+        lifts={lifts}
+        timeLimit={timeLimit(tree, skill, rung)}
+        results={results}
+        levelId={playerLevelId}
+        planAdded={planState.added.includes(id)}
+        onTogglePlan={() => planState.toggleAdded(id)}
+        onCopyLink={copySkillLink}
+        onOpenPage={beside ? openPage : undefined}
+        onChallenge={challengeMate}
+        // One sheet at a time: on phones the skill sheet steps aside while a level dialog is open.
+        hidden={beside && isPhone && (pickerOpen || testOpen || placementId !== null)}
+      />
+    );
   }
 
   return (
@@ -519,7 +596,7 @@ export default function App() {
         summary={[t.header.skillsCount(done.size, tree.skills.length), ...(playerRungName ? [playerRungName] : [])]}
       />
       <div className="content">
-        <div className="train" hidden={tab !== "train"} ref={trainRef}>
+        <div className="train" hidden={tab !== "train" || pageId !== null} ref={trainRef}>
           <Header
             tree={tree}
             doneCount={done.size}
@@ -575,31 +652,24 @@ export default function App() {
             {tab === "train" && sheetShown && !(pickerOpen || testOpen || placementId !== null) && (
               <div className="sheet-backdrop" aria-hidden="true" onClick={() => closeSheet()} />
             )}
-            {tab === "train" && (!isPhone || sheetOpen) && (
-              <SkillPanel
-                tree={tree}
-                done={done}
-                skillId={selectedId}
-                onComplete={complete}
-                onUndo={undo}
-                onClose={isPhone ? () => closeSheet() : undefined}
-                playerLevelName={playerRungName}
-                target={targetFor(tree, selectedSkill, rung, language)}
-                onChangeLevel={openPicker}
-                lifts={lifts}
-                timeLimit={timeLimit(tree, selectedSkill, rung)}
-                results={results}
-                levelId={playerLevelId}
-                planAdded={planState.added.includes(selectedId)}
-                onTogglePlan={() => planState.toggleAdded(selectedId)}
-                onCopyLink={copySkillLink}
-                onChallenge={challengeMate}
-                // One sheet at a time: on phones the skill sheet steps aside while a level dialog is open.
-                hidden={isPhone && (pickerOpen || testOpen || placementId !== null)}
-              />
-            )}
+            {tab === "train" && (!isPhone || sheetOpen) && panel(true)}
           </main>
         </div>
+        {tab === "train" && pageId && (
+          <SkillPage
+            tree={tree}
+            done={done}
+            skill={tree.skills.find((s) => s.id === pageId)!}
+            results={results.results}
+            sessions={sessions.sessions}
+            xpEvents={xp.events}
+            tier={masteryTier(tree, tree.skills.find((s) => s.id === pageId)!, done.has(pageId), results.results) ?? undefined}
+            onOpen={openPage}
+            onBack={closePage}
+          >
+            {panel(false)}
+          </SkillPage>
+        )}
         {tab === "areas" && (
           <AreasScreen
             tree={tree}

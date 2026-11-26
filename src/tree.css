@@ -261,3 +261,35 @@
 @media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   .zoom-wrap { flex: none; height: clamp(26rem, 68dvh, 60rem); min-height: 0; }
 }
+
+/* A skill's own page. The panel under the blocks drops its side-panel layout. */
+.skill-page { padding-bottom: calc(32px + env(safe-area-inset-bottom)); }
+.skill-back { align-self: flex-start; min-height: 2.75rem; }
+.skill-page-head { display: flex; flex-direction: column; gap: 8px; }
+.skill-page-head h1:focus { outline: none; }
+.skill-block h2 { margin: 0; font-size: 1rem; }
+.skill-block h3 { margin: 8px 0 0; font-size: 0.875rem; color: var(--text-2); }
+.skill-links, .history-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.history-list li { font-size: 0.9375rem; }
+.reward-xp { margin: 0; font-size: 1.125rem; font-weight: 700; }
+.skill-link {
+  width: 100%;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border-strong);
+  background: var(--glass-faint);
+  color: var(--fg);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  text-align: left;
+}
+.skill-link:hover { background: var(--hover); }
+.skill-link.locked { border-style: dashed; color: var(--fg-2); }
+.skill-link-state { font-size: 0.8125rem; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+.skill-page .panel { width: 100%; max-height: none; padding: 0; border-width: 0; overflow: visible; background: transparent; }
+.panel .btn, .skill-page .btn { min-height: 2.75rem; }
