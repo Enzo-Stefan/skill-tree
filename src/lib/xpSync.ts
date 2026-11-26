@@ -19,8 +19,10 @@ export function reconcile(tree: Tree, events: XpEvent[], done: Iterable<string>,
     if (doneSet.has(skill.id)) next = award(next, skillPassKey(skill.id), amountFor(skillPassKey(skill.id)), now);
   }
   for (const e of events) {
-    const m = /^skill:(.+):pass$/.exec(e.key);
-    if (m && e.active && !doneSet.has(m[1]!)) next = revoke(next, e.key, now);
+    // A skill's pass, and the day marker written with it, go when the skill is un-ticked.
+    const m = /^(?:skill:(.+):pass|passday:(.+):\d{4}-\d{2}-\d{2})$/.exec(e.key);
+    const skillId = m ? (m[1] ?? m[2]) : null;
+    if (skillId && e.active && !doneSet.has(skillId)) next = revoke(next, e.key, now);
   }
   for (const day of practiceDays) next = award(next, sessionKey(day), amountFor(sessionKey(day)), now);
   return next;

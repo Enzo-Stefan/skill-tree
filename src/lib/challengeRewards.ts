@@ -4,7 +4,6 @@ import { SEASONS } from "../data/seasons";
 import { challengeAwardKey, challengeDone, dailyChallenge, weeklyChallenge, type ChallengeContext } from "./challenges";
 import type { SessionEntry } from "./sessions";
 import { activeSeason, seasonAwardKey, seasonChallengeDone } from "./seasons";
-import { dayKey } from "./streak";
 import { amountFor, award, type XpEvent } from "./xp";
 
 // Awards the XP for today's daily challenge, this week's weekly challenge, and the current season's challenges
@@ -12,9 +11,18 @@ import { amountFor, award, type XpEvent } from "./xp";
 // is the challenge id and the day, the week's Monday, or the season), so it pays once however often this runs.
 // Only the current period is looked at: a challenge missed yesterday cannot be earned today.
 
-/** The days skills were passed on: the time of each active skill-pass event, as the player's local day. */
+/**
+ * The days skills were passed on, from the day markers written when each pass happened (passDayKey). A pass made before
+ * these markers existed has none, so it never counts toward a pass goal: only passes from now on do. Un-ticking a skill
+ * switches its marker off.
+ */
 export function passDaysFromLedger(events: XpEvent[]): string[] {
-  return events.filter((e) => e.active && /^skill:.+:pass$/.test(e.key)).map((e) => dayKey(new Date(e.at)));
+  const days: string[] = [];
+  for (const e of events) {
+    const m = e.active ? /^passday:.+:(\d{4}-\d{2}-\d{2})$/.exec(e.key) : null;
+    if (m) days.push(m[1]!);
+  }
+  return days;
 }
 
 export interface ChallengeInput {

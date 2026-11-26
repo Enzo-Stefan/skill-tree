@@ -6,20 +6,41 @@ import { dailyChallenge, weeklyChallenge, challengeAwardKey } from "./challenges
 import { applyChallengeRewards, applyMissionRewards, passDaysFromLedger } from "./challengeRewards";
 import { completedMissionKeys, exerciseTickKey } from "./missions";
 import { buildWeekPlan, skillsToPlan } from "./plan";
-import { amountFor, award, skillPassKey, totalXp, type XpEvent } from "./xp";
+import { amountFor, award, passDayKey, skillPassKey, totalXp, type XpEvent } from "./xp";
+import { reconcile } from "./xpSync";
 
 const TODAY = "2026-11-26";
 const NOW = "2026-11-26T12:00:00.000Z";
 const input = (over: Partial<Parameters<typeof applyChallengeRewards>[1]> = {}) => ({ practiceDays: [], sessions: [], today: TODAY, ...over });
 
-/** A ledger where a skill was passed at a time that is the given local day at noon, whatever the machine's time zone. */
-const passedOn = (skillId: string, y: number, m: number, d: number): XpEvent => ({ key: skillPassKey(skillId), xp: 100, active: true, at: new Date(y, m - 1, d, 12).toISOString() });
+const pad = (n: number) => String(n).padStart(2, "0");
+/** The marker written when a skill is passed on a day (what the app records at pass time). */
+const passedOn = (skillId: string, y: number, m: number, d: number): XpEvent => ({ key: passDayKey(skillId, `${y}-${pad(m)}-${pad(d)}`), xp: 0, active: true, at: NOW });
 
 describe("passDaysFromLedger", () => {
-  it("lists the local days of active skill passes only", () => {
+  it("lists the days of active pass markers only", () => {
     const off: XpEvent = { ...passedOn("bc2", 2026, 11, 25), active: false };
     const other: XpEvent = { key: "session:2026-11-26", xp: 40, active: true, at: NOW };
     expect(passDaysFromLedger([passedOn("bc1", 2026, 11, 26), off, other])).toEqual(["2026-11-26"]);
+  });
+
+  it("never counts a pass that has no day marker: an old pass, or one the app only noticed later", () => {
+    // A skill-pass event stamped today because the app first saw the skill done today (every pre-existing player's case).
+    const legacy = reconcile({ id: "football", skills: [{ id: "bc1" }] } as never, [], ["bc1"], [], NOW);
+    expect(legacy.some((e) => e.key === skillPassKey("bc1"))).toBe(true);
+    expect(passDaysFromLedger(legacy)).toEqual([]);
+    const rewards = applyChallengeRewards(legacy, input({ practiceDays: [] }), NOW, []);
+    expect(rewards.some((e) => e.key.startsWith("challenge:"))).toBe(false);
+  });
+
+  it("an undo removes the marker, and a pass again on a later day counts for that later day only", () => {
+    const tree = { id: "football", skills: [{ id: "bc1" }] } as never;
+    let ledger = award(reconcile(tree, [], ["bc1"], [], NOW), passDayKey("bc1", "2026-11-20"), 0, NOW);
+    expect(passDaysFromLedger(ledger)).toEqual(["2026-11-20"]);
+    ledger = reconcile(tree, ledger, [], [], "2026-11-21T10:00:00.000Z");
+    expect(passDaysFromLedger(ledger)).toEqual([]);
+    ledger = award(reconcile(tree, ledger, ["bc1"], [], "2026-11-26T10:00:00.000Z"), passDayKey("bc1", "2026-11-26"), 0, "2026-11-26T10:00:00.000Z");
+    expect(passDaysFromLedger(ledger)).toEqual(["2026-11-26"]);
   });
 });
 
@@ -47,7 +68,7 @@ describe("daily and weekly challenges", () => {
   it("looks only at today's day and week, so a challenge missed earlier cannot be earned later", () => {
     const sessions = ["bc1", "bc2", "bc3", "bc4"].map((skillId) => ({ date: "2026-11-10", skillId }));
     const old = applyChallengeRewards([passedOn("bc1", 2026, 11, 10), passedOn("bc2", 2026, 11, 10)], input({ practiceDays: ["2026-11-10", "2026-11-11", "2026-11-12", "2026-11-13"], sessions }), NOW, []);
-    expect(old.every((e) => e.key.startsWith("skill:"))).toBe(true);
+    expect(old.some((e) => e.key.startsWith("challenge:"))).toBe(false);
   });
 });
 

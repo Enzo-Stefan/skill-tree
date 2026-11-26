@@ -416,6 +416,7 @@ export default function App() {
     const skill = tree.skills.find((s) => s.id === id)!;
     const unlocked = newlyUnlocked(tree, done, id);
     const next = new Set(done).add(id);
+    xp.recordPassDay(id, today);
     const before = levelInfo(tree.levels, done.size).current.name;
     const after = levelInfo(tree.levels, next.size).current.name;
     setDone(next);
@@ -473,6 +474,7 @@ export default function App() {
     results.clear();
     sessions.clear();
     xp.reset();
+    planState.clearTicks();
     setTestOpen(false);
     setSelectedId(tree.skills[0].id);
     setBranchId(null);

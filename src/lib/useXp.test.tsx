@@ -143,4 +143,32 @@ describe("useXp", () => {
     const withDay = renderHook(() => useXp(tree, null, "off", new Set<string>(), days, { ...base, today: "2026-11-26" }));
     expect(withDay.result.current.events.some((e) => e.key.startsWith("challenge:"))).toBe(true);
   });
+
+  it("a challenge that asks for a pass counts only passes recorded by day, never one the app merely noticed", () => {
+    const days = ["2026-11-26"];
+    const base = { streakWeeks: 0, levelIndex: -1, results: 0, today: "2026-11-26" };
+    // A skill already done when the app loads (a legacy pass) gives no pass-day marker, so no pass goal is met by it.
+    const legacy = renderHook(() => useXp(tree, null, "off", new Set(["a", "b"]), days, base));
+    expect(legacy.result.current.events.some((e) => e.key.startsWith("passday:"))).toBe(false);
+    cleanup();
+    localStorage.clear();
+    const fresh = renderHook(({ done }) => useXp(tree, null, "off", done, days, base), { initialProps: { done: new Set<string>() } });
+    act(() => {
+      fresh.result.current.recordPassDay("a", "2026-11-26");
+      fresh.rerender({ done: new Set(["a"]) });
+    });
+    expect(fresh.result.current.events.some((e) => e.key === "passday:a:2026-11-26" && e.active)).toBe(true);
+  });
+
+  it("after Reset everything the same mission is not paid again once its ticks are cleared", () => {
+    const base = { streakWeeks: 0, levelIndex: -1, results: 0 };
+    const { result, rerender } = renderHook(({ keys }) => useXp(tree, null, "off", new Set<string>(), [], { ...base, missionKeys: keys }), { initialProps: { keys: ["mission:2026-11-26:a"] } });
+    expect(result.current.total).toBe(XP_AMOUNTS.mission);
+    // The app clears the plan's ticks and then switches the ledger off.
+    rerender({ keys: [] });
+    act(() => result.current.reset());
+    expect(result.current.total).toBe(0);
+    rerender({ keys: [] });
+    expect(result.current.total).toBe(0);
+  });
 });

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Tree } from "../types";
 import { loadSupabase } from "../auth/client";
 import type { SyncStatus } from "./useCloudSync";
-import { mergeEvents, revoke, totalXp, xpLevel, type XpEvent, type XpLevel } from "./xp";
+import { award, mergeEvents, passDayKey, revoke, totalXp, xpLevel, type XpEvent, type XpLevel } from "./xp";
 import { belongsToAnother, setOwner } from "./localOwner";
 import { applyStreakRewards } from "./streakRewards";
 import { applyChallengeRewards, applyMissionRewards } from "./challengeRewards";
@@ -16,6 +16,8 @@ export interface XpState {
   level: XpLevel;
   /** Switches every award off, for "Reset everything": XP, trophies and streak bonuses start again from the reset progress. */
   reset: () => void;
+  /** A skill was just passed on this day: remembers the day, so challenges count only passes made from now on. */
+  recordPassDay: (skillId: string, day: string) => void;
   /** Ids of the achievements earned (#121 item 4), from the ledger, so trophies from another device count too. */
   earned: string[];
 }
@@ -55,7 +57,6 @@ export function useXp(tree: Tree, userId: string | null, status: SyncStatus, don
   const [events, setEvents] = useState<XpEvent[]>(() => loadXp(tree.id));
   const accountReady = useRef<string | null>(null);
   const { streakWeeks, streakSince = null, levelIndex, results, sessions, today, missionKeys } = extra;
-  const missionList = (missionKeys ?? []).join(",");
   const latest = useRef({ events, done, practiceDays, extra });
   latest.current = { events, done, practiceDays, extra };
 
@@ -63,8 +64,8 @@ export function useXp(tree: Tree, userId: string | null, status: SyncStatus, don
   // Follow the finished skills and training days, once they are final.
   useEffect(() => {
     if (status === "loading") return;
-    setEvents((current) => follow(tree, current, done, practiceDays, { streakWeeks, streakSince, levelIndex, results, sessions, today, missionKeys: missionList ? missionList.split(",") : [] }, new Date().toISOString()));
-  }, [tree, status, done, practiceDays, streakWeeks, streakSince, levelIndex, results, sessions, today, missionList]);
+    setEvents((current) => follow(tree, current, done, practiceDays, { streakWeeks, streakSince, levelIndex, results, sessions, today, missionKeys }, new Date().toISOString()));
+  }, [tree, status, done, practiceDays, streakWeeks, streakSince, levelIndex, results, sessions, today, missionKeys]);
 
   useEffect(() => saveXp(tree.id, events), [tree.id, events]);
 
@@ -116,8 +117,13 @@ export function useXp(tree: Tree, userId: string | null, status: SyncStatus, don
     setEvents((current) => current.reduce((next, e) => (e.active ? revoke(next, e.key, now) : next), current));
   }, []);
 
+  const recordPassDay = useCallback((skillId: string, day: string) => {
+    const key = passDayKey(skillId, day);
+    setEvents((current) => award(current, key, 0, new Date().toISOString()));
+  }, []);
+
   return useMemo(() => {
     const total = totalXp(events);
-    return { events, total, level: xpLevel(total), earned: earnedInLedger(events), reset };
-  }, [events, reset]);
+    return { events, total, level: xpLevel(total), earned: earnedInLedger(events), reset, recordPassDay };
+  }, [events, reset, recordPassDay]);
 }
