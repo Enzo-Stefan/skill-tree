@@ -79,6 +79,7 @@ import { useCloudSync } from "./lib/useCloudSync";
 import { useXp } from "./lib/useXp";
 import { completedMissionKeys } from "./lib/missions";
 import { useRatings } from "./lib/useRatings";
+import { levelStepOf } from "./lib/ratings";
 import { LeaderboardScreen } from "./components/LeaderboardScreen";
 import { LeaderboardProfileDialog } from "./components/LeaderboardProfileDialog";
 import { useLeaderboardProfile } from "./lib/useLeaderboardProfile";
@@ -176,7 +177,6 @@ export default function App() {
     if (!hasLeaderboard) setBoardOpen(false);
   }, [hasLeaderboard]);
   const cloud = useCloudSync({ tree, userId: auth.account?.id ?? null, progress, apply: applySaved, onMessage: showToast });
-  const { ratings, history: ratingHistory } = useRatings(tree, auth.account?.id ?? null, cloud.status, done, playerLevelId, playerStep, today);
   const accountAuth = {
     ...auth,
     // Send any waiting save before signing out, while the account can still be written to.
@@ -413,11 +413,21 @@ export default function App() {
     toastTimer.current = window.setTimeout(() => setToast(null), ms);
   }
 
+  /** A test passed again on a skill already passed: silver or gold when it was at a higher level than last time. */
+  function retest(id: string) {
+    const skill = tree.skills.find((s) => s.id === id)!;
+    const result = xp.retest(id, levelStepOf(tree, playerLevelId, playerStep));
+    if (result === "silver") showToast(t.app.masterySilver(skill.name));
+    else if (result === "gold") showToast(t.app.masteryGold(skill.name));
+    else if (result === "maxed") showToast(t.app.masteryMaxed);
+    else if (result === "tooSoon") showToast(t.app.masteryTooSoon);
+  }
   function complete(id: string) {
     const skill = tree.skills.find((s) => s.id === id)!;
     const unlocked = newlyUnlocked(tree, done, id);
     const next = new Set(done).add(id);
     xp.recordPassDay(id, today);
+    xp.recordPass(id, levelStepOf(tree, playerLevelId, playerStep));
     const before = levelInfo(tree.levels, done.size).current.name;
     const after = levelInfo(tree.levels, next.size).current.name;
     setDone(next);
@@ -497,6 +507,8 @@ export default function App() {
     levelIndex: (tree.playerLevels ?? []).findIndex((l) => l.id === playerLevelId),
     results: results.results.length,
   });
+  // The player's ratings and weekly history (#123), with the mastery tiers from the XP ledger (#121 item 5).
+  const { ratings, history: ratingHistory } = useRatings(tree, auth.account?.id ?? null, cloud.status, done, playerLevelId, playerStep, today, xp.mastery);
   const suggested = nextSkill(tree, done);
 
   /** Train's two scroll areas: the whole tab (phones) and the tree (wider screens). */
@@ -539,6 +551,7 @@ export default function App() {
         skillId={id}
         onComplete={complete}
         onUndo={undo}
+        onRetest={retest}
         onClose={beside && isPhone ? () => closeSheet() : undefined}
         playerLevelName={playerRungName}
         target={targetFor(tree, skill, rung, language)}

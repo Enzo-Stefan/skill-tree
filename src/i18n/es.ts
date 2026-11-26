@@ -24,6 +24,10 @@ export const es: Strings = {
     skillCompleteUnlocked: (skill: string, unlocked: string[]) =>
       `${skill} completada. Desbloqueadas: ${unlocked.join(", ")}.`,
     skillComplete: (skill: string) => `${skill} completada.`,
+    masterySilver: (skill: string) => `${skill}: ¡maestría de plata!`,
+    masteryGold: (skill: string) => `${skill}: ¡maestría de oro!`,
+    masteryTooSoon: "Superada otra vez. La plata y el oro llegan al pasar la prueba en un nivel más alto que la última vez.",
+    masteryMaxed: "Esta habilidad ya es de oro.",
     copied: "Progreso copiado. Pégalo donde quieras.",
     copyFailed: "No se pudo copiar en este navegador.",
     languageNotSaved: "Este navegador no deja guardar el idioma, así que no se puede cambiar aquí. Suele pasar en ventanas privadas.",

@@ -19,6 +19,8 @@ interface Props {
   skillId: string;
   onComplete: (id: string) => void;
   onUndo: (id: string) => void;
+  /** A test passed again on a skill already passed: the app decides whether it earns a mastery tier (#121 item 5). */
+  onRetest?: (id: string) => void;
   /** The player's level and step, e.g. "Beginner 2", or null if not picked yet. */
   playerLevelName: string | null;
   /** The chosen level's target for this skill, or null. */
@@ -53,6 +55,7 @@ export function SkillPanel({
   skillId,
   onComplete,
   onUndo,
+  onRetest,
   onClose,
   playerLevelName,
   target,
@@ -296,11 +299,12 @@ export function SkillPanel({
           skill={skill}
           check={skill.check}
           limit={timeLimit}
-          canPass={state === "available"}
+          canPass={state === "available" || (state === "done" && Boolean(onRetest))}
           onPassed={() => {
             // Close first: passing closes the sheet on phones and moves focus to the skill in the tree.
             setTestFor(null);
-            onComplete(skill.id);
+            if (state === "done") onRetest?.(skill.id);
+            else onComplete(skill.id);
           }}
           onClose={() => setTestFor(null)}
           results={keepsTimes}

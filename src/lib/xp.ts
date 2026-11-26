@@ -54,6 +54,12 @@ export function isEventKey(key: unknown): key is string {
   return typeof key === "string" && key.length <= 100 && KEY.test(key);
 }
 
+/** The fourth part of a key like stepat:<skill>:<tier>:<step>, or an empty string. */
+function parts4(key: string): string {
+  const parts = key.split(":");
+  return parts.length === 4 && /^(bronze|silver|gold)$/.test(parts[2]!) ? parts[3]! : "";
+}
+
 /** What a new event with this key is worth today, or null when the key is not one we award for. */
 export function amountFor(key: string, weekly = false): number | null {
   if (!isEventKey(key)) return null;
@@ -80,6 +86,9 @@ export function amountFor(key: string, weekly = false): number | null {
       return key.split(":").length === 3 && /^\d{4}-\d{2}-\d{2}$/.test(b ?? "") ? 0 : null;
     case "achievement":
       return XP_AMOUNTS.achievement;
+    case "stepat":
+      // The step a mastery tier was earned at (src/lib/mastery.ts): a marker worth nothing.
+      return /^\d{1,2}$/.test(parts4(key)) ? 0 : null;
     default:
       return null;
   }
