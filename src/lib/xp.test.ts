@@ -168,3 +168,55 @@ describe("xpLevel", () => {
     expect(xpLevel(100.9).level).toBe(2);
   });
 });
+
+describe("review fixes (#129)", () => {
+  const ev = (key: string, xp: number, active: boolean, at: string): XpEvent => ({ key, xp, active, at });
+
+  it("keeps the smaller amount when two copies of a key disagree, in either order", () => {
+    const a = [ev("skill:bc1:pass", 100, true, T1)];
+    const b = [ev("skill:bc1:pass", 250, true, T2)];
+    expect(mergeEvents(a, b)).toEqual([ev("skill:bc1:pass", 100, true, T2)]);
+    expect(mergeEvents(b, a)).toEqual(mergeEvents(a, b));
+    expect(mergeEvents(a, [ev("skill:bc1:pass", 250, true, T1)])).toEqual([ev("skill:bc1:pass", 100, true, T1)]);
+  });
+
+  it("gives the same merge when the same instant is written two ways", () => {
+    const a = [ev("skill:bc1:pass", 100, true, "2026-11-25T10:00:00.000Z")];
+    const b = [ev("skill:bc1:pass", 100, true, "2026-11-25T10:00:00+00:00")];
+    expect(mergeEvents(a, b)).toEqual(mergeEvents(b, a));
+    expect(mergeEvents(a, b)[0]!.at).toBe("2026-11-25T10:00:00.000Z");
+  });
+
+  it("stamps a change later than the version it replaces, even when this clock is behind", () => {
+    const ahead = "2026-11-25T13:00:00.000Z";
+    const events = [ev("skill:bc1:pass", 100, true, ahead)];
+    const undone = revoke(events, "skill:bc1:pass", T1);
+    expect(Date.parse(undone[0]!.at)).toBeGreaterThan(Date.parse(ahead));
+    expect(totalXp(mergeEvents(events, undone))).toBe(0);
+    const repassed = award(undone, "skill:bc1:pass", null, T1);
+    expect(Date.parse(repassed[0]!.at)).toBeGreaterThan(Date.parse(undone[0]!.at));
+    expect(totalXp(mergeEvents(undone, repassed))).toBe(100);
+  });
+
+  it("uses the clock when it is already later", () => {
+    const undone = revoke([ev("skill:bc1:pass", 100, true, T1)], "skill:bc1:pass", T3);
+    expect(undone[0]!.at).toBe(T3);
+  });
+
+  it("only pays for the exact keys the builders make", () => {
+    expect(amountFor("streak:4")).toBe(XP_AMOUNTS.streak[4]);
+    for (const key of ["streak:04", "streak:4.0", "streak:4:extra", "streak:+4", "skill:bc1:pass:x", "skill:bc1"]) {
+      expect(amountFor(key)).toBeNull();
+    }
+    expect(amountFor(skillPassKey("bc1"))).toBe(XP_AMOUNTS.skill);
+  });
+
+  it("sorts by key the same way on every device", () => {
+    const keys = cleanEvents(["skill:b:pass", "skill:B:pass", "skill:a:pass"].map((key) => ev(key, 1, true, T1))).map((e) => e.key);
+    expect(keys).toEqual(["skill:B:pass", "skill:a:pass", "skill:b:pass"]);
+  });
+
+  it("gives level 1 for a total that is not a number", () => {
+    for (const total of [NaN, Infinity, -Infinity]) expect(xpLevel(total)).toMatchObject({ level: 1, into: 0 });
+  });
+});
