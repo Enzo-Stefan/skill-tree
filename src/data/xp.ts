@@ -8,6 +8,8 @@ export const XP_AMOUNTS = {
   skill: 100,
   /** Completing a training session (a day trained). */
   session: 40,
+  /** Completing a mission: every step of a planned session ticked. */
+  mission: 60,
   /** A daily challenge. */
   challengeDaily: 30,
   /** A weekly challenge. */
