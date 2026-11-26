@@ -568,8 +568,8 @@ main { flex: 1; display: flex; min-height: 0; }
   display: flex;
   align-items: center;
   gap: 8px;
-  min-height: 36px;
-  padding: 6px 14px;
+  min-height: 2.75rem;
+  padding: 6px 14px 6px 10px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--glass-border);
   background: var(--glass);
@@ -578,7 +578,18 @@ main { flex: 1; display: flex; min-height: 0; }
   font-weight: 600;
   transition: transform var(--dur-fast) var(--ease), background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
-.branch-tab:not(.all)::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c-ink); flex-shrink: 0; }
+/* The ring shows how much of the branch is passed; the dot in the middle is the branch colour. On the open pill the arc turns to the pill's text colour. */
+.branch-ring { width: 1.625rem; height: 1.625rem; flex-shrink: 0; transform: rotate(-90deg); }
+.branch-ring circle { fill: none; stroke-width: 3; }
+.branch-ring .ring-track { stroke: currentColor; opacity: 0.22; }
+.branch-ring .ring-arc { stroke: var(--c-ink, currentColor); stroke-linecap: round; }
+.branch-ring .ring-dot { fill: var(--c-ink, currentColor); stroke: none; }
+.branch-tab.active .ring-arc { stroke: currentColor; }
+.branch-tab.active .ring-dot, .branch-tab.all .ring-dot { fill: currentColor; }
+.branch-tab.all .ring-arc { stroke: currentColor; }
+@media (prefers-reduced-motion: no-preference) {
+  .ring-arc { transition: stroke-dasharray 0.5s var(--ease); }
+}
 .branch-tab:hover:not(.active) { border-color: var(--btn-border-hover); }
 .branch-tab:active { transform: scale(0.98); }
 .branch-tab.active { background: var(--btn-primary-bg); border-color: var(--btn-primary-bg); color: var(--btn-primary-fg); }
