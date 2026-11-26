@@ -47,8 +47,9 @@
    unlocks, so a line that grows when a skill opens moves upward. */
 .edges { position: absolute; inset: 0; z-index: 0; overflow: visible; pointer-events: none; }
 .edge { fill: none; stroke-width: 2; stroke-linecap: round; }
-.edge.base { stroke: var(--line-faint); }
-.edge.lit { stroke: var(--c-ink); }
+/* Locked: thin, dashed and dim. Open (the lower skill is passed): solid, thicker and in the branch colour. */
+.edge.base { stroke: var(--line-faint); stroke-width: 1.5; stroke-dasharray: 2 7; opacity: 0.8; }
+.edge.lit { stroke: var(--c-ink); stroke-width: 3; filter: drop-shadow(0 0 3px color-mix(in srgb, var(--c-ink) 55%, transparent)); }
 .edge.grow { stroke-dasharray: 1; animation: edge-grow 0.7s ease-out 0.35s backwards; }
 @keyframes edge-grow { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
 @keyframes edge-flash { from { stroke: var(--chalk); } }
@@ -159,7 +160,7 @@
 }
 /* The first skill of a branch: a short line down to the edge of the branch, towards the start. */
 .skill-li.rail-stub::after { bottom: -10px; height: 18px; }
-.skill-li.rail-lit::after { background: var(--c-ink); }
+.skill-li.rail-lit::after { background: var(--c-ink); width: 3px; margin-left: -0.5px; }
 .skill-li.rail-grow::after { transform-origin: bottom; animation: rail-grow 0.6s ease-out 0.35s backwards; }
 @keyframes rail-grow { from { transform: scaleY(0); } }
 @media (prefers-reduced-motion: reduce) {
