@@ -100,7 +100,8 @@ describe("ReportDialog", () => {
     sendButton().focus();
     fireEvent.click(sendButton());
     await screen.findByRole("alert");
-    expect(document.activeElement).toBe(reasonBox());
+    // Focus moves in an effect after the error renders, so wait for it instead of assuming it already has.
+    await waitFor(() => expect(document.activeElement).toBe(reasonBox()));
   });
 
   it("shows the database's sign-in message and offers Close instead of Cancel", async () => {
