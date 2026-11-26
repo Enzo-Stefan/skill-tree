@@ -1,6 +1,6 @@
 import type { PerLevel, RoutineExercise, Skill, Tree } from "../types";
 import { forLevel } from "./progress";
-import type { PlanItem } from "./plan";
+import type { PlanItem, WeekPlan } from "./plan";
 import { missionKey } from "./xp";
 
 // Missions (#126): one planned session turned into steps the player ticks off: warm-up, each exercise,
@@ -142,4 +142,23 @@ export function cleanTicks(raw: unknown, missions: Mission[]): MissionTicks {
     if (steps.length) out[m.id] = steps;
   }
   return out;
+}
+
+// ---- Missions from the Training screen's own ticks ----
+// The Training screen already lets the player tick each exercise of today's sessions ("<day>|<skill>|<exercise index>").
+// A mission is complete when every exercise of one planned session is ticked, and completing it pays XP once.
+
+/** The tick key the Training screen uses for one exercise of one skill's session on a day. */
+export const exerciseTickKey = (day: string, skillId: string, index: number) => `${day}|${skillId}|${index}`;
+
+/** The XP award keys of today's sessions whose exercises are all ticked. A day off, a skill with no routine or with no exercises is never complete. */
+export function completedMissionKeys(tree: Tree, plan: WeekPlan, ticks: Set<string>, today: string): string[] {
+  const day = plan.days.find((d) => d.date === today);
+  if (!day || day.rest) return [];
+  const keys: string[] = [];
+  for (const item of day.items) {
+    const exercises = tree.skills.find((s) => s.id === item.skillId)?.routine?.exercises ?? [];
+    if (exercises.length > 0 && exercises.every((_, i) => ticks.has(exerciseTickKey(today, item.skillId, i)))) keys.push(missionKey(today, item.skillId));
+  }
+  return keys;
 }

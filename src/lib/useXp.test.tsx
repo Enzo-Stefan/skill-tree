@@ -120,4 +120,27 @@ describe("useXp", () => {
     rerender({ done: new Set<string>(), weeks: 4 });
     expect(result.current.total).toBe(XP_AMOUNTS.streak[4]);
   });
+
+  it("pays a completed mission once, from the keys the app passes in", () => {
+    const base = { streakWeeks: 0, levelIndex: -1, results: 0 };
+    const { result, rerender } = renderHook(({ keys }) => useXp(tree, null, "off", new Set<string>(), [], { ...base, missionKeys: keys }), { initialProps: { keys: [] as string[] } });
+    expect(result.current.total).toBe(0);
+    rerender({ keys: ["mission:2026-11-26:a"] });
+    expect(result.current.total).toBe(XP_AMOUNTS.mission);
+    rerender({ keys: ["mission:2026-11-26:a"] });
+    rerender({ keys: [] });
+    expect(result.current.total).toBe(XP_AMOUNTS.mission);
+  });
+
+  it("pays today's challenge when it is done, and checks none when no day is given", () => {
+    const days = ["2026-11-23", "2026-11-24", "2026-11-25", "2026-11-26"];
+    const sessions = ["a", "b", "c", "d"].map((skillId) => ({ date: "2026-11-26", skillId }));
+    const base = { streakWeeks: 0, levelIndex: -1, results: 0, sessions };
+    const without = renderHook(() => useXp(tree, null, "off", new Set<string>(), days, base));
+    expect(without.result.current.events.some((e) => e.key.startsWith("challenge:"))).toBe(false);
+    cleanup();
+    localStorage.clear();
+    const withDay = renderHook(() => useXp(tree, null, "off", new Set<string>(), days, { ...base, today: "2026-11-26" }));
+    expect(withDay.result.current.events.some((e) => e.key.startsWith("challenge:"))).toBe(true);
+  });
 });

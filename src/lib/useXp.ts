@@ -5,6 +5,8 @@ import type { SyncStatus } from "./useCloudSync";
 import { mergeEvents, revoke, totalXp, xpLevel, type XpEvent, type XpLevel } from "./xp";
 import { belongsToAnother, setOwner } from "./localOwner";
 import { applyStreakRewards } from "./streakRewards";
+import { applyChallengeRewards, applyMissionRewards } from "./challengeRewards";
+import type { SessionEntry } from "./sessions";
 import { applyAchievements, earnedAchievements, earnedInLedger } from "./achievements";
 import { fetchXp, loadXp, pushXp, reconcile, saveXp, sameEvents } from "./xpSync";
 
@@ -26,13 +28,21 @@ export interface XpExtra {
   /** -1 none picked, 0 Beginner ... 3 Expert. */
   levelIndex: number;
   results: number;
+  /** Which skills were worked on which day, for the challenges. */
+  sessions?: SessionEntry[];
+  /** Today, as YYYY-MM-DD, for the challenges. Without it no challenge is checked. */
+  today?: string;
+  /** The mission award keys completed today (completedMissionKeys). */
+  missionKeys?: string[];
 }
 
 /** Reconcile the ledger with progress, then add any achievement now earned. */
 function follow(tree: Tree, current: XpEvent[], done: Set<string>, practiceDays: string[], extra: XpExtra, now: string): XpEvent[] {
   const synced = reconcile(tree, current, done, practiceDays, now);
   const withTrophies = applyAchievements(synced, earnedAchievements({ tree, done, practiceDays, ...extra }), now);
-  return applyStreakRewards(withTrophies, extra.streakWeeks, extra.streakSince ?? null, now);
+  const withStreak = applyStreakRewards(withTrophies, extra.streakWeeks, extra.streakSince ?? null, now);
+  const withMissions = applyMissionRewards(withStreak, extra.missionKeys ?? [], now);
+  return extra.today ? applyChallengeRewards(withMissions, { practiceDays, sessions: extra.sessions ?? [], today: extra.today }, now) : withMissions;
 }
 
 /**
@@ -44,7 +54,8 @@ function follow(tree: Tree, current: XpEvent[], done: Set<string>, practiceDays:
 export function useXp(tree: Tree, userId: string | null, status: SyncStatus, done: Set<string>, practiceDays: string[], extra: XpExtra = { streakWeeks: 0, levelIndex: -1, results: 0 }): XpState {
   const [events, setEvents] = useState<XpEvent[]>(() => loadXp(tree.id));
   const accountReady = useRef<string | null>(null);
-  const { streakWeeks, streakSince = null, levelIndex, results } = extra;
+  const { streakWeeks, streakSince = null, levelIndex, results, sessions, today, missionKeys } = extra;
+  const missionList = (missionKeys ?? []).join(",");
   const latest = useRef({ events, done, practiceDays, extra });
   latest.current = { events, done, practiceDays, extra };
 
@@ -52,8 +63,8 @@ export function useXp(tree: Tree, userId: string | null, status: SyncStatus, don
   // Follow the finished skills and training days, once they are final.
   useEffect(() => {
     if (status === "loading") return;
-    setEvents((current) => follow(tree, current, done, practiceDays, { streakWeeks, streakSince, levelIndex, results }, new Date().toISOString()));
-  }, [tree, status, done, practiceDays, streakWeeks, streakSince, levelIndex, results]);
+    setEvents((current) => follow(tree, current, done, practiceDays, { streakWeeks, streakSince, levelIndex, results, sessions, today, missionKeys: missionList ? missionList.split(",") : [] }, new Date().toISOString()));
+  }, [tree, status, done, practiceDays, streakWeeks, streakSince, levelIndex, results, sessions, today, missionList]);
 
   useEffect(() => saveXp(tree.id, events), [tree.id, events]);
 
