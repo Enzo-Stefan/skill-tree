@@ -108,6 +108,12 @@ export const es: Strings = {
     upFrom: (kg: string, times: number) => `Antes: ${kg} · ${times} ${times === 1 ? "registro" : "registros"}`,
     timesLogged: (times: number) => `${times} ${times === 1 ? "registro" : "registros"}`,
   },
+  xp: {
+    form: "Forma",
+    level: (n: number) => `Nivel de forma ${n}`,
+    total: (n: number) => `${n} XP`,
+    toNext: (n: number) => `${n} XP para el siguiente nivel`,
+  },
   progressScreen: {
     rankLabel: "Tu rango",
     thisWeek: "Esta semana",
