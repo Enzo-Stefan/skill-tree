@@ -62,7 +62,7 @@ export function PlayerCard({ tree, ratings, history, hasProgress }: Props) {
               <span className="player-history-value" aria-hidden="true">
                 {first}
               </span>
-              <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} role="img" aria-label={t.playerCard.historyLabel(first, last, history.length - 1)} preserveAspectRatio="none">
+              <svg viewBox={`0 0 ${CHART_W} ${CHART_H}`} role="img" aria-label={t.playerCard.historyLabel(first, last, t.playerCard.weeks(history.length))} preserveAspectRatio="none">
                 <polyline points={points} fill="none" stroke="var(--fg)" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" vectorEffect="non-scaling-stroke" />
               </svg>
               <span className="player-history-value" aria-hidden="true">

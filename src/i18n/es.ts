@@ -121,8 +121,8 @@ export const es: Strings = {
     /** Visually hidden after each rating: "de 99". */
     outOf: (max: number) => `de ${max}`,
     weeks: (n: number) => `${n} ${n === 1 ? "semana" : "semanas"} registradas`,
-    /** The chart's text alternative: "La valoración general pasó de 2 a 5 en 4 semanas". */
-    historyLabel: (first: number, last: number, weeks: number) => `La valoración general pasó de ${first} a ${last} en ${weeks} ${weeks === 1 ? "semana" : "semanas"}`,
+    /** The chart's text alternative: "La valoración general pasó de 2 a 5, 5 semanas registradas". */
+    historyLabel: (first: number, last: number, tracked: string) => `La valoración general pasó de ${first} a ${last}, ${tracked}`,
     weekRow: (week: string, overall: number) => `Semana del ${week}: general ${overall}`,
     empty: "Pasa tu primera habilidad para ver tu tarjeta.",
     how: "Se calcula en este dispositivo con las habilidades que has pasado y tu nivel.",

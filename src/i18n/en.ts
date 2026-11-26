@@ -124,8 +124,8 @@ export const en = {
     /** Visually hidden after each rating: "out of 99". */
     outOf: (max: number) => `out of ${max}`,
     weeks: (n: number) => `${n} ${n === 1 ? "week" : "weeks"} tracked`,
-    /** The chart's text alternative: "Overall rating went from 2 to 5 over 4 weeks". */
-    historyLabel: (first: number, last: number, weeks: number) => `Overall rating went from ${first} to ${last} over ${weeks} ${weeks === 1 ? "week" : "weeks"}`,
+    /** The chart's text alternative: "Overall rating went from 2 to 5, 5 weeks tracked". `tracked` is the same text as the card's label. */
+    historyLabel: (first: number, last: number, tracked: string) => `Overall rating went from ${first} to ${last}, ${tracked}`,
     weekRow: (week: string, overall: number) => `Week of ${week}: overall ${overall}`,
     empty: "Pass your first skill to see your card.",
     how: "Worked out on this device from the skills you passed and your level.",

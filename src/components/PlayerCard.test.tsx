@@ -63,7 +63,7 @@ describe("PlayerCard", () => {
 
   it("gives the chart a text alternative with the first and latest value and the number of weeks", () => {
     render(<PlayerCard tree={tree} ratings={{ branches: { bc: 62, ps: 30 }, overall: 46 }} history={climb} hasProgress />);
-    expect(screen.getByRole("img", { name: "Overall rating went from 2 to 5 over 4 weeks" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Overall rating went from 2 to 5, 5 weeks tracked" })).toBeTruthy();
   });
 
   it("shows the first and latest value beside the line", () => {
@@ -81,7 +81,7 @@ describe("PlayerCard", () => {
   it("draws a twenty-week history as one point per week", () => {
     const long = Array.from({ length: 20 }, (_, i) => snap(`2026-${String(1 + Math.floor(i / 4)).padStart(2, "0")}-${String(1 + (i % 4) * 7).padStart(2, "0")}`, i * 5));
     const { container } = render(<PlayerCard tree={tree} ratings={{ branches: { bc: 95, ps: 30 }, overall: 60 }} history={long} hasProgress />);
-    expect(screen.getByRole("img", { name: "Overall rating went from 0 to 95 over 19 weeks" })).toBeTruthy();
+    expect(screen.getByRole("img", { name: "Overall rating went from 0 to 95, 20 weeks tracked" })).toBeTruthy();
     const points = container.querySelector("polyline")?.getAttribute("points")?.split(" ") ?? [];
     expect(points).toHaveLength(20);
     expect(container.querySelectorAll(".player-history .sr-only li")).toHaveLength(20);
