@@ -1,6 +1,9 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
 import type { Skill, SkillState, Tree } from "../types";
 import { skillState } from "../lib/progress";
+import { masteryTiers, TIER_PIPS } from "./mastery";
+import type { TestResult } from "../lib/results";
+import type { MasteryTier } from "../lib/xp";
 import { ZoomPane, type ZoomPaneHandle } from "./ZoomPane";
 import { connectorPath, TREE_PANEL_ID, treeEdges, treeGrid } from "./treeView";
 import { t } from "../i18n";
@@ -23,6 +26,8 @@ interface Props {
   nextId: string | null;
   /** Scrolls this skill to the middle of the screen, smoothly. */
   scrollTo: ScrollRequest | null;
+  /** The saved test results, which decide the mastery badge on passed skills. */
+  results: TestResult[];
 }
 
 /**
@@ -35,8 +40,9 @@ interface Props {
  * the order they unlock, last one on top. A branch isn't a straight line (two skills open after the
  * first, and the last needs two), so a locked skill says which skills it is waiting for.
  */
-export function SkillTree({ tree, done, selectedId, onSelect, branchId, phone, nextId, scrollTo }: Props) {
+export function SkillTree({ tree, done, selectedId, onSelect, branchId, phone, nextId, scrollTo, results }: Props) {
   const effects = useUnlockEffects(tree, done);
+  const tiers = useMemo(() => masteryTiers(tree, done, results), [tree, done, results]);
   const [treeEl, setTreeEl] = useState<HTMLDivElement | null>(null);
   const [wrapEl, setWrapEl] = useState<HTMLDivElement | null>(null);
   const start = tree.skills.filter((s) => s.branch === null && s.requires.length === 0);
@@ -59,6 +65,7 @@ export function SkillTree({ tree, done, selectedId, onSelect, branchId, phone, n
   const item = (s: Skill) => {
     const state = skillState(s, done);
     const waitingFor = s.requires.filter((id) => !done.has(id)).map(nameOf);
+    const tier = tiers.get(s.id);
     return (
       <SkillItem
         key={s.id}
@@ -70,7 +77,8 @@ export function SkillTree({ tree, done, selectedId, onSelect, branchId, phone, n
         selected={layout === "card" && s.id === selectedId}
         next={s.id === nextId}
         effect={effects.get(s.id)}
-        sub={state === "done" ? t.tree.passed : state === "locked" ? t.tree.after(waitingFor) : t.panel.status.available}
+        tier={tier}
+        sub={state === "done" ? (tier ? t.tree.passedWith(t.tree.mastery[tier]) : t.tree.passed) : state === "locked" ? t.tree.after(waitingFor) : t.panel.status.available}
         onSelect={onSelect}
       />
     );
@@ -338,12 +346,13 @@ interface ItemProps {
   selected: boolean;
   next: boolean;
   effect?: Effect;
+  tier?: MasteryTier;
   /** Passed, Ready to train, or what it's waiting for. Shown in the phone list, and read out everywhere. */
   sub: string;
   onSelect: (id: string) => void;
 }
 
-function SkillItem({ skill, state, layout, color, selected, next, effect, sub, onSelect }: ItemProps) {
+function SkillItem({ skill, state, layout, color, selected, next, effect, tier, sub, onSelect }: ItemProps) {
   const classes = ["skill", layout, state, selected && "selected", next && "next", skill.big && "big", effect && `fx-${effect}`];
   return (
     <button
@@ -357,6 +366,13 @@ function SkillItem({ skill, state, layout, color, selected, next, effect, sub, o
     >
       <span className="skill-node" aria-hidden="true">
         {state === "done" ? <CheckIcon /> : state === "locked" ? <LockIcon /> : tileLabel(skill)}
+        {tier && (
+          <span className={`mastery ${tier}`}>
+            {Array.from({ length: TIER_PIPS[tier] }, (_, i) => (
+              <i key={i} />
+            ))}
+          </span>
+        )}
       </span>
       <span className="skill-text">
         <span className="skill-name">{skill.name}</span>
@@ -371,7 +387,15 @@ function SkillItem({ skill, state, layout, color, selected, next, effect, sub, o
 function tileLabel(s: Skill) {
   if (s.big) return t.tree.finalTile;
   if (s.requires.length === 0) return t.tree.startTile;
-  return <span className="skill-dot" />;
+  return <PlayIcon />;
+}
+
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M8.5 5.5v13l10-6.5z" />
+    </svg>
+  );
 }
 
 function CheckIcon() {

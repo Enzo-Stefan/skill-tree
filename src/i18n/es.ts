@@ -200,6 +200,8 @@ export const es: Strings = {
     finalTile: "90'",
     nodeLabel: (skill: string, status: string, next: boolean) => `${skill}, ${status}${next ? ", la siguiente" : ""}`,
     passed: "Aprobada",
+    passedWith: (tier: string) => `Aprobada, maestría de ${tier}`,
+    mastery: { bronze: "bronce", silver: "plata", gold: "oro" },
     after: (skills: string[]) =>
       skills.length > 2 ? `Después de ${skills.length} habilidades más` : `Después de ${listAnd(skills)}`,
     branchCount: (done: number, total: number) => `${done} de ${total} hechas`,

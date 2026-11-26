@@ -569,6 +569,7 @@ export default function App() {
               branchId={branchId}
               phone={isPhone}
               scrollTo={scrollTo}
+              results={results.results}
             />
             {/* Not kept while Train is hidden, so a playing video stops. */}
             {tab === "train" && sheetShown && !(pickerOpen || testOpen || placementId !== null) && (

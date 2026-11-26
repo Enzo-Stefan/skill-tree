@@ -207,6 +207,8 @@ export const en = {
     finalTile: "90'",
     nodeLabel: (skill: string, status: string, next: boolean) => `${skill}, ${status}${next ? ", next up" : ""}`,
     passed: "Passed",
+    passedWith: (tier: string) => `Passed, ${tier} mastery`,
+    mastery: { bronze: "bronze", silver: "silver", gold: "gold" },
     /** What a locked skill waits for. More than two (the final skill) becomes a count. */
     after: (skills: string[]) => (skills.length > 2 ? `After ${skills.length} more skills` : `After ${listAnd(skills)}`),
     branchCount: (done: number, total: number) => `${done} of ${total} done`,

@@ -82,10 +82,33 @@
 }
 .skill-node svg { width: 1.5rem; height: 1.5rem; }
 .skill-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--fg); }
+.skill.available .skill-node svg { width: 1.25rem; height: 1.25rem; }
+
+/* Mastery on a passed skill: a medal on the circle's corner, one, two or three pips for bronze, silver, gold. */
+.skill-node { position: relative; }
+.mastery {
+  --m: #b4783c;
+  position: absolute;
+  right: -6px;
+  bottom: -6px;
+  min-width: 1.125rem;
+  height: 1.125rem;
+  padding: 0 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--bg);
+  background: var(--m);
+}
+.mastery i { width: 4px; height: 4px; border-radius: 50%; background: #1a1206; }
+.mastery.silver { --m: #c3cad2; }
+.mastery.gold { --m: #f0bf3a; }
 /* Open: brighter glass and a crisp border. Passed: solid with a soft glow. Locked: dim. */
-.skill.available .skill-node { border: 2px solid var(--fg); background: var(--glass-strong); box-shadow: 0 0 0 4px var(--node-ring); }
+.skill.available .skill-node { border: 2px solid var(--fg); border-radius: 32%; background: var(--glass-strong); box-shadow: 0 0 0 4px var(--node-ring); }
 .skill.done .skill-node { border-color: var(--btn-primary-bg); background: var(--btn-primary-bg); color: var(--btn-primary-fg); box-shadow: var(--node-done-glow); }
-.skill.locked .skill-node { border: 1px dashed var(--fg-3); background: var(--glass-faint); color: var(--fg-2); }
+.skill.locked .skill-node { border: 1.5px dashed var(--fg-3); border-radius: 12%; background: var(--glass-faint); color: var(--fg-2); }
 .skill.locked .skill-name { color: var(--text-2); }
 .skill.big .skill-node { width: 4.5rem; height: 4.5rem; font-size: 1.25rem; }
 .skill-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
