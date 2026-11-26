@@ -207,7 +207,7 @@
    size (set in SkillTree) and a transform scales it, so everything inside keeps its proportions. */
 .tree-wrap.zoomed { display: flex; flex-direction: column; overflow: hidden; padding: 0; }
 .zoom-wrap { position: relative; flex: 1; min-height: 28rem; }
-.zoom-pane { position: absolute; inset: 0; overflow: clip; touch-action: none; cursor: grab; user-select: none; -webkit-user-select: none; }
+.zoom-pane { position: absolute; inset: 0; overflow: clip; touch-action: pan-y; cursor: grab; user-select: none; -webkit-user-select: none; }
 .zoom-pane:active { cursor: grabbing; }
 .zoom-map { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
 @media (prefers-reduced-motion: no-preference) {

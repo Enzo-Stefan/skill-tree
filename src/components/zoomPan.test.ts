@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
-import { baseView, centerOn, constrain, fitView, minScale, pinchView, wheelFactor, zoomAt } from "./zoomPan";
+import { MIN_TAP_SCALE, baseView, centerOn, constrain, fitView, minScale, pinchView, wheelFactor, zoomAt } from "./zoomPan";
 
 const content = { width: 1000, height: 1500 };
 const pane = { width: 400, height: 700 };
 
 describe("fitView", () => {
   it("shows the whole map, centred", () => {
-    const v = fitView(content, pane, 0);
+    const v = fitView(content, pane, 0, 0);
     expect(v.scale).toBeCloseTo(0.4);
     expect(v.x).toBeCloseTo(0);
     expect(v.y).toBeCloseTo((700 - 1500 * 0.4) / 2);
@@ -16,9 +16,19 @@ describe("fitView", () => {
   });
 });
 
+describe("tap-target floor", () => {
+  it("starts and fits no smaller than the scale that keeps 44px targets", () => {
+    expect(baseView(content, pane).scale).toBeCloseTo(MIN_TAP_SCALE);
+    expect(fitView(content, pane).scale).toBeCloseTo(MIN_TAP_SCALE);
+  });
+  it("does not enlarge a map that already fits", () => {
+    expect(fitView({ width: 100, height: 100 }, pane).scale).toBe(1);
+  });
+});
+
 describe("baseView", () => {
   it("fits the width and shows the bottom of the map", () => {
-    const v = baseView(content, pane, 0);
+    const v = baseView(content, pane, 0, 0);
     expect(v.scale).toBeCloseTo(0.4);
     expect(v.y + content.height * v.scale).toBeCloseTo(pane.height);
   });

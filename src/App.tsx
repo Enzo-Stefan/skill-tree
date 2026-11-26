@@ -7,7 +7,6 @@ import { branchFocusSkill, revealTarget } from "./components/treeView";
 import { NextUpCard } from "./components/NextUpCard";
 import { SkillPanel } from "./components/SkillPanel";
 import { SkillPage } from "./components/SkillPage";
-import { masteryTier } from "./components/mastery";
 import { useMediaQuery } from "./components/useMediaQuery";
 import { LevelPicker } from "./components/LevelPicker";
 import { LevelUpBanner } from "./components/LevelUpBanner";
@@ -646,7 +645,6 @@ export default function App() {
               branchId={branchId}
               phone={isPhone}
               scrollTo={scrollTo}
-              results={results.results}
             />
             {/* Not kept while Train is hidden, so a playing video stops. */}
             {tab === "train" && sheetShown && !(pickerOpen || testOpen || placementId !== null) && (
@@ -663,7 +661,6 @@ export default function App() {
             results={results.results}
             sessions={sessions.sessions}
             xpEvents={xp.events}
-            tier={masteryTier(tree, tree.skills.find((s) => s.id === pageId)!, done.has(pageId), results.results) ?? undefined}
             onOpen={openPage}
             onBack={closePage}
           >

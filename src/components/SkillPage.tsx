@@ -14,7 +14,7 @@ interface Props {
   results: TestResult[];
   sessions: SessionEntry[];
   xpEvents: XpEvent[];
-  tier: MasteryTier | undefined;
+  tier?: MasteryTier;
   /** Goes to another skill's page (a prerequisite or a skill this one opens). */
   onOpen: (skillId: string) => void;
   onBack: () => void;

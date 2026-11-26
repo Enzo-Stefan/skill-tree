@@ -1,8 +1,7 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
 import type { Skill, SkillState, Tree } from "../types";
 import { skillState } from "../lib/progress";
-import { masteryTiers, TIER_PIPS } from "./mastery";
-import type { TestResult } from "../lib/results";
+import { TIER_PIPS } from "./mastery";
 import type { MasteryTier } from "../lib/xp";
 import { ZoomPane, type ZoomPaneHandle } from "./ZoomPane";
 import { connectorPath, TREE_PANEL_ID, treeEdges, treeGrid } from "./treeView";
@@ -26,8 +25,8 @@ interface Props {
   nextId: string | null;
   /** Scrolls this skill to the middle of the screen, smoothly. */
   scrollTo: ScrollRequest | null;
-  /** The saved test results, which decide the mastery badge on passed skills. */
-  results: TestResult[];
+  /** Recorded mastery tiers by skill id. None are recorded yet, so by default no badge shows. */
+  tiers?: Map<string, MasteryTier>;
 }
 
 /**
@@ -40,9 +39,10 @@ interface Props {
  * the order they unlock, last one on top. A branch isn't a straight line (two skills open after the
  * first, and the last needs two), so a locked skill says which skills it is waiting for.
  */
-export function SkillTree({ tree, done, selectedId, onSelect, branchId, phone, nextId, scrollTo, results }: Props) {
+const NO_TIERS = new Map<string, MasteryTier>();
+
+export function SkillTree({ tree, done, selectedId, onSelect, branchId, phone, nextId, scrollTo, tiers = NO_TIERS }: Props) {
   const effects = useUnlockEffects(tree, done);
-  const tiers = useMemo(() => masteryTiers(tree, done, results), [tree, done, results]);
   const [treeEl, setTreeEl] = useState<HTMLDivElement | null>(null);
   const [wrapEl, setWrapEl] = useState<HTMLDivElement | null>(null);
   const start = tree.skills.filter((s) => s.branch === null && s.requires.length === 0);

@@ -21,8 +21,8 @@ const ZOOM_STEP = 1.4;
 const NONE: Size = { width: 0, height: 0 };
 
 /**
- * A pane the map can be zoomed and moved around in: two fingers to pinch and move, one finger or the
- * mouse to drag, the wheel or a trackpad pinch to zoom, and buttons for zoom in, zoom out and fit.
+ * A pane the map can be zoomed and moved around in: two fingers to pinch and move, the mouse or a sideways
+ * finger drag to pan (an up/down finger drag scrolls the page), Ctrl or Cmd plus the wheel, or a trackpad pinch, to zoom (plain scrolling scrolls the page), and buttons for zoom in, zoom out and fit.
  * The map is drawn at its own size and scaled with a CSS transform; the maths is in zoomPan.ts.
  */
 export function ZoomPane({ ref, children, className = "" }: Props) {
@@ -76,7 +76,8 @@ export function ZoomPane({ ref, children, className = "" }: Props) {
     if (!pane) return;
     const onWheel = (e: WheelEvent) => {
       const v = viewRef.current;
-      if (!v) return;
+      // Plain scroll belongs to the page. A trackpad pinch arrives as a wheel event with ctrlKey set.
+      if (!v || !(e.ctrlKey || e.metaKey)) return;
       e.preventDefault();
       const rect = pane.getBoundingClientRect();
       const at = { x: e.clientX - rect.left, y: e.clientY - rect.top };
