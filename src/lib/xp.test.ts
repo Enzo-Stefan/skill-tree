@@ -11,6 +11,7 @@ import {
   mergeEvents,
   revoke,
   sessionKey,
+  passDayKey,
   skillPassKey,
   streakKey,
   totalXp,
@@ -219,5 +220,13 @@ describe("review fixes (#129)", () => {
 
   it("gives level 1 for a total that is not a number", () => {
     for (const total of [NaN, Infinity, -Infinity]) expect(xpLevel(total)).toMatchObject({ level: 1, into: 0 });
+  });
+});
+
+describe("pass day markers", () => {
+  it("are keys worth nothing, only for a real day shape", () => {
+    expect(isEventKey(passDayKey("bc1", "2026-11-26"))).toBe(true);
+    expect(amountFor(passDayKey("bc1", "2026-11-26"))).toBe(0);
+    for (const bad of ["passday:bc1", "passday:bc1:today", "passday:bc1:2026-11-26:x", "passday:bc1:26-11-26"]) expect(amountFor(bad), bad).toBeNull();
   });
 });

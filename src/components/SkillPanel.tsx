@@ -19,6 +19,8 @@ interface Props {
   skillId: string;
   onComplete: (id: string) => void;
   onUndo: (id: string) => void;
+  /** A test passed again on a skill already passed: the app decides whether it earns a mastery tier (#121 item 5). */
+  onRetest?: (id: string) => void;
   /** The player's level and step, e.g. "Beginner 2", or null if not picked yet. */
   playerLevelName: string | null;
   /** The chosen level's target for this skill, or null. */
@@ -39,6 +41,8 @@ interface Props {
   onTogglePlan?: () => void;
   /** Copies a link that opens this skill. When missing, the button is not shown. */
   onCopyLink?: (id: string) => void;
+  /** Opens this skill's own page. When missing (on that page already), the button is not shown. */
+  onOpenPage?: (id: string) => void;
   /** Shares "beat my result" for a saved result, from test mode. */
   onChallenge?: (skillId: string) => void;
   /** Hides the sheet while a dialog is open over it, so only one shows at a time (phones). */
@@ -51,6 +55,7 @@ export function SkillPanel({
   skillId,
   onComplete,
   onUndo,
+  onRetest,
   onClose,
   playerLevelName,
   target,
@@ -62,6 +67,7 @@ export function SkillPanel({
   planAdded = false,
   onTogglePlan,
   onCopyLink,
+  onOpenPage,
   onChallenge,
   hidden = false,
 }: Props) {
@@ -120,6 +126,11 @@ export function SkillPanel({
       </h2>
       <span className={`status ${state}`}>{t.panel.status[state]}</span>
       {state === "locked" && <p className="hint">{t.panel.finishFirst(missing.filter((n) => n !== undefined))}</p>}
+      {onOpenPage && (
+        <button className="link-btn" type="button" onClick={() => onOpenPage(skill.id)}>
+          {t.panel.openPage}
+        </button>
+      )}
     </>
   );
   const drill = (
@@ -288,11 +299,12 @@ export function SkillPanel({
           skill={skill}
           check={skill.check}
           limit={timeLimit}
-          canPass={state === "available"}
+          canPass={state === "available" || (state === "done" && Boolean(onRetest))}
           onPassed={() => {
             // Close first: passing closes the sheet on phones and moves focus to the skill in the tree.
             setTestFor(null);
-            onComplete(skill.id);
+            if (state === "done") onRetest?.(skill.id);
+            else onComplete(skill.id);
           }}
           onClose={() => setTestFor(null)}
           results={keepsTimes}

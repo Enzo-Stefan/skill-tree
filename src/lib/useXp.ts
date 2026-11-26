@@ -2,9 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Tree } from "../types";
 import { loadSupabase } from "../auth/client";
 import type { SyncStatus } from "./useCloudSync";
-import { mergeEvents, revoke, totalXp, xpLevel, type XpEvent, type XpLevel } from "./xp";
+import { award, mergeEvents, passDayKey, revoke, skillPassKey, totalXp, xpLevel, type XpEvent, type XpLevel } from "./xp";
 import { belongsToAnother, setOwner } from "./localOwner";
 import { applyStreakRewards } from "./streakRewards";
+import { recordPass, recordRetest, tiersOf, type RetestResult } from "./mastery";
+import type { MasteryTier } from "./xp";
+import { applyChallengeRewards, applyMissionRewards } from "./challengeRewards";
+import type { SessionEntry } from "./sessions";
 import { applyAchievements, earnedAchievements, earnedInLedger } from "./achievements";
 import { fetchXp, loadXp, pushXp, reconcile, saveXp, sameEvents } from "./xpSync";
 
@@ -14,6 +18,14 @@ export interface XpState {
   level: XpLevel;
   /** Switches every award off, for "Reset everything": XP, trophies and streak bonuses start again from the reset progress. */
   reset: () => void;
+  /** A skill was just passed on this day: remembers the day of its first-ever pass, so challenges count only passes made from now on. */
+  recordPassDay: (skillId: string, day: string) => void;
+  /** The highest mastery tier of each passed skill (#121 item 5). */
+  mastery: Record<string, MasteryTier>;
+  /** A skill was just passed at this level step (1 to 16, 0 with no level): earns bronze and remembers the step. */
+  recordPass: (skillId: string, step: number) => void;
+  /** A test passed again at this level step: earns the next tier if the step is a full level above the last one. */
+  retest: (skillId: string, step: number) => RetestResult;
   /** Ids of the achievements earned (#121 item 4), from the ledger, so trophies from another device count too. */
   earned: string[];
 }
@@ -26,13 +38,21 @@ export interface XpExtra {
   /** -1 none picked, 0 Beginner ... 3 Expert. */
   levelIndex: number;
   results: number;
+  /** Which skills were worked on which day, for the challenges. */
+  sessions?: SessionEntry[];
+  /** Today, as YYYY-MM-DD, for the challenges. Without it no challenge is checked. */
+  today?: string;
+  /** The mission award keys completed today (completedMissionKeys). */
+  missionKeys?: string[];
 }
 
 /** Reconcile the ledger with progress, then add any achievement now earned. */
 function follow(tree: Tree, current: XpEvent[], done: Set<string>, practiceDays: string[], extra: XpExtra, now: string): XpEvent[] {
   const synced = reconcile(tree, current, done, practiceDays, now);
   const withTrophies = applyAchievements(synced, earnedAchievements({ tree, done, practiceDays, ...extra }), now);
-  return applyStreakRewards(withTrophies, extra.streakWeeks, extra.streakSince ?? null, now);
+  const withStreak = applyStreakRewards(withTrophies, extra.streakWeeks, extra.streakSince ?? null, now);
+  const withMissions = applyMissionRewards(withStreak, extra.missionKeys ?? [], now);
+  return extra.today ? applyChallengeRewards(withMissions, { practiceDays, sessions: extra.sessions ?? [], today: extra.today }, now) : withMissions;
 }
 
 /**
@@ -44,7 +64,7 @@ function follow(tree: Tree, current: XpEvent[], done: Set<string>, practiceDays:
 export function useXp(tree: Tree, userId: string | null, status: SyncStatus, done: Set<string>, practiceDays: string[], extra: XpExtra = { streakWeeks: 0, levelIndex: -1, results: 0 }): XpState {
   const [events, setEvents] = useState<XpEvent[]>(() => loadXp(tree.id));
   const accountReady = useRef<string | null>(null);
-  const { streakWeeks, streakSince = null, levelIndex, results } = extra;
+  const { streakWeeks, streakSince = null, levelIndex, results, sessions, today, missionKeys } = extra;
   const latest = useRef({ events, done, practiceDays, extra });
   latest.current = { events, done, practiceDays, extra };
 
@@ -52,8 +72,8 @@ export function useXp(tree: Tree, userId: string | null, status: SyncStatus, don
   // Follow the finished skills and training days, once they are final.
   useEffect(() => {
     if (status === "loading") return;
-    setEvents((current) => follow(tree, current, done, practiceDays, { streakWeeks, streakSince, levelIndex, results }, new Date().toISOString()));
-  }, [tree, status, done, practiceDays, streakWeeks, streakSince, levelIndex, results]);
+    setEvents((current) => follow(tree, current, done, practiceDays, { streakWeeks, streakSince, levelIndex, results, sessions, today, missionKeys }, new Date().toISOString()));
+  }, [tree, status, done, practiceDays, streakWeeks, streakSince, levelIndex, results, sessions, today, missionKeys]);
 
   useEffect(() => saveXp(tree.id, events), [tree.id, events]);
 
@@ -105,8 +125,29 @@ export function useXp(tree: Tree, userId: string | null, status: SyncStatus, don
     setEvents((current) => current.reduce((next, e) => (e.active ? revoke(next, e.key, now) : next), current));
   }, []);
 
+  // Only a skill's first-ever pass gets a day. A skill-pass event is switched off by an undo, never deleted, so its
+  // existence says the skill was passed before: an undo and re-pass (of a new or an old skill) must not move the pass
+  // to today, or a pass goal could be met every day by undoing and passing again.
+  const recordPassDay = useCallback((skillId: string, day: string) => {
+    setEvents((current) =>
+      current.some((e) => e.key === skillPassKey(skillId)) ? current : award(current, passDayKey(skillId, day), 0, new Date().toISOString()),
+    );
+  }, []);
+
+  const recordPassNow = useCallback((skillId: string, step: number) => {
+    setEvents((current) => recordPass(current, skillId, step, new Date().toISOString()));
+  }, []);
+
+  const retest = useCallback((skillId: string, step: number): RetestResult => {
+    const now = new Date().toISOString();
+    const outcome = recordRetest(latest.current.events, skillId, step, now);
+    // Applied to the newest ledger, so a change queued meanwhile is not overwritten; the result is from the snapshot.
+    if (outcome.events !== latest.current.events) setEvents((current) => recordRetest(current, skillId, step, now).events);
+    return outcome.result;
+  }, []);
+
   return useMemo(() => {
     const total = totalXp(events);
-    return { events, total, level: xpLevel(total), earned: earnedInLedger(events), reset };
-  }, [events, reset]);
+    return { events, total, level: xpLevel(total), earned: earnedInLedger(events), reset, recordPassDay, mastery: tiersOf(events), recordPass: recordPassNow, retest };
+  }, [events, reset, recordPassDay, recordPassNow, retest]);
 }

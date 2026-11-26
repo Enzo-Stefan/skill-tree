@@ -40,6 +40,11 @@ export const masteryKey = (skillId: string, tier: MasteryTier) => `mastery:${ski
  * the streak), or nothing for the first one. One award per milestone per run, so a new streak can earn them again.
  */
 export const streakKey = (weeks: number, run: string | null) => `streak:${weeks}:${run ?? "start"}`;
+/**
+ * The day a skill was passed, written when the pass happens (a marker worth nothing). Challenges count passes from
+ * these, not from the time the app first noticed a pass, so old passes never count toward today's goals.
+ */
+export const passDayKey = (skillId: string, day: string) => `passday:${skillId}:${day}`;
 export const achievementKey = (id: string) => `achievement:${id}`;
 
 const KEY = /^[a-z]+:[A-Za-z0-9_.:-]{1,90}$/;
@@ -47,6 +52,12 @@ const KEY = /^[a-z]+:[A-Za-z0-9_.:-]{1,90}$/;
 /** True for a key this app could have made. */
 export function isEventKey(key: unknown): key is string {
   return typeof key === "string" && key.length <= 100 && KEY.test(key);
+}
+
+/** The fourth part of a key like stepat:<skill>:<tier>:<step>, or an empty string. */
+function parts4(key: string): string {
+  const parts = key.split(":");
+  return parts.length === 4 && /^(bronze|silver|gold)$/.test(parts[2]!) ? parts[3]! : "";
 }
 
 /** What a new event with this key is worth today, or null when the key is not one we award for. */
@@ -71,8 +82,13 @@ export function amountFor(key: string, weekly = false): number | null {
       if (parts.length !== 3 || String(Number(a)) !== a || !/^(start|\d{4}-\d{2}-\d{2})$/.test(parts[2]!)) return null;
       return XP_AMOUNTS.streak[Number(a)] ?? null;
     }
+    case "passday":
+      return key.split(":").length === 3 && /^\d{4}-\d{2}-\d{2}$/.test(b ?? "") ? 0 : null;
     case "achievement":
       return XP_AMOUNTS.achievement;
+    case "stepat":
+      // The step a mastery tier was earned at (src/lib/mastery.ts): a marker worth nothing.
+      return /^\d{1,2}$/.test(parts4(key)) ? 0 : null;
     default:
       return null;
   }

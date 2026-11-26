@@ -1,6 +1,9 @@
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type RefObject } from "react";
 import type { Skill, SkillState, Tree } from "../types";
 import { skillState } from "../lib/progress";
+import { TIER_PIPS } from "./mastery";
+import type { MasteryTier } from "../lib/xp";
+import { ZoomPane, type ZoomPaneHandle } from "./ZoomPane";
 import { connectorPath, TREE_PANEL_ID, treeEdges, treeGrid } from "./treeView";
 import { t } from "../i18n";
 
@@ -22,6 +25,8 @@ interface Props {
   nextId: string | null;
   /** Scrolls this skill to the middle of the screen, smoothly. */
   scrollTo: ScrollRequest | null;
+  /** Recorded mastery tiers by skill id. None are recorded yet, so by default no badge shows. */
+  tiers?: Map<string, MasteryTier>;
 }
 
 /**
@@ -34,7 +39,9 @@ interface Props {
  * the order they unlock, last one on top. A branch isn't a straight line (two skills open after the
  * first, and the last needs two), so a locked skill says which skills it is waiting for.
  */
-export function SkillTree({ tree, done, selectedId, onSelect, branchId, phone, nextId, scrollTo }: Props) {
+const NO_TIERS = new Map<string, MasteryTier>();
+
+export function SkillTree({ tree, done, selectedId, onSelect, branchId, phone, nextId, scrollTo, tiers = NO_TIERS }: Props) {
   const effects = useUnlockEffects(tree, done);
   const [treeEl, setTreeEl] = useState<HTMLDivElement | null>(null);
   const [wrapEl, setWrapEl] = useState<HTMLDivElement | null>(null);
@@ -44,16 +51,21 @@ export function SkillTree({ tree, done, selectedId, onSelect, branchId, phone, n
   const nameOf = (id: string) => tree.skills.find((s) => s.id === id)?.name ?? id;
   const grid = useMemo(() => treeGrid(tree), [tree]);
   const room = useWidth(wrapEl);
-  // Names need about 58px a slot (two columns) to fit on a line. Before the first measure, the page's width stands in.
+  // Names need about 72px a slot (two columns) to fit on a line. Before the first measure, the page's width stands in.
   const stacked = phone || (room ?? window.innerWidth) < (grid.columns / 2) * SLOT_PX + WRAP_PADDING_PX;
-  const layout = stacked ? "row" : "card";
+  // On phones the map is opt-in: the list stays the default, since its skills are always full size.
+  const [mapOpen, setMapOpen] = useState(false);
+  const zoomed = !stacked || mapOpen;
+  const layout = zoomed ? "card" : "row";
+  const pane = useRef<ZoomPaneHandle>(null);
 
-  useScrollTo(treeEl, scrollTo);
-  useStartAtBase(wrapEl, stacked);
+  useScrollTo(treeEl, scrollTo, zoomed ? pane : null);
+  useStartAtBase(wrapEl, stacked && !mapOpen);
 
   const item = (s: Skill) => {
     const state = skillState(s, done);
     const waitingFor = s.requires.filter((id) => !done.has(id)).map(nameOf);
+    const tier = tiers.get(s.id);
     return (
       <SkillItem
         key={s.id}
@@ -65,7 +77,8 @@ export function SkillTree({ tree, done, selectedId, onSelect, branchId, phone, n
         selected={layout === "card" && s.id === selectedId}
         next={s.id === nextId}
         effect={effects.get(s.id)}
-        sub={state === "done" ? t.tree.passed : state === "locked" ? t.tree.after(waitingFor) : t.panel.status.available}
+        tier={tier}
+        sub={state === "done" ? (tier ? t.tree.passedWith(t.tree.mastery[tier]) : t.tree.passed) : state === "locked" ? t.tree.after(waitingFor) : t.panel.status.available}
         onSelect={onSelect}
       />
     );
@@ -77,9 +90,21 @@ export function SkillTree({ tree, done, selectedId, onSelect, branchId, phone, n
 
   const label = tree.shortName ?? tree.title;
 
-  if (stacked) {
+  const toggle = stacked && (
+    <div className="view-toggle" role="group" aria-label={t.tree.viewLabel}>
+      <button type="button" aria-pressed={!mapOpen} onClick={() => setMapOpen(false)}>
+        {t.tree.viewList}
+      </button>
+      <button type="button" aria-pressed={mapOpen} onClick={() => setMapOpen(true)}>
+        {t.tree.viewMap}
+      </button>
+    </div>
+  );
+
+  if (stacked && !mapOpen) {
     return (
       <div className="tree-wrap" id={TREE_PANEL_ID} role="tabpanel" aria-label={label} ref={setWrapEl}>
+        {toggle}
         <div className="tree stacked" ref={setTreeEl}>
           <div className="tree-end">{finish.map(item)}</div>
           {[...branches].reverse().map(({ branch, skills }) => {
@@ -134,11 +159,13 @@ export function SkillTree({ tree, done, selectedId, onSelect, branchId, phone, n
   };
 
   return (
-    <div className="tree-wrap" id={TREE_PANEL_ID} role="tabpanel" aria-label={label} ref={setWrapEl}>
+    <div className="tree-wrap zoomed" id={TREE_PANEL_ID} role="tabpanel" aria-label={label} ref={setWrapEl}>
+      {toggle}
+      <ZoomPane ref={pane}>
       <div
-        className="tree wide"
+        className="tree wide map"
         ref={setTreeEl}
-        style={{ gridTemplateColumns: `repeat(${grid.columns}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${grid.rows}, auto)` }}
+        style={{ width: (grid.columns / 2) * MAP_SLOT_PX + 2 * MAP_PADDING_PX, gridTemplateColumns: `repeat(${grid.columns}, minmax(0, 1fr))`, gridTemplateRows: `repeat(${grid.rows}, auto)` }}
       >
         <Connectors tree={tree} done={done} effects={effects} colorOf={colorOf} container={treeEl} />
         {finish.map((s) => (
@@ -187,6 +214,7 @@ export function SkillTree({ tree, done, selectedId, onSelect, branchId, phone, n
           </div>
         ))}
       </div>
+      </ZoomPane>
     </div>
   );
 }
@@ -212,14 +240,16 @@ function Connectors({ tree, done, effects, colorOf, container }: ConnectorsProps
     if (!container) return;
     const measure = () => {
       const box = container.getBoundingClientRect();
+      // The map can be scaled by a transform; rects are in screen pixels, the lines are in the map's own.
+      const k = box.width / container.offsetWidth || 1;
       const node = (id: string) => container.querySelector<HTMLElement>(`[data-skill-id="${CSS.escape(id)}"] .skill-node`)?.getBoundingClientRect();
       const paths = new Map<string, string>();
       for (const e of treeEdges(tree)) {
         const lower = node(e.from);
         const upper = node(e.to);
         if (!lower || !upper) continue;
-        const from = { x: lower.left + lower.width / 2 - box.left, y: lower.top - box.top };
-        const to = { x: upper.left + upper.width / 2 - box.left, y: upper.bottom - box.top };
+        const from = { x: (lower.left + lower.width / 2 - box.left) / k, y: (lower.top - box.top) / k };
+        const to = { x: (upper.left + upper.width / 2 - box.left) / k, y: (upper.bottom - box.top) / k };
         paths.set(`${e.from}>${e.to}`, connectorPath(from, to));
       }
       setDrawn({ width: container.scrollWidth, height: container.scrollHeight, paths });
@@ -252,18 +282,22 @@ function Connectors({ tree, done, effects, colorOf, container }: ConnectorsProps
 }
 
 /** Scrolls the tree to a skill when asked. Smooth, unless the player asked for less motion. */
-function useScrollTo(tree: HTMLElement | null, request: ScrollRequest | null) {
+function useScrollTo(tree: HTMLElement | null, request: ScrollRequest | null, zoom: RefObject<ZoomPaneHandle | null> | null) {
   useEffect(() => {
     if (!request) return;
     // Wait a frame: when Train was hidden until this render (coming back from Areas), Chrome drops
     // a smooth scroll that starts in the same frame it becomes visible.
     const frame = requestAnimationFrame(() => {
       const skill = tree?.querySelector<HTMLElement>(`[data-skill-id="${CSS.escape(request.id)}"]`);
+      if (zoom) {
+        if (skill) zoom.current?.centerOn(skill);
+        return;
+      }
       const calm = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       skill?.scrollIntoView({ block: "center", inline: "nearest", behavior: calm ? "auto" : "smooth" });
     });
     return () => cancelAnimationFrame(frame);
-  }, [request, tree]);
+  }, [request, tree, zoom]);
 }
 
 /**
@@ -298,8 +332,11 @@ function useWidth(el: HTMLElement | null): number | null {
 }
 
 /** Room one slot (two grid columns) of the wide tree needs, and the tree area's side padding. Keep in sync with tree.css. */
-const SLOT_PX = 58;
+const SLOT_PX = 72;
 const WRAP_PADDING_PX = 48;
+/** The map's own size: a slot this wide, and padding all round. Names fit at this size, and the pane scales it. */
+const MAP_SLOT_PX = 96;
+const MAP_PADDING_PX = 24;
 
 interface ItemProps {
   skill: Skill;
@@ -309,12 +346,13 @@ interface ItemProps {
   selected: boolean;
   next: boolean;
   effect?: Effect;
+  tier?: MasteryTier;
   /** Passed, Ready to train, or what it's waiting for. Shown in the phone list, and read out everywhere. */
   sub: string;
   onSelect: (id: string) => void;
 }
 
-function SkillItem({ skill, state, layout, color, selected, next, effect, sub, onSelect }: ItemProps) {
+function SkillItem({ skill, state, layout, color, selected, next, effect, tier, sub, onSelect }: ItemProps) {
   const classes = ["skill", layout, state, selected && "selected", next && "next", skill.big && "big", effect && `fx-${effect}`];
   return (
     <button
@@ -328,6 +366,13 @@ function SkillItem({ skill, state, layout, color, selected, next, effect, sub, o
     >
       <span className="skill-node" aria-hidden="true">
         {state === "done" ? <CheckIcon /> : state === "locked" ? <LockIcon /> : tileLabel(skill)}
+        {tier && (
+          <span className={`mastery ${tier}`}>
+            {Array.from({ length: TIER_PIPS[tier] }, (_, i) => (
+              <i key={i} />
+            ))}
+          </span>
+        )}
       </span>
       <span className="skill-text">
         <span className="skill-name">{skill.name}</span>
@@ -342,7 +387,15 @@ function SkillItem({ skill, state, layout, color, selected, next, effect, sub, o
 function tileLabel(s: Skill) {
   if (s.big) return t.tree.finalTile;
   if (s.requires.length === 0) return t.tree.startTile;
-  return <span className="skill-dot" />;
+  return <PlayIcon />;
+}
+
+function PlayIcon() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M8.5 5.5v13l10-6.5z" />
+    </svg>
+  );
 }
 
 function CheckIcon() {
