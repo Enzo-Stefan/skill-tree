@@ -5,6 +5,7 @@ import './index.css'
 import './nav.css'
 import './tree.css'
 import './motion.css'
+import './skeleton.css'
 import App from './App.tsx'
 
 // /#admin loads the admin page as its own chunk, so players never download it. Anyone who is not an admin

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { SkeletonRows } from "./Skeleton";
 import type { LeaderboardProfile, LeaderboardRow, LeaderboardScope, Tree } from "../types";
 import type { Auth } from "../auth/useAuth";
 import { loadSupabase } from "../auth/client";
@@ -155,7 +156,7 @@ export function LeaderboardScreen({ tree, auth, profile, profileLoading, profile
                 </button>
               </section>
             )}
-            {supported && available && !failed && !result && <p className="card-note">{t.leaderboard.loading}</p>}
+            {supported && available && !failed && !result && <SkeletonRows label={t.leaderboard.loading} />}
             {result && result.top.length === 0 && <p className="card-note">{t.leaderboard.empty}</p>}
             {result && result.top.length > 0 && (
               <ol className="lb-list">

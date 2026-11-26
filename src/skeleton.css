@@ -1,0 +1,19 @@
+/* Loading placeholders (issue #127 item 4): grey glass shapes in the current monochrome style. */
+.skeleton-list { display: flex; flex-direction: column; gap: 6px; }
+.skeleton-row {
+  display: grid;
+  grid-template-columns: 2.5rem 1fr 4.5rem;
+  align-items: center;
+  gap: 10px;
+  min-height: 52px;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+}
+.skeleton-bar { display: block; height: 14px; border-radius: var(--radius-pill); background: var(--glass-border-strong); opacity: 0.6; }
+.skeleton-name { width: 70%; }
+@media (prefers-reduced-motion: no-preference) {
+  .skeleton-bar { animation: skeleton-pulse 1.2s ease-in-out infinite; }
+  @keyframes skeleton-pulse { 50% { opacity: 0.25; } }
+}
