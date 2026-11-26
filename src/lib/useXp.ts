@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Tree } from "../types";
 import { loadSupabase } from "../auth/client";
 import type { SyncStatus } from "./useCloudSync";
-import { mergeEvents, totalXp, xpLevel, type XpEvent, type XpLevel } from "./xp";
+import { mergeEvents, revoke, totalXp, xpLevel, type XpEvent, type XpLevel } from "./xp";
 import { belongsToAnother, setOwner } from "./localOwner";
+import { applyStreakRewards } from "./streakRewards";
 import { applyAchievements, earnedAchievements, earnedInLedger } from "./achievements";
 import { fetchXp, loadXp, pushXp, reconcile, saveXp, sameEvents } from "./xpSync";
 
@@ -11,6 +12,8 @@ export interface XpState {
   events: XpEvent[];
   total: number;
   level: XpLevel;
+  /** Switches every award off, for "Reset everything": XP, trophies and streak bonuses start again from the reset progress. */
+  reset: () => void;
   /** Ids of the achievements earned (#121 item 4), from the ledger, so trophies from another device count too. */
   earned: string[];
 }
@@ -18,6 +21,8 @@ export interface XpState {
 /** What the achievement rules need beyond the finished skills and training days. */
 export interface XpExtra {
   streakWeeks: number;
+  /** The week the current streak started after (src/lib/streak.ts `since`), or null for the first run. */
+  streakSince?: string | null;
   /** -1 none picked, 0 Beginner ... 3 Expert. */
   levelIndex: number;
   results: number;
@@ -26,7 +31,8 @@ export interface XpExtra {
 /** Reconcile the ledger with progress, then add any achievement now earned. */
 function follow(tree: Tree, current: XpEvent[], done: Set<string>, practiceDays: string[], extra: XpExtra, now: string): XpEvent[] {
   const synced = reconcile(tree, current, done, practiceDays, now);
-  return applyAchievements(synced, earnedAchievements({ tree, done, practiceDays, ...extra }), now);
+  const withTrophies = applyAchievements(synced, earnedAchievements({ tree, done, practiceDays, ...extra }), now);
+  return applyStreakRewards(withTrophies, extra.streakWeeks, extra.streakSince ?? null, now);
 }
 
 /**
@@ -38,7 +44,7 @@ function follow(tree: Tree, current: XpEvent[], done: Set<string>, practiceDays:
 export function useXp(tree: Tree, userId: string | null, status: SyncStatus, done: Set<string>, practiceDays: string[], extra: XpExtra = { streakWeeks: 0, levelIndex: -1, results: 0 }): XpState {
   const [events, setEvents] = useState<XpEvent[]>(() => loadXp(tree.id));
   const accountReady = useRef<string | null>(null);
-  const { streakWeeks, levelIndex, results } = extra;
+  const { streakWeeks, streakSince = null, levelIndex, results } = extra;
   const latest = useRef({ events, done, practiceDays, extra });
   latest.current = { events, done, practiceDays, extra };
 
@@ -46,8 +52,8 @@ export function useXp(tree: Tree, userId: string | null, status: SyncStatus, don
   // Follow the finished skills and training days, once they are final.
   useEffect(() => {
     if (status === "loading") return;
-    setEvents((current) => follow(tree, current, done, practiceDays, { streakWeeks, levelIndex, results }, new Date().toISOString()));
-  }, [tree, status, done, practiceDays, streakWeeks, levelIndex, results]);
+    setEvents((current) => follow(tree, current, done, practiceDays, { streakWeeks, streakSince, levelIndex, results }, new Date().toISOString()));
+  }, [tree, status, done, practiceDays, streakWeeks, streakSince, levelIndex, results]);
 
   useEffect(() => saveXp(tree.id, events), [tree.id, events]);
 
@@ -92,8 +98,15 @@ export function useXp(tree: Tree, userId: string | null, status: SyncStatus, don
     return () => window.clearTimeout(timer);
   }, [tree, userId, status, events]);
 
+  // Reset everything: every active award is switched off (not deleted), so the account's copy follows, and a new
+  // streak after the reset can earn its bonuses again.
+  const reset = useCallback(() => {
+    const now = new Date().toISOString();
+    setEvents((current) => current.reduce((next, e) => (e.active ? revoke(next, e.key, now) : next), current));
+  }, []);
+
   return useMemo(() => {
     const total = totalXp(events);
-    return { events, total, level: xpLevel(total), earned: earnedInLedger(events) };
-  }, [events]);
+    return { events, total, level: xpLevel(total), earned: earnedInLedger(events), reset };
+  }, [events, reset]);
 }

@@ -151,13 +151,20 @@ export function savePracticeDays(treeId: string, days: DayKey[]): void {
   }
 }
 
+/** A real calendar day written YYYY-MM-DD (weeks are identified by their Monday), or null. Anything else in storage is ignored. */
+function weekOrNull(value: unknown): WeekKey | null {
+  if (typeof value !== "string") return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!m) return null;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  const date = new Date(Date.UTC(y, mo - 1, d));
+  return date.getUTCFullYear() === y && date.getUTCMonth() === mo - 1 && date.getUTCDate() === d ? value : null;
+}
+
 export function loadStreakState(treeId: string): StreakState {
   try {
     const raw = JSON.parse(localStorage.getItem(stateKey(treeId)) ?? "{}");
-    return {
-      since: typeof raw?.since === "string" ? raw.since : null,
-      askedWeek: typeof raw?.askedWeek === "string" ? raw.askedWeek : null,
-    };
+    return { since: weekOrNull(raw?.since), askedWeek: weekOrNull(raw?.askedWeek) };
   } catch {
     return { since: null, askedWeek: null };
   }

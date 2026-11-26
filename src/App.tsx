@@ -471,6 +471,7 @@ export default function App() {
     lifts.clear();
     results.clear();
     sessions.clear();
+    xp.reset();
     setTestOpen(false);
     setSelectedId(tree.skills[0].id);
     setBranchId(null);
@@ -483,6 +484,7 @@ export default function App() {
   const streak = streakWeeks(practiceDays, streakState.since, today);
   const xp = useXp(tree, auth.account?.id ?? null, cloud.status, done, practiceDays, {
     streakWeeks: streak,
+    streakSince: streakState.since,
     levelIndex: (tree.playerLevels ?? []).findIndex((l) => l.id === playerLevelId),
     results: results.results.length,
   });
