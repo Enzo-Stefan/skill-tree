@@ -22,6 +22,8 @@ export default defineConfig({
     // Vitest's default 10 s hook limit made those suites fail intermittently under load, so give them room.
     testTimeout: 30_000,
     hookTimeout: 60_000,
+    // Replaces Node's experimental localStorage global (Node 25+) with jsdom's Storage. See the file for why.
+    setupFiles: ['./vitest.setup.ts'],
   },
   define: {
     // Shown under Settings > About, so a bug report says which build it came from.
