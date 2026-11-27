@@ -1,131 +1,3 @@
-/* Monochrome glass. Every colour, blur, radius, shadow and timing lives here, so the look is tuned in one place.
-   Two looks follow the phone's setting: near-black (dark) and near-white (light). Branch colours are the one
-   exception to monochrome, muted, and only say which branch a skill is in (#78). */
-:root {
-  /* Surface */
-  --bg: #0a0a0a;
-  --glow-1: rgba(255, 255, 255, 0.075);
-  --glow-2: rgba(255, 255, 255, 0.05);
-  --fg: #f5f5f5;
-  /* Secondary text: 6.9:1 on the background, 5.9:1 on the brightest glass over a glow. */
-  --fg-2: #a3a3a3;
-  /* Lines and borders only, too faint for text. */
-  --fg-3: rgba(255, 255, 255, 0.3);
-
-  /* Glass: translucent white over the dark, blurred. */
-  --glass-faint: rgba(255, 255, 255, 0.03);
-  --glass: rgba(255, 255, 255, 0.05);
-  --glass-strong: rgba(255, 255, 255, 0.09);
-  /* Sheets and dialogs sit over the tree, so they need a darker base for text to stay readable. */
-  --glass-raised: rgba(24, 24, 24, 0.72);
-  --glass-bar: rgba(10, 10, 10, 0.6);
-  --glass-border: rgba(255, 255, 255, 0.12);
-  --glass-border-strong: rgba(255, 255, 255, 0.22);
-  --glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  --glass-blur: blur(24px) saturate(1.6);
-  /* Browsers without backdrop-filter get a solid panel instead. */
-  --glass-solid: #161616;
-  --glass-solid-raised: #1c1c1c;
-  --hover: rgba(255, 255, 255, 0.07);
-
-  /* Buttons */
-  --btn-primary-bg: #ffffff;
-  --btn-primary-fg: #0a0a0a;
-  --btn-border: rgba(255, 255, 255, 0.32);
-  --btn-border-hover: rgba(255, 255, 255, 0.7);
-
-  /* Skill states */
-  --node-done-glow: 0 0 18px rgba(255, 255, 255, 0.28);
-  --node-ring: rgba(255, 255, 255, 0.1);
-  --unlock-glow: rgba(255, 255, 255, 0.55);
-
-  /* Branch colours, muted: this much of the branch's own colour, the rest grey. */
-  --branch-mix: 55%;
-  --branch-grey: #8c8c8c;
-
-  /* Only for destructive actions and errors. */
-  --danger: #c96a6a;
-  --danger-text: #f0a8a8;
-
-  --overlay: rgba(0, 0, 0, 0.6);
-  --shadow-raised: 0 24px 48px rgba(0, 0, 0, 0.5);
-  --video-bg: #000000;
-
-  /* Shape. Spacing sticks to multiples of 4px. */
-  --radius-card: 18px;
-  --radius-md: 12px;
-  --radius-sm: 8px;
-  --radius-sheet: 22px;
-  --radius-pill: 999px;
-
-  /* Motion */
-  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
-  --dur-fast: 150ms;
-  --dur: 200ms;
-  --dur-slow: 250ms;
-
-  --font-body: -apple-system, BlinkMacSystemFont, "Inter", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  --font-display: var(--font-body);
-  --tracking-tight: -0.02em;
-
-  /* Older names, still used across the app (and by #83), mapped onto the tokens above. */
-  --grass: var(--bg);
-  --grass-2: var(--glass-solid);
-  --chalk: var(--fg);
-  --chalk-dim: var(--fg-3);
-  --text-2: var(--fg-2);
-  --chalk-faint: var(--glass-border);
-  --gold: var(--fg);
-  --gold-text: var(--fg);
-  --on-gold: var(--bg);
-  --gold-wash: var(--glass-strong);
-  --test-wash: var(--glass);
-  --toast-text: var(--bg);
-  --panel: var(--glass-solid);
-  --bar-bg: var(--glass-bar);
-  --on-branch: var(--bg);
-  --line-faint: var(--glass-border);
-  --success: var(--fg);
-  --sheet-shadow: rgba(0, 0, 0, 0.5);
-  color-scheme: dark;
-}
-@media (prefers-color-scheme: light) {
-  :root {
-    --bg: #f2f2f2;
-    --glow-1: rgba(255, 255, 255, 0.95);
-    --glow-2: rgba(0, 0, 0, 0.045);
-    --fg: #0a0a0a;
-    /* 6.9:1 on the background, 6.4:1 on the darkest glass. */
-    --fg-2: #525252;
-    --fg-3: rgba(0, 0, 0, 0.3);
-    --glass-faint: rgba(255, 255, 255, 0.35);
-    --glass: rgba(255, 255, 255, 0.55);
-    --glass-strong: rgba(255, 255, 255, 0.8);
-    --glass-raised: rgba(250, 250, 250, 0.78);
-    --glass-bar: rgba(242, 242, 242, 0.7);
-    --glass-border: rgba(0, 0, 0, 0.09);
-    --glass-border-strong: rgba(0, 0, 0, 0.18);
-    --glass-edge: inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    --glass-solid: #ffffff;
-    --glass-solid-raised: #ffffff;
-    --hover: rgba(0, 0, 0, 0.05);
-    --btn-primary-bg: #0a0a0a;
-    --btn-primary-fg: #ffffff;
-    --btn-border: rgba(0, 0, 0, 0.25);
-    --btn-border-hover: rgba(0, 0, 0, 0.6);
-    --node-done-glow: 0 2px 10px rgba(0, 0, 0, 0.18);
-    --node-ring: rgba(0, 0, 0, 0.08);
-    --unlock-glow: rgba(0, 0, 0, 0.35);
-    --branch-mix: 60%;
-    --branch-grey: #6b6b6b;
-    --danger: #b04545;
-    --danger-text: #9e2f2f;
-    --overlay: rgba(0, 0, 0, 0.28);
-    --shadow-raised: 0 24px 48px rgba(0, 0, 0, 0.12);
-    --sheet-shadow: rgba(0, 0, 0, 0.14);
-    color-scheme: light;
-  }
-}
 /* A branch's colour from the tree data (--c), muted toward grey. Used for dots, rails, bars and tab marks, never text. */
 .skill, .skill-li, .branch-tab, .chip, .branch-col, .next-up, .branch-bar, .edge {
   --c-ink: color-mix(in oklab, var(--c) var(--branch-mix), var(--branch-grey));
@@ -141,7 +13,7 @@ body {
   background-attachment: fixed;
   color: var(--fg);
   font-family: var(--font-body);
-  font-size: 1rem;
+  font-size: var(--fs-16);
   line-height: 1.45;
 }
 .app { height: 100%; display: flex; flex-direction: column; }
@@ -173,13 +45,13 @@ h1, h2 { letter-spacing: var(--tracking-tight); }
 .brand h1 {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 1.75rem;
+  font-size: var(--fs-28);
   letter-spacing: -0.03em;
   margin: 0;
   line-height: 1.1;
   text-wrap: balance;
 }
-.brand p { margin: 2px 0 0; color: var(--text-2); font-size: 0.875rem; }
+.brand p { margin: 2px 0 0; color: var(--text-2); font-size: var(--fs-14); }
 
 /* Football / Strength switch, above the title. */
 .tree-switch {
@@ -201,7 +73,7 @@ h1, h2 { letter-spacing: var(--tracking-tight); }
   border-radius: var(--radius-pill);
   background: transparent;
   color: var(--text-2);
-  font-size: 0.875rem;
+  font-size: var(--fs-14);
   font-weight: 600;
   transition: background-color var(--dur) var(--ease), color var(--dur) var(--ease);
 }
@@ -212,19 +84,19 @@ h1, h2 { letter-spacing: var(--tracking-tight); }
 .tree-switch-option[aria-disabled="true"]:not(.soon) { opacity: 0.5; cursor: default; }
 /* A tree that isn't built yet: dashed, with a "Coming soon" label. It can be focused, but not picked. */
 .tree-switch-option.soon { border: 1px dashed var(--glass-border); cursor: default; }
-.tree-switch-soon { font-size: 0.75rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2); }
+.tree-switch-soon { font-size: var(--fs-12); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-2); }
 .tree-switch-option:focus-visible, .branch-tab:focus-visible { outline-offset: 1px; }
 /* Pills never wrap. With many trees the row scrolls sideways instead. */
 .tree-switch { overflow-x: auto; max-width: 100%; scrollbar-width: none; }
 .tree-switch-option { flex: 0 0 auto; white-space: nowrap; }
-.tree-switch-count { font-size: 0.75rem; font-weight: 400; font-variant-numeric: tabular-nums; opacity: 0.8; }
+.tree-switch-count { font-size: var(--fs-12); font-weight: 400; font-variant-numeric: tabular-nums; opacity: 0.8; }
 .progress { flex: 1 1 260px; display: flex; flex-direction: column; gap: 6px; min-width: 220px; }
-.progress-top { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-variant-numeric: tabular-nums; }
-.level { font-family: var(--font-display); font-size: 1.125rem; font-weight: 700; letter-spacing: var(--tracking-tight); color: var(--fg); }
-.count { color: var(--text-2); font-size: 0.875rem; }
+.progress-top { display: flex; justify-content: space-between; align-items: baseline; gap: var(--space-3); font-variant-numeric: tabular-nums; }
+.level { font-family: var(--font-display); font-size: var(--fs-18); font-weight: 700; letter-spacing: var(--tracking-tight); color: var(--fg); }
+.count { color: var(--text-2); font-size: var(--fs-14); }
 .bar { height: 8px; border-radius: var(--radius-pill); background: var(--glass-border); overflow: hidden; }
 .bar span { display: block; height: 100%; width: 0; background: var(--fg); border-radius: var(--radius-pill); transition: width 0.4s var(--ease); }
-.next-level { font-size: 0.8125rem; color: var(--text-2); }
+.next-level { font-size: var(--fs-13); color: var(--text-2); }
 .actions { display: flex; gap: 10px; flex-wrap: wrap; }
 /* Secondary: glass with a light border. Primary: solid, the opposite of the background. */
 .btn {
@@ -233,7 +105,7 @@ h1, h2 { letter-spacing: var(--tracking-tight); }
   border-radius: var(--radius-pill);
   padding: 8px 16px;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: var(--fs-14);
   transition: transform var(--dur-fast) var(--ease), filter var(--dur-fast) var(--ease),
     background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
@@ -250,11 +122,11 @@ main { flex: 1; display: flex; min-height: 0; }
   width: 380px;
   flex-shrink: 0;
   border-width: 0 0 0 1px;
-  padding: 24px;
+  padding: var(--space-6);
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-4);
 }
 /* Which branch the skill is in: a muted dot in the branch colour, grey text. */
 .chip {
@@ -262,7 +134,7 @@ main { flex: 1; display: flex; min-height: 0; }
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.75rem;
+  font-size: var(--fs-12);
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -275,19 +147,19 @@ main { flex: 1; display: flex; min-height: 0; }
 .chip::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c-ink); }
 .panel h2 {
   font-family: var(--font-display);
-  font-size: 1.875rem;
+  font-size: var(--fs-30);
   font-weight: 700;
   margin: 0;
   line-height: 1.1;
   text-wrap: balance;
 }
-.status { font-size: 0.875rem; font-weight: 700; letter-spacing: 0.03em; }
+.status { font-size: var(--fs-14); font-weight: 700; letter-spacing: 0.03em; }
 .status.done { color: var(--success); }
 .status.available { color: var(--gold-text); }
 .status.locked { color: var(--text-2); }
 .block h3 {
   margin: 0 0 4px;
-  font-size: 0.75rem;
+  font-size: var(--fs-12);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-2);
@@ -301,13 +173,13 @@ main { flex: 1; display: flex; min-height: 0; }
   border-radius: var(--radius-md);
 }
 .panel[hidden] { display: none; }
-.panel-main, .panel-rest { display: flex; flex-direction: column; gap: 16px; }
+.panel-main, .panel-rest { display: flex; flex-direction: column; gap: var(--space-4); }
 .panel-actions { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
 .panel-actions .btn { min-height: 44px; }
 .panel-actions .btn.primary { flex: 1 1 12rem; }
 .panel-actions-hint { flex-basis: 100%; }
-.test-open { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: 12px; }
-.test-open .hint { margin: 0; font-size: 0.875rem; }
+.test-open { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin-top: var(--space-3); }
+.test-open .hint { margin: 0; font-size: var(--fs-14); }
 .yt { color: var(--gold-text); font-weight: 600; }
 
 .video {
@@ -315,7 +187,7 @@ main { flex: 1; display: flex; min-height: 0; }
   display: block;
   width: 100%;
   aspect-ratio: 16 / 9;
-  margin-top: 12px;
+  margin-top: var(--space-3);
   border-radius: var(--radius-md);
   overflow: hidden;
   background: var(--video-bg);
@@ -340,17 +212,17 @@ main { flex: 1; display: flex; min-height: 0; }
   box-shadow: inset 0 0 0 1px var(--glass-border);
   color: var(--chalk);
 }
-.poster-note { font-size: 0.875rem; color: var(--text-2); padding: 0 16px; text-align: center; }
+.poster-note { font-size: var(--fs-14); color: var(--text-2); padding: 0 16px; text-align: center; }
 .video-offline {
   display: grid;
   place-items: center;
-  padding: 16px;
+  padding: var(--space-4);
   text-align: center;
   background: var(--glass);
   border: 1px dashed var(--glass-border-strong);
 }
-.video-offline p { margin: 0; font-size: 0.875rem; color: var(--text-2); }
-.video-offline strong { display: block; margin-bottom: 4px; font-size: 1rem; color: var(--chalk); }
+.video-offline p { margin: 0; font-size: var(--fs-14); color: var(--text-2); }
+.video-offline strong { display: block; margin-bottom: var(--space-1); font-size: var(--fs-16); color: var(--chalk); }
 .video-poster .play {
   width: 60px;
   height: 60px;
@@ -369,7 +241,7 @@ main { flex: 1; display: flex; min-height: 0; }
 @media (prefers-reduced-motion: reduce) {
   .video-poster:hover .play { transform: none; }
 }
-.hint { font-size: 0.875rem; color: var(--text-2); margin: 0; }
+.hint { font-size: var(--fs-14); color: var(--text-2); margin: 0; }
 
 .toast {
   position: fixed;
@@ -412,14 +284,14 @@ main { flex: 1; display: flex; min-height: 0; }
   .panel { width: 100%; border-width: 1px 0 0; max-height: 46%; }
   .header { padding: calc(14px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 14px max(16px, env(safe-area-inset-left)); }
 }
-.panel-top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.panel-top { display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); }
 .close {
   background: var(--glass);
   border: 1px solid var(--btn-border);
   border-radius: var(--radius-pill);
   padding: 6px 14px;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: var(--fs-14);
   transition: transform var(--dur-fast) var(--ease), border-color var(--dur) var(--ease);
 }
 .close:hover { border-color: var(--btn-border-hover); }
@@ -431,28 +303,28 @@ main { flex: 1; display: flex; min-height: 0; }
   align-items: baseline;
   gap: 4px 10px;
   margin-top: 8px !important;
-  padding-top: 8px;
+  padding-top: var(--space-2);
   border-top: 1px solid var(--glass-border);
 }
 .target-label {
-  font-size: 0.75rem;
+  font-size: var(--fs-12);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--fg-2);
   font-weight: 700;
 }
-.target strong { font-size: 1.125rem; font-variant-numeric: tabular-nums; }
+.target strong { font-size: var(--fs-18); font-variant-numeric: tabular-nums; }
 .link-btn {
   background: none;
   border: none;
   padding: 0;
   color: var(--fg);
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: var(--fs-14);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
-.test > .link-btn { margin-top: 8px; }
+.test > .link-btn { margin-top: var(--space-2); }
 
 .overlay {
   position: fixed;
@@ -460,7 +332,7 @@ main { flex: 1; display: flex; min-height: 0; }
   background: var(--overlay);
   display: grid;
   place-items: center;
-  padding: 16px;
+  padding: var(--space-4);
   z-index: 20;
   animation: backdrop-in var(--dur) var(--ease);
 }
@@ -469,15 +341,15 @@ main { flex: 1; display: flex; min-height: 0; }
   max-height: 100%;
   overflow-y: auto;
   border-radius: var(--radius-card);
-  padding: 24px;
+  padding: var(--space-6);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-4);
 }
 .level-picker h2 {
   font-family: var(--font-display);
   font-weight: 700;
-  font-size: 1.75rem;
+  font-size: var(--fs-28);
   margin: 0;
   text-wrap: balance;
 }
@@ -500,8 +372,8 @@ main { flex: 1; display: flex; min-height: 0; }
 .level-option.current { border-color: var(--fg); background: var(--glass-strong); }
 .level-option.locked { opacity: 0.55; cursor: not-allowed; }
 .level-option.locked:hover { border-color: var(--glass-border); background: var(--glass); }
-.level-option-name { font-family: var(--font-display); font-size: 1.125rem; font-weight: 700; letter-spacing: var(--tracking-tight); }
-.level-option-hint { font-size: 0.875rem; color: var(--text-2); }
+.level-option-name { font-family: var(--font-display); font-size: var(--fs-18); font-weight: 700; letter-spacing: var(--tracking-tight); }
+.level-option-hint { font-size: var(--fs-14); color: var(--text-2); }
 .level-picker > .btn { align-self: flex-start; }
 
 .levelup {
@@ -531,12 +403,12 @@ main { flex: 1; display: flex; min-height: 0; }
   padding: 10px max(28px, env(safe-area-inset-right)) 10px max(28px, env(safe-area-inset-left));
   border-bottom: 1px solid var(--glass-border);
 }
-.practice p { margin: 0; font-size: 0.875rem; color: var(--text-2); }
+.practice p { margin: 0; font-size: var(--fs-14); color: var(--text-2); }
 .practice strong { color: var(--chalk); }
-.practice-main { flex: 1 1 260px; max-width: 420px; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
-.practice-nudge { font-size: 0.8125rem; }
-.test-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
-.test-list li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border: 1px solid var(--glass-border); border-radius: var(--radius-md); background: var(--glass); }
+.practice-main { flex: 1 1 260px; max-width: 420px; min-width: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.practice-nudge { font-size: var(--fs-13); }
+.test-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.test-list li { display: flex; justify-content: space-between; gap: var(--space-3); padding: 10px 12px; border: 1px solid var(--glass-border); border-radius: var(--radius-md); background: var(--glass); }
 .test-list strong { text-align: right; }
 @media (max-width: 700px) {
   .practice { padding: 10px max(16px, env(safe-area-inset-right)) 10px max(16px, env(safe-area-inset-left)); }
@@ -555,7 +427,7 @@ main { flex: 1; display: flex; min-height: 0; }
 }
 .branch-tabs {
   display: flex;
-  gap: 8px;
+  gap: var(--space-2);
   /* Room for the focus ring, which an overflow:auto row would otherwise cut off. */
   padding: 3px;
   margin: -3px;
@@ -567,14 +439,14 @@ main { flex: 1; display: flex; min-height: 0; }
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--space-2);
   min-height: 2.75rem;
   padding: 6px 14px 6px 10px;
   border-radius: var(--radius-pill);
   border: 1px solid var(--glass-border);
   background: var(--glass);
   color: var(--fg);
-  font-size: 0.875rem;
+  font-size: var(--fs-14);
   font-weight: 600;
   transition: transform var(--dur-fast) var(--ease), background-color var(--dur) var(--ease), border-color var(--dur) var(--ease);
 }
@@ -593,18 +465,18 @@ main { flex: 1; display: flex; min-height: 0; }
 .branch-tab:hover:not(.active) { border-color: var(--btn-border-hover); }
 .branch-tab:active { transform: scale(0.98); }
 .branch-tab.active { background: var(--btn-primary-bg); border-color: var(--btn-primary-bg); color: var(--btn-primary-fg); }
-.branch-tab-count { font-family: var(--font-body); font-weight: 700; font-size: 0.75rem; font-variant-numeric: tabular-nums; opacity: 0.85; }
+.branch-tab-count { font-family: var(--font-body); font-weight: 700; font-size: var(--fs-12); font-variant-numeric: tabular-nums; opacity: 0.85; }
 
 @media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
   .switcher {
     padding: 8px max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left));
-    gap: 8px;
+    gap: var(--space-2);
     /* The tree scrolls under the pills, so they get the same frosted glass as the tab bar. */
     -webkit-backdrop-filter: blur(20px) saturate(1.6);
     backdrop-filter: blur(20px) saturate(1.6);
   }
-  .header { gap: 12px; }
-  .brand h1 { font-size: 1.375rem; }
+  .header { gap: var(--space-3); }
+  .brand h1 { font-size: var(--fs-22); }
   .brand p { display: none; }
   .brand { width: 100%; }
   .tree-switch { display: flex; width: 100%; }
@@ -635,7 +507,7 @@ main { flex: 1; display: flex; min-height: 0; }
     align-self: center;
     width: 88px;
     height: 32px;
-    margin-bottom: 4px;
+    margin-bottom: var(--space-1);
     padding: 0;
     border: 0;
     background: transparent;
@@ -676,7 +548,7 @@ main { flex: 1; display: flex; min-height: 0; }
     border: 0;
     background: transparent;
     color: var(--text-2);
-    font-size: 0.9375rem;
+    font-size: var(--fs-15);
   }
   .sheet-more svg { width: 18px; height: 18px; flex-shrink: 0; }
   .toast { bottom: auto; top: calc(16px + env(safe-area-inset-top)); transform: translate(-50%, -20px); }
@@ -684,7 +556,7 @@ main { flex: 1; display: flex; min-height: 0; }
 }
 /* A phone held sideways has little height: both rows of pills share one line. */
 @media (max-height: 500px) and (pointer: coarse) {
-  .switcher { flex-direction: row; align-items: center; gap: 12px; }
+  .switcher { flex-direction: row; align-items: center; gap: var(--space-3); }
   .switcher .tree-switch { width: auto; flex: none; margin: 0; }
   .switcher .branch-tabs { flex: 1; min-width: 0; }
 }
@@ -733,12 +605,12 @@ main { flex: 1; display: flex; min-height: 0; }
 .dialog {
   width: min(420px, 100%);
   border-radius: var(--radius-card);
-  padding: 24px;
+  padding: var(--space-6);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: var(--space-4);
 }
-.dialog h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.75rem; margin: 0; }
+.dialog h2 { font-family: var(--font-display); font-weight: 700; font-size: var(--fs-28); margin: 0; }
 .dialog p { margin: 0; color: var(--text-2); }
 .dialog .dialog-error { color: var(--danger-text); }
 .dialog.share { width: min(460px, 100%); max-height: 100%; overflow-y: auto; }
@@ -755,7 +627,7 @@ a.btn { color: inherit; text-decoration: none; display: inline-flex; align-items
 /* Privacy links in the header and the sign-in dialog. */
 .privacy-link { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .privacy-link:hover { color: var(--chalk); }
-.dialog-note { font-size: 0.875rem; }
+.dialog-note { font-size: var(--fs-14); }
 /* The skill's name gets focus when the sheet opens (for screen readers); no focus ring on a heading. */
 .panel h2[tabindex="-1"]:focus { outline: none; }
 
@@ -767,23 +639,23 @@ a.btn { color: inherit; text-decoration: none; display: inline-flex; align-items
 
 /* Test mode: counts or times a skill's test at the pitch. Big targets for sweaty hands. */
 .test-overlay { z-index: 40; }
-.dialog.test-mode { width: min(460px, 100%); max-height: 100%; overflow-y: auto; gap: 16px; }
-.test-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.test-head h2 { font-size: 1.5rem; }
+.dialog.test-mode { width: min(460px, 100%); max-height: 100%; overflow-y: auto; gap: var(--space-4); }
+.test-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-3); }
+.test-head h2 { font-size: var(--fs-24); }
 .dialog .test-goal { color: var(--chalk); font-weight: 600; }
-.test-side { display: block; font-size: 0.8125rem; letter-spacing: 0.04em; text-transform: uppercase; color: var(--fg-2); margin-bottom: 2px; }
-.test-display { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 0; }
-.test-number { font-family: var(--font-display); font-size: 5rem; font-weight: 700; letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--fg); }
-.test-time { font-size: 4rem; }
+.test-side { display: block; font-size: var(--fs-13); letter-spacing: 0.04em; text-transform: uppercase; color: var(--fg-2); margin-bottom: 2px; }
+.test-display { display: flex; flex-direction: column; align-items: center; gap: var(--space-1); padding: 8px 0; }
+.test-number { font-family: var(--font-display); font-size: var(--fs-80); font-weight: 700; letter-spacing: -0.04em; line-height: 1; font-variant-numeric: tabular-nums; color: var(--fg); }
+.test-time { font-size: var(--fs-64); }
 .test-sub { color: var(--text-2); font-variant-numeric: tabular-nums; }
-.test-clock { font-family: var(--font-display); font-size: 1.75rem; font-weight: 600; color: var(--fg); font-variant-numeric: tabular-nums; }
+.test-clock { font-family: var(--font-display); font-size: var(--fs-28); font-weight: 600; color: var(--fg); font-variant-numeric: tabular-nums; }
 .test-times { list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; margin: 8px 0 0; padding: 0; }
 .test-times li { padding: 2px 10px; border-radius: var(--radius-pill); background: var(--glass-strong); border: 1px solid var(--glass-border); font-variant-numeric: tabular-nums; }
 .test-times li.slow { color: var(--danger-text); }
-.test-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.test-controls { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
 .test-controls > :only-child, .test-controls .test-wide, .test-controls .hint { grid-column: 1 / -1; }
 .test-controls .primary.test-big:first-child:nth-last-child(2) { grid-column: 1 / -1; }
-.btn.test-big { min-height: 96px; border-radius: var(--radius-card); font-size: 1.5rem; font-weight: 700; touch-action: manipulation; }
+.btn.test-big { min-height: 96px; border-radius: var(--radius-card); font-size: var(--fs-24); font-weight: 700; touch-action: manipulation; }
 .btn.test-wide { min-height: 48px; touch-action: manipulation; }
 
 .dialog .test-result { min-height: 1.5em; text-align: center; font-weight: 700; color: var(--chalk); }
@@ -815,8 +687,8 @@ a.btn { color: inherit; text-decoration: none; display: inline-flex; align-items
 .radio { display: flex; align-items: center; gap: 10px; min-height: 44px; color: var(--text); }
 .radio input { width: 20px; height: 20px; flex: none; }
 .profile-dialog { max-height: 100%; overflow-y: auto; }
-.lb-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
-.lb-tab { min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--btn-border); background: var(--glass); color: var(--text); font: inherit; white-space: nowrap; cursor: pointer; }
+.lb-tabs { display: flex; gap: 6px; overflow-x: auto; padding-bottom: var(--space-1); }
+.lb-tab { min-height: 44px; padding: 0 14px; border-radius: var(--radius-pill); border: 1px solid var(--btn-border); background: var(--glass); color: var(--text); font: inherit; white-space: nowrap; cursor: pointer; }
 .lb-tab[aria-selected="true"] { background: var(--btn-primary-bg); border-color: var(--btn-primary-bg); color: var(--btn-primary-fg); }
 .lb-filter { display: flex; align-items: center; gap: 10px; color: var(--text-2); }
 .lb-filter select { width: auto; flex: 1; max-width: 18rem; }
@@ -832,15 +704,15 @@ a.btn { color: inherit; text-decoration: none; display: inline-flex; align-items
 
 /* Player card (#123) */
 .player-overall { display: flex; align-items: baseline; gap: 10px; }
-.player-ratings { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 8px; }
+.player-ratings { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: var(--space-2); }
 .player-ratings li { display: grid; grid-template-columns: minmax(84px, 38%) 1fr 2.2em; align-items: center; gap: 10px; font-variant-numeric: tabular-nums; }
 .player-ratings strong { text-align: right; }
 /* The track is --glass-border-strong so it stays visible on the light and dark cards. */
 .player-ratings-bar { height: 8px; border-radius: 4px; background: var(--glass-border-strong); overflow: hidden; }
 .player-ratings-bar > span { display: block; height: 100%; border-radius: 4px; }
-.player-history { display: flex; align-items: center; gap: 8px; margin: 4px 0 8px; color: var(--fg); }
+.player-history { display: flex; align-items: center; gap: var(--space-2); margin: 4px 0 8px; color: var(--fg); }
 .player-history svg { flex: 1; min-width: 0; height: 80px; }
-.player-history-value { min-width: 2ch; text-align: center; font-size: 0.9375rem; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.player-history-value { min-width: 2ch; text-align: center; font-size: var(--fs-15); color: var(--text-2); font-variant-numeric: tabular-nums; }
 .player-picks { display: grid; gap: 8px; margin-top: 12px; }
 .player-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .player-pick-label { flex: 0 0 100%; font-size: 0.85em; opacity: 0.75; }
