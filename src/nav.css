@@ -182,8 +182,15 @@
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 0;
-    padding: 6px max(16px, env(safe-area-inset-right)) calc(6px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-    border-width: 1px 0 0;
+    /* iOS-style floating glass pill: inset from the edges and clear of the home indicator. */
+    margin: 0 max(12px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+    padding: 6px;
+    border: 1px solid var(--glass-border);
+    border-radius: 28px;
+    background: var(--glass-raised);
+    -webkit-backdrop-filter: var(--glass-blur);
+    backdrop-filter: var(--glass-blur);
+    box-shadow: var(--glass-edge), var(--shadow-raised);
   }
   .tabbar-brand, .tabbar-summary { display: none; }
   .tabbar-item {
@@ -199,7 +206,8 @@
   }
   .tabbar-item svg { width: 24px; height: 24px; color: inherit; }
   .tabbar-item:hover:not([aria-current]) { background: transparent; }
-  .tabbar-item[aria-current="page"] { background: transparent; box-shadow: none; color: var(--fg); }
+  .tabbar-item { border-radius: 22px; }
+  .tabbar-item[aria-current="page"] { background: var(--glass-strong); box-shadow: inset 0 0 0 1px var(--glass-border); color: var(--fg); }
   .screen { padding: calc(20px + env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) 24px max(16px, env(safe-area-inset-left)); }
   .screen-title { font-size: 2.125rem; }
 }
