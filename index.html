@@ -25,15 +25,30 @@
     <meta name="twitter:card" content="summary_large_image" />
     <!-- Splash: shown by the browser as soon as the page loads, replaced when React renders. -->
     <style>
-      .splash { position: fixed; inset: 0; display: grid; place-items: center; background: #0a0a0a; color: #f2f2f2; }
+      .splash { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 1.5rem; text-align: center; background: #0a0a0a; color: #f2f2f2; }
       .splash-brand { font: 700 2rem/1.2 system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: -0.03em; }
+      .splash-note, .splash-retry { margin: 0; font: 500 0.95rem/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
+      .splash-retry { padding: 0.5rem 1rem; border: 1px solid currentColor; border-radius: 999px; background: none; color: inherit; cursor: pointer; }
       @media (prefers-color-scheme: light) { .splash { background: #f2f2f2; color: #0a0a0a; } }
       @media (prefers-reduced-motion: no-preference) { .splash-brand { animation: splash-pulse 1.2s ease-in-out infinite; } }
       @keyframes splash-pulse { 50% { opacity: 0.45; } }
     </style>
   </head>
   <body>
-    <div id="root"><div class="splash" role="status" aria-label="hapi skill"><span class="splash-brand" aria-hidden="true">hapi skill</span></div></div>
+    <div id="root"><div class="splash" role="status" aria-label="hapi skill">
+      <span class="splash-brand" aria-hidden="true">hapi skill</span>
+      <noscript><p class="splash-note">hapi skill needs JavaScript. Turn it on and reload the page.</p></noscript>
+      <button type="button" id="splash-retry" class="splash-retry" hidden>Couldn't load. Tap to retry.</button>
+    </div></div>
+    <script>
+      // React replaces the splash when it mounts. If the splash is still here after 8 seconds, the app bundle most likely failed to load.
+      setTimeout(function () {
+        var retry = document.getElementById('splash-retry');
+        if (!retry) return;
+        retry.hidden = false;
+        retry.addEventListener('click', function () { location.reload(); });
+      }, 8000);
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
