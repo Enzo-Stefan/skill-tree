@@ -1,0 +1,25 @@
+/* Screen transitions (issue #127 item 3). Timing and curves only; colours and layout are untouched.
+   Every duration is under 250ms (--dur-fast 150ms, --dur 200ms) and all motion is off for
+   prefers-reduced-motion: reduce. */
+@keyframes screen-in { from { opacity: 0; transform: translateX(20px); } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes sheet-in { from { transform: translateY(100%); } }
+@keyframes dialog-in { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A tab slides in from the right while it fades in. Train stays mounted (hidden), so it
+     replays each time it is shown again. It only fades: a transform here would trap the fixed sheet. */
+  .content > .screen { animation: screen-in var(--dur) var(--ease); }
+  .content > .train:not([hidden]) { animation: fade-in var(--dur-fast) var(--ease); }
+  /* The skill sheet rises from the bottom edge; its half/full height change stays under 250ms. */
+  @media (max-width: 700px), (max-height: 500px) and (pointer: coarse) {
+    .panel.sheet { animation: sheet-in var(--dur) var(--ease); transition-duration: var(--dur); }
+  }
+  .overlay > * { animation: dialog-in var(--dur-fast) var(--ease); }
+  .toast { transition-duration: var(--dur-fast); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sheet-backdrop, .overlay { animation: none; }
+  .panel.sheet { transition: none; }
+}
