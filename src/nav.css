@@ -365,3 +365,6 @@
 .dash-list li.done .dash-check { background: var(--fg); color: var(--bg); border-color: var(--fg); }
 .dash-check + span { flex: 1; }
 @media (max-width: 700px) { .dash { margin-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right)); } }
+.empty-plan { align-items: flex-start; gap: var(--space-3); margin-block: auto; }
+.empty-plan-title { margin: 0; font-size: var(--fs-22); line-height: 1.25; font-weight: 700; letter-spacing: var(--tracking-tight); }
+.empty-plan-action { align-self: stretch; min-height: 48px; }

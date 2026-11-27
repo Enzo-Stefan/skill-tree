@@ -676,7 +676,24 @@ export default function App() {
           />
         )}
         {tab === "plan" && (
-          <TrainingScreen tree={tree} state={planState} levelId={playerLevelId} today={today} practiceDays={practiceDays} onFinish={finishSession} />
+          <TrainingScreen
+            tree={tree}
+            state={planState}
+            levelId={playerLevelId}
+            today={today}
+            practiceDays={practiceDays}
+            onFinish={finishSession}
+            suggestedName={suggested?.name}
+            allDone={tree.skills.every((s) => done.has(s.id))}
+            onOpenProgress={() => goTo("progress")}
+            onPickSkill={() => {
+              goTo("train");
+              if (!suggested) return;
+              if (suggested.branch) chooseBranch(suggested.branch);
+              else setScrollTo({ id: suggested.id });
+              select(suggested.id);
+            }}
+          />
         )}
         {tab === "progress" && boardOpen && hasLeaderboard && (
           <LeaderboardScreen

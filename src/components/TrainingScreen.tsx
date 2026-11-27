@@ -17,6 +17,13 @@ interface Props {
   practiceDays: DayKey[];
   /** "Finish session": counts today as a training day. */
   onFinish: () => void;
+  /** Empty state action: opens the suggested skill on Train, or just the tree when nothing is suggested. */
+  onPickSkill: () => void;
+  /** Name of the suggested skill, shown on the empty state's button. */
+  suggestedName?: string;
+  /** Every skill is passed: the empty state says so and links to Progress instead. */
+  allDone: boolean;
+  onOpenProgress: () => void;
 }
 
 const DAY_STEP = 15;
@@ -27,10 +34,13 @@ function parse(key: DayKey): Date {
 }
 
 /** The Training tab: today's session as a checklist, and the week's plan. */
-export function TrainingScreen({ tree, state, levelId, today, practiceDays, onFinish }: Props) {
+export function TrainingScreen({ tree, state, levelId, today, practiceDays, onFinish, onPickSkill, suggestedName, allDone, onOpenProgress }: Props) {
   const [view, setView] = useState<"today" | "week">("today");
   const { plan } = state;
-  const empty = plan.days.every((d) => d.items.length === 0) && plan.unplaced.length === 0;
+  // The card is for nothing left to do: every skill passed, or a player with a level and no session planned.
+  // A player with no level always gets the normal plan.
+  const planEmpty = plan.days.every((d) => d.items.length === 0) && plan.unplaced.length === 0;
+  const empty = allDone || (levelId !== null && planEmpty);
   const trained = new Set(trainedPlanDays(plan, practiceDays));
   const skills = new Map(tree.skills.map((s) => [s.id, s]));
 
@@ -47,13 +57,40 @@ export function TrainingScreen({ tree, state, levelId, today, practiceDays, onFi
         </div>
       </div>
       {empty ? (
-        <p className="hint">{t.training.noPlan}</p>
+        <EmptyPlan allDone={allDone} suggestedName={suggestedName} onPickSkill={onPickSkill} onOpenProgress={onOpenProgress} />
       ) : view === "today" ? (
         <TodayView day={plan.days.find((d) => d.date === today)} skills={skills} levelId={levelId} state={state} finished={practiceDays.includes(today)} onFinish={onFinish} />
       ) : (
         <WeekView days={plan.days} skills={skills} today={today} trained={trained} state={state} unplaced={plan.unplaced.length} />
       )}
     </div>
+  );
+}
+
+function EmptyPlan({ allDone, suggestedName, onPickSkill, onOpenProgress }: Pick<Props, "allDone" | "suggestedName" | "onPickSkill" | "onOpenProgress">) {
+  if (allDone) {
+    return (
+      <section className="card empty-plan" aria-labelledby="empty-plan-title">
+        <h2 id="empty-plan-title" className="empty-plan-title">
+          {t.training.allDoneTitle}
+        </h2>
+        <p className="card-note">{t.training.allDoneNote}</p>
+        <button className="btn primary empty-plan-action" type="button" onClick={onOpenProgress}>
+          {t.training.seeProgress}
+        </button>
+      </section>
+    );
+  }
+  return (
+    <section className="card empty-plan" aria-labelledby="empty-plan-title">
+      <h2 id="empty-plan-title" className="empty-plan-title">
+        {t.training.emptyTitle}
+      </h2>
+      <p className="card-note">{t.training.noPlan}</p>
+      <button className="btn primary empty-plan-action" type="button" onClick={onPickSkill}>
+        {suggestedName ? t.training.startSkill(suggestedName) : t.training.pickSkill}
+      </button>
+    </section>
   );
 }
 
