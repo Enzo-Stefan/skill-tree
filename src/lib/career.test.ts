@@ -43,18 +43,49 @@ describe("XP", () => {
     expect(weeks.map((w) => w.xp)).toEqual([0, 100, 40]);
   });
   it("counts earned missions only", () => expect(missionsCompleted(events)).toBe(1));
+  it("puts XP from before tracking in the week the ledger last changed", () => {
+    const backfill = [ev("skill:a:pass", noon("2026-11-12")), ev("skill:b:pass", noon("2026-11-12")), ev("skill:c:pass", noon("2026-11-12"), 20)];
+    const weeks = xpPerWeek(backfill, "2026-11-12", 3);
+    expect(weeks.map((w) => w.xp)).toEqual([0, 0, 40]);
+  });
+  it("counts a pass redone after an undo in the week of the redo", () => {
+    const redone = [ev("skill:a:pass", "2026-11-16T12:00:00", 10)];
+    expect(xpPerWeek(redone, "2026-11-18", 2).map((w) => w.xp)).toEqual([0, 10]);
+  });
+  it("uses local days at the week boundary", () => {
+    const edge = [ev("session:a", "2026-11-08T23:30:00", 10), ev("session:b", "2026-11-09T00:30:00", 10)];
+    expect(xpPerWeek(edge, "2026-11-12", 2).map((w) => w.xp)).toEqual([10, 10]);
+  });
 });
 
 describe("ranksReached", () => {
-  it("dates each rank by the Nth skill pass in the ledger", () => {
+  const skillIds = (n: number) => football.skills.slice(0, n).map((s) => s.id);
+  const dayFor = (i: number) => `2026-11-${String(i + 1).padStart(2, "0")}`;
+  it("dates each rank by the day of its Nth marked first pass", () => {
     const second = football.levels[1];
-    const events = Array.from({ length: second.at }, (_, i) => ev(`skill:s${i}:pass`, noon(`2026-11-${String(i + 1).padStart(2, "0")}`)));
-    const ranks = ranksReached(football, second.at, events);
+    const done = new Set(skillIds(second.at));
+    const events = skillIds(second.at).map((id, i) => ev(`passday:${id}:${dayFor(i)}`, noon(dayFor(i)), 0));
+    const ranks = ranksReached(football, done, events);
     expect(ranks.map((r) => r.name)).toEqual([football.levels[0].name, second.name]);
-    expect(ranks[1].day).toBe(`2026-11-${String(second.at).padStart(2, "0")}`);
+    expect(ranks[1].day).toBe(dayFor(second.at - 1));
   });
-  it("has no date when the ledger holds too few passes", () => {
-    expect(ranksReached(football, football.levels[1].at, [])[1].day).toBeNull();
+  it("gives no date to a rank reached by passes from before tracking", () => {
+    const second = football.levels[1];
+    const ids = skillIds(second.at);
+    // The first two passes have no markers, so they happened before tracking: the first rank has no date.
+    const events = ids.slice(2).map((id, i) => ev(`passday:${id}:${dayFor(i + 2)}`, noon(dayFor(i + 2)), 0));
+    const ranks = ranksReached(football, new Set(ids), events);
+    expect(ranks[0].day).toBeNull();
+    expect(ranks[1].day).toBe(dayFor(second.at - 1));
+  });
+  it("ignores markers for skills not done and inactive markers", () => {
+    const [first, second] = football.skills;
+    const done = new Set([first.id]);
+    const events = [ev(`passday:${first.id}:${dayFor(0)}`, noon(dayFor(0)), 0), ev(`passday:${second.id}:${dayFor(1)}`, noon(dayFor(1)), 0, false)];
+    expect(ranksReached(football, done, events)[0].day).toBe(dayFor(0));
+  });
+  it("has no date when the ledger holds no markers", () => {
+    expect(ranksReached(football, new Set(skillIds(football.levels[1].at)), [])[1].day).toBeNull();
   });
 });
 

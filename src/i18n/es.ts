@@ -173,6 +173,7 @@ export const es: Strings = {
     resultsSaved: "Resultados guardados",
     timeNote: "El tiempo es una estimación según la duración de cada rutina que entrenaste.",
     xpTitle: "XP por semana",
+    xpNote: "El progreso anterior al registro de XP cuenta en la semana en que empezó. Un paso que deshaces y repites cuenta en la semana en que lo repites.",
     ratingsTitle: "Valoraciones en el tiempo",
     ratingsEmpty: "Tus valoraciones por rama aparecerán aquí cuando se registre una semana.",
     lineValues: (first: number, last: number) => `${first} a ${last}`,

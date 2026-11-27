@@ -176,6 +176,7 @@ export const en = {
     resultsSaved: "Results saved",
     timeNote: "Time is an estimate from the length of each routine you trained.",
     xpTitle: "XP per week",
+    xpNote: "Progress from before XP tracking began is counted in the week it started. A pass you undo and redo counts in the week you redo it.",
     ratingsTitle: "Ratings over time",
     ratingsEmpty: "Your branch ratings will show here once a week has been tracked.",
     lineValues: (first: number, last: number) => `${first} to ${last}`,

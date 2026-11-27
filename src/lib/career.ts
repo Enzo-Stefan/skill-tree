@@ -98,19 +98,27 @@ export interface RankReached {
 }
 
 /**
- * The ranks the player has reached, lowest first. A rank is reached with its `at` skills; the day is when the
- * ledger recorded that many passes (the Nth earliest active pass event).
+ * The ranks the player has reached, lowest first. A rank is reached with its `at` skills. Only passes made since the
+ * passday markers were added have a known day (the marker is written on a skill's first pass), and every older pass
+ * happened before any marked one, so the Nth pass's day is the (N - undated)th marked day. A rank reached by older
+ * passes has no day (null, shown as "Before tracking").
  */
-export function ranksReached(tree: Tree, doneCount: number, events: XpEvent[]): RankReached[] {
-  const passDays = active(events, "skill:")
-    .filter((e) => e.key.endsWith(":pass"))
-    .map((e) => e.at)
-    .sort();
+export function ranksReached(tree: Tree, done: Set<string>, events: XpEvent[]): RankReached[] {
+  const firstPass = new Map<string, DayKey>();
+  for (const e of active(events, "passday:")) {
+    const m = /^passday:(.+):(\d{4}-\d{2}-\d{2})$/.exec(e.key);
+    if (!m || !done.has(m[1]!)) continue;
+    const day = m[2] as DayKey;
+    const known = firstPass.get(m[1]!);
+    if (!known || day < known) firstPass.set(m[1]!, day);
+  }
+  const days = [...firstPass.values()].sort();
+  const undated = done.size - days.length;
   return tree.levels
-    .filter((l) => doneCount >= l.at)
+    .filter((l) => done.size >= l.at)
     .map((l) => {
-      const at = passDays[Math.max(1, l.at) - 1];
-      return { name: l.name, day: at ? localDay(at) : null };
+      const index = Math.max(1, l.at) - undated;
+      return { name: l.name, day: index >= 1 ? (days[index - 1] ?? null) : null };
     });
 }
 

@@ -35,7 +35,7 @@ export function CareerView({ tree, done, practiceDays, today, sessions, results,
   const totals = useMemo(() => careerTotals(tree, practiceDays, sessions, results, playerLevelId), [tree, practiceDays, sessions, results, playerLevelId]);
   const weeks = useMemo(() => xpPerWeek(xpEvents, today, XP_WEEKS), [xpEvents, today]);
   const lines = useMemo(() => branchLines(tree, ratingHistory), [tree, ratingHistory]);
-  const ranks = useMemo(() => ranksReached(tree, done.size, xpEvents), [tree, done, xpEvents]);
+  const ranks = useMemo(() => ranksReached(tree, done, xpEvents), [tree, done, xpEvents]);
   const { hours, minutes } = splitMinutes(totals.minutes);
   const maxWeek = Math.max(1, ...weeks.map((w) => w.xp));
   const stats: [string, string][] = [
@@ -82,6 +82,7 @@ export function CareerView({ tree, done, practiceDays, today, sessions, results,
             </li>
           ))}
         </ul>
+        <p className="card-note">{t.career.xpNote}</p>
       </section>
 
       <section className="card" aria-labelledby="career-ratings">
