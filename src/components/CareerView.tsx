@@ -82,7 +82,7 @@ export function CareerView({ tree, done, practiceDays, today, sessions, results,
             </li>
           ))}
         </ul>
-        <p className="card-note">{t.career.xpNote}</p>
+        {weeks.some((w) => w.undated) && <p className="card-note">{t.career.xpNote}</p>}
       </section>
 
       <section className="card" aria-labelledby="career-ratings">
