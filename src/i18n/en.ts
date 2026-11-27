@@ -139,6 +139,10 @@ export const en = {
     positions: { GK: "GK", DEF: "DEF", MID: "MID", FWD: "FWD" },
     feet: { left: "Left", right: "Right", both: "Both" },
     private: "Only you can see this. It is saved to your account when you are signed in.",
+    /** Shown once when saving the position or foot to the account fails. */
+    notSaved: "Couldn't save your position and foot to your account. They are still saved on this device.",
+    /** Button that empties one picker. */
+    clear: "Clear",
   },
   progressScreen: {
     rankLabel: "Your rank",

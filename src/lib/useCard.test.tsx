@@ -131,6 +131,38 @@ describe("useCard", () => {
     expect(vi.mocked(saveCard).mock.calls[0][2]).toEqual({ position: "MID", foot: null });
   });
 
+  it("tells the player once when saving fails, and again only after a save has worked", async () => {
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const onMessage = vi.fn();
+    vi.mocked(saveCard).mockRejectedValue(new Error("offline"));
+    const { result } = renderHook(() => useCard("u1", "ready", onMessage));
+    await waitFor(() => expect(fetchCard).toHaveBeenCalled());
+    await waitFor(() => expect(result.current.card).toEqual({ position: null, foot: null }));
+    act(() => result.current.setCard({ position: "MID", foot: null }));
+    await waitFor(() => expect(saveCard).toHaveBeenCalledTimes(1));
+    act(() => result.current.setCard({ position: "DEF", foot: null }));
+    await waitFor(() => expect(saveCard).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(onMessage).toHaveBeenCalledTimes(1));
+    expect(onMessage).toHaveBeenCalledWith("Couldn't save your position and foot to your account. They are still saved on this device.");
+    vi.mocked(saveCard).mockResolvedValueOnce();
+    act(() => result.current.setCard({ position: "FWD", foot: null }));
+    await waitFor(() => expect(saveCard).toHaveBeenCalledTimes(3));
+    act(() => result.current.setCard({ position: "GK", foot: null }));
+    await waitFor(() => expect(onMessage).toHaveBeenCalledTimes(2));
+  });
+
+  it("tells the player once when the first fetch fails", async () => {
+    vi.mocked(fetchCard).mockRejectedValue(new Error("offline"));
+    vi.spyOn(console, "warn").mockImplementation(() => undefined);
+    const onMessage = vi.fn();
+    const { result } = renderHook(() => useCard("u1", "ready", onMessage));
+    await waitFor(() => expect(onMessage).toHaveBeenCalledTimes(1));
+    act(() => result.current.setCard({ position: "MID", foot: null }));
+    await waitFor(() => expect(fetchCard).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(console.warn).toHaveBeenCalledTimes(2));
+    expect(onMessage).toHaveBeenCalledTimes(1);
+  });
+
   it("keeps a field cleared on this device cleared when another device still holds the old choice", async () => {
     const { result } = renderHook(() => useCard("u1", "ready"));
     await waitFor(() => expect(fetchCard).toHaveBeenCalledTimes(1));

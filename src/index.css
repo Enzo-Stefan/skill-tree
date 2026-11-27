@@ -845,4 +845,5 @@ a.btn { color: inherit; text-decoration: none; display: inline-flex; align-items
 .player-pick { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .player-pick-label { flex: 0 0 100%; font-size: 0.85em; opacity: 0.75; }
 .player-pick .btn { min-height: 44px; }
+.player-pick .player-pick-clear { min-width: 44px; margin-left: auto; opacity: 0.8; }
 .player-pick .btn.on { outline: 2px solid currentColor; outline-offset: -2px; font-weight: 600; }

@@ -99,13 +99,33 @@ describe("PlayerCard pickers", () => {
     expect(screen.getByRole("radio", { name: "Left" }).getAttribute("aria-checked")).toBe("false");
   });
 
-  it("picks a value, and pressing the chosen one again clears it", () => {
+  it("picks a value, and pressing the chosen one again keeps it", () => {
     const onChange = vi.fn();
-    const { rerender } = render(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: null, foot: "left" }} onCardChange={onChange} hasProgress />);
+    render(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: null, foot: "left" }} onCardChange={onChange} hasProgress />);
     fireEvent.click(screen.getByRole("radio", { name: "FWD" }));
     expect(onChange).toHaveBeenLastCalledWith({ position: "FWD", foot: "left" });
-    rerender(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: "FWD", foot: "left" }} onCardChange={onChange} hasProgress />);
     fireEvent.click(screen.getByRole("radio", { name: "Left" }));
+    expect(onChange).toHaveBeenLastCalledWith({ position: null, foot: "left" });
+  });
+
+  it("names each radiogroup from its visible label, not a second aria-label", () => {
+    render(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: null, foot: null }} onCardChange={() => undefined} hasProgress />);
+    const groups = screen.getAllByRole("radiogroup");
+    expect(groups.map((g) => g.getAttribute("aria-label"))).toEqual([null, null]);
+    expect(screen.getByRole("radiogroup", { name: "Position" })).toBeTruthy();
+    expect(screen.getByRole("radiogroup", { name: "Preferred foot" })).toBeTruthy();
+  });
+
+  it("shows a Clear button of at least 44px only when a value is set, and it clears just that picker", () => {
+    const onChange = vi.fn();
+    const { rerender } = render(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: null, foot: null }} onCardChange={onChange} hasProgress />);
+    expect(screen.queryByRole("button", { name: /Clear/ })).toBeNull();
+    rerender(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: "FWD", foot: "left" }} onCardChange={onChange} hasProgress />);
+    const clear = screen.getByRole("button", { name: "Clear Position" });
+    expect(clear.className).toContain("player-pick-clear");
+    fireEvent.click(clear);
+    expect(onChange).toHaveBeenLastCalledWith({ position: null, foot: "left" });
+    fireEvent.click(screen.getByRole("button", { name: "Clear Preferred foot" }));
     expect(onChange).toHaveBeenLastCalledWith({ position: "FWD", foot: null });
   });
 
@@ -118,17 +138,17 @@ describe("PlayerCard pickers", () => {
     expect(screen.getByRole("radio", { name: "MID" }).tabIndex).toBe(0);
   });
 
-  it("moves and chooses with the arrow keys, wrapping around, and clears with Backspace or Delete", () => {
+  it("moves and chooses with the arrow keys, wrapping around, and ignores Backspace and Delete", () => {
     const onChange = vi.fn();
     render(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: "FWD", foot: "left" }} onCardChange={onChange} hasProgress />);
     fireEvent.keyDown(screen.getByRole("radio", { name: "FWD" }), { key: "ArrowRight" });
     expect(onChange).toHaveBeenLastCalledWith({ position: "GK", foot: "left" });
     fireEvent.keyDown(screen.getByRole("radio", { name: "FWD" }), { key: "ArrowLeft" });
     expect(onChange).toHaveBeenLastCalledWith({ position: "MID", foot: "left" });
+    onChange.mockClear();
     fireEvent.keyDown(screen.getByRole("radio", { name: "Left" }), { key: "Backspace" });
-    expect(onChange).toHaveBeenLastCalledWith({ position: "FWD", foot: null });
     fireEvent.keyDown(screen.getByRole("radio", { name: "FWD" }), { key: "Delete" });
-    expect(onChange).toHaveBeenLastCalledWith({ position: null, foot: "left" });
+    expect(onChange).not.toHaveBeenCalled();
   });
 
   it("hides the pickers when no card is given", () => {

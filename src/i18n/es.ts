@@ -136,6 +136,10 @@ export const es: Strings = {
     positions: { GK: "POR", DEF: "DFC", MID: "MED", FWD: "DEL" },
     feet: { left: "Izquierdo", right: "Derecho", both: "Ambos" },
     private: "Solo tú puedes verlo. Se guarda en tu cuenta cuando has iniciado sesión.",
+    /** Shown once when saving the position or foot to the account fails. */
+    notSaved: "No se pudieron guardar tu posición y tu pie en tu cuenta. Siguen guardados en este dispositivo.",
+    /** Button that empties one picker. */
+    clear: "Quitar",
   },
   progressScreen: {
     rankLabel: "Tu rango",

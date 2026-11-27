@@ -1,4 +1,4 @@
-import { useRef, type CSSProperties, type KeyboardEvent } from "react";
+import { useId, useRef, type CSSProperties, type KeyboardEvent } from "react";
 import type { Tree } from "../types";
 import { MAX_RATING, type Ratings } from "../lib/ratings";
 import type { RatingSnapshot } from "../lib/ratingHistory";
@@ -20,11 +20,11 @@ interface Props {
 
 /**
  * One optional choice, as a radio group: the chosen button (or the first when none is chosen) is the only tab stop,
- * arrow keys move to the next or previous button and choose it, and Backspace or Delete clears the choice.
- * Pressing the chosen button again also clears it.
+ * and arrow keys move to the next or previous button and choose it. A "Clear" button empties the choice.
  */
 function Pick<T extends string>({ label, options, names, value, onPick }: { label: string; options: readonly T[]; names: Record<T, string>; value: T | null; onPick: (next: T | null) => void }) {
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
+  const labelId = useId();
   const stop = value === null ? 0 : options.indexOf(value);
 
   const onKeyDown = (e: KeyboardEvent<HTMLButtonElement>, index: number) => {
@@ -34,15 +34,14 @@ function Pick<T extends string>({ label, options, names, value, onPick }: { labe
       const to = (index + step + options.length) % options.length;
       onPick(options[to]);
       buttons.current[to]?.focus();
-    } else if (e.key === "Backspace" || e.key === "Delete") {
-      e.preventDefault();
-      onPick(null);
     }
   };
 
   return (
-    <div className="player-pick" role="radiogroup" aria-label={label}>
-      <span className="player-pick-label">{label}</span>
+    <div className="player-pick" role="radiogroup" aria-labelledby={labelId}>
+      <span className="player-pick-label" id={labelId}>
+        {label}
+      </span>
       {options.map((o, i) => (
         <button
           key={o}
@@ -54,12 +53,17 @@ function Pick<T extends string>({ label, options, names, value, onPick }: { labe
           aria-checked={value === o}
           tabIndex={i === stop ? 0 : -1}
           className={value === o ? "btn on" : "btn"}
-          onClick={() => onPick(value === o ? null : o)}
+          onClick={() => onPick(o)}
           onKeyDown={(e) => onKeyDown(e, i)}
         >
           {names[o]}
         </button>
       ))}
+      {value !== null && (
+        <button type="button" className="btn player-pick-clear" aria-label={`${t.playerCard.clear} ${label}`} onClick={() => onPick(null)}>
+          {t.playerCard.clear}
+        </button>
+      )}
     </div>
   );
 }

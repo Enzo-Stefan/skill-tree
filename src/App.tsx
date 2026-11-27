@@ -178,7 +178,7 @@ export default function App() {
     if (!hasLeaderboard) setBoardOpen(false);
   }, [hasLeaderboard]);
   const cloud = useCloudSync({ tree, userId: auth.account?.id ?? null, progress, apply: applySaved, onMessage: showToast });
-  const { card: playerCard, setCard: setPlayerCard } = useCard(auth.account?.id ?? null, cloud.status);
+  const { card: playerCard, setCard: setPlayerCard } = useCard(auth.account?.id ?? null, cloud.status, showToast);
   const accountAuth = {
     ...auth,
     // Send any waiting save before signing out, while the account can still be written to.
