@@ -99,11 +99,12 @@ export function ProgressScreen(props: Props) {
             <span style={{ width: `${xp.level.progress * 100}%` }} />
           </div>
           <p className="card-note">{t.xp.toNext(xp.level.span - xp.level.into)}</p>
-          <p className="card-note">{t.xp.trophies(xp.earned.length, ACHIEVEMENTS.length)}</p>
+          {/* Without ratings the player card (and its trophy summary) is not shown, so this line is the only count. */}
+          {!ratings && <p className="card-note">{t.xp.trophies(xp.earned.filter((id) => ACHIEVEMENTS.some((a) => a.id === id)).length, ACHIEVEMENTS.length)}</p>}
         </section>
       )}
 
-      {ratings && <PlayerCard tree={tree} ratings={ratings} history={ratingHistory ?? []} hasProgress={hasProgress} card={card} onCardChange={onCardChange} onShareCard={onShareCard} />}
+      {ratings && <PlayerCard tree={tree} ratings={ratings} history={ratingHistory ?? []} hasProgress={hasProgress} card={card} onCardChange={onCardChange} onShareCard={onShareCard} earned={xp?.earned} />}
 
       {onOpenLeaderboard && (
         <section className="card" aria-labelledby="progress-board">

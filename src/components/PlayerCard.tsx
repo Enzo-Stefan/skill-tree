@@ -5,6 +5,7 @@ import type { RatingSnapshot } from "../lib/ratingHistory";
 import { FEET, POSITIONS, type PlayerCard as Card } from "../lib/ratingHistory";
 import { t } from "../i18n";
 import { CHART_H, CHART_W, historyPoints } from "./playerCardChart";
+import { PlayerTrophies } from "./PlayerTrophies";
 
 interface Props {
   tree: Tree;
@@ -18,6 +19,8 @@ interface Props {
   onCardChange?: (next: Card) => void;
   /** Opens the share picture of the card. Left out, there is no button. */
   onShareCard?: () => void;
+  /** Ids of the achievements earned (#123). Left out, the trophies are not shown. */
+  earned?: string[];
 }
 
 /**
@@ -74,7 +77,7 @@ function Pick<T extends string>({ label, options, names, value, onPick }: { labe
  * The player card (#123): the overall rating, one rating per branch, and how the overall changed week by week.
  * Ratings are worked out on this device from progress.
  */
-export function PlayerCard({ tree, ratings, history, hasProgress, card, onCardChange, onShareCard }: Props) {
+export function PlayerCard({ tree, ratings, history, hasProgress, card, onCardChange, onShareCard, earned }: Props) {
   const points = historyPoints(history);
   const first = history[0]?.overall;
   const last = history[history.length - 1]?.overall;
@@ -147,6 +150,8 @@ export function PlayerCard({ tree, ratings, history, hasProgress, card, onCardCh
           <p className="card-note">{t.playerCard.private}</p>
         </div>
       )}
+
+      {earned && <PlayerTrophies earned={earned} />}
     </section>
   );
 }

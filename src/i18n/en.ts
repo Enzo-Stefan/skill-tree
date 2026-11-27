@@ -1,4 +1,5 @@
 import { formatNumber } from "../lib/progress";
+import { ACHIEVEMENTS } from "../data/achievements";
 
 /**
  * Every piece of app text in English, grouped by the screen it appears on.
@@ -165,6 +166,9 @@ export const en = {
     footLabel: { left: "Left foot", right: "Right foot", both: "Both feet" },
     shareAlt: (overall: number) => `My player card, overall rating ${overall}`,
     shareText: (overall: number, title: string) => `My ${title} player card: ${overall} overall.`,
+    noTrophies: "No trophies yet. Pass your first skill to earn one.",
+    earned: "Earned",
+    locked: "Locked",
   },
   progressScreen: {
     rankLabel: "Your rank",
@@ -571,6 +575,8 @@ export const en = {
     headline: (title: string, done: number, total: number, rank: string) => `My ${title}: ${done}/${total} skills, rank ${rank}.`,
     training: (rung: string) => ` Training at ${rung}.`,
   },
+  /** Trophy names and hints, read from the achievement data so English is not kept in two places. Spanish is in es.ts. */
+  trophyText: Object.fromEntries(ACHIEVEMENTS.map((a) => [a.id, { title: a.title, text: a.text }])) as Record<string, { title: string; text: string }>,
 };
 
 /** The shape every language file must have. */
