@@ -258,7 +258,8 @@
 .checklist input:checked + label .routine-name { text-decoration: line-through; color: var(--text-2); }
 .rest-btn { grid-column: 2; justify-self: start; min-height: 40px; font-size: 0.875rem; }
 .routine-name { font-weight: 600; }
-.routine-amount, .routine-how, .routine-facts { color: var(--text-2); font-size: 0.875rem; }
+.routine-amount, .routine-how, .routine-facts, .routine-est { color: var(--text-2); font-size: 0.875rem; }
+.routine-est { display: block; margin: 0; }
 .routine-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .routine-list li { display: flex; flex-direction: column; gap: 2px; border-left: 2px solid var(--chalk-faint); padding-left: 12px; }
 .rest-bar { position: sticky; bottom: 8px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }

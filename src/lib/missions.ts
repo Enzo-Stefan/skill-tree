@@ -1,4 +1,4 @@
-import type { PerLevel, RoutineExercise, Skill, Tree } from "../types";
+import type { PerLevel, Routine, RoutineExercise, Skill, Tree } from "../types";
 import { forLevel } from "./progress";
 import type { PlanItem, WeekPlan } from "./plan";
 import { missionKey } from "./xp";
@@ -71,6 +71,12 @@ export function exerciseDifficulty(minutes: number): Difficulty {
 export function missionDifficulty(minutes: number, heavy: boolean): Difficulty {
   const base: Difficulty = minutes <= 20 ? "easy" : minutes <= 35 ? "medium" : "hard";
   return heavy && base === "easy" ? "medium" : base;
+}
+
+/** The estimated minutes and the difficulty of a whole routine session at a level: warm-up, every exercise, cool-down. */
+export function sessionEstimate(routine: Routine, levelId: string | null, heavy = Boolean(routine.heavy)): { minutes: number; difficulty: Difficulty } {
+  const minutes = minutesInText(routine.warmUp) + routine.exercises.reduce((sum, ex) => sum + exerciseMinutes(ex, levelId), 0) + minutesInText(routine.coolDown);
+  return { minutes, difficulty: missionDifficulty(minutes, heavy) };
 }
 
 const levelsOf = (p: PerLevel | undefined, levelId: string | null) => (p ? forLevel(p, levelId) ?? undefined : undefined);

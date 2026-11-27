@@ -11,6 +11,7 @@ import {
   missionAwardKey,
   missionComplete,
   missionDifficulty,
+  sessionEstimate,
   stepsDone,
   toggleStep,
   type MissionTicks,
@@ -130,5 +131,26 @@ describe("ticking steps", () => {
     const cleaned = cleanTicks({ [mission.id]: [0, 0, 2, 99, -1, "x", 1.5], "2020-01-01:old": [0] }, [mission]);
     expect(cleaned).toEqual({ [mission.id]: [0, 2] });
     expect(cleanTicks("nope", [mission])).toEqual({});
+  });
+});
+
+describe("sessionEstimate", () => {
+  const routine = football.skills.find((s) => s.id === "bc1")!.routine!;
+
+  it("adds the warm-up, every exercise and the cool-down, and labels the total", () => {
+    const est = sessionEstimate(routine, "beginner");
+    const sum = minutesInText(routine.warmUp) + routine.exercises.reduce((n, ex) => n + exerciseMinutes(ex, "beginner"), 0) + minutesInText(routine.coolDown);
+    expect(est.minutes).toBe(sum);
+    expect(est.difficulty).toBe(missionDifficulty(sum, Boolean(routine.heavy)));
+  });
+
+  it("agrees with the mission built from the same routine", () => {
+    const m = buildMission(football, { skillId: "bc1", minutes: 20, heavy: false }, DAY, "beginner")!;
+    expect(sessionEstimate(routine, "beginner", false)).toEqual({ minutes: m.minutes, difficulty: m.difficulty });
+  });
+
+  it("grows with the level and a heavy session is at least medium", () => {
+    expect(sessionEstimate(routine, "expert").minutes).toBeGreaterThanOrEqual(sessionEstimate(routine, "beginner").minutes);
+    expect(sessionEstimate(routine, "beginner", true).difficulty).not.toBe("easy");
   });
 });
