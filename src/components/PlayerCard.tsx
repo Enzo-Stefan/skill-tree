@@ -16,6 +16,8 @@ interface Props {
   /** Position and preferred foot. Left out, the pickers are not shown. */
   card?: Card;
   onCardChange?: (next: Card) => void;
+  /** Opens the share picture of the card. Left out, there is no button. */
+  onShareCard?: () => void;
 }
 
 /**
@@ -72,7 +74,7 @@ function Pick<T extends string>({ label, options, names, value, onPick }: { labe
  * The player card (#123): the overall rating, one rating per branch, and how the overall changed week by week.
  * Ratings are worked out on this device from progress.
  */
-export function PlayerCard({ tree, ratings, history, hasProgress, card, onCardChange }: Props) {
+export function PlayerCard({ tree, ratings, history, hasProgress, card, onCardChange, onShareCard }: Props) {
   const points = historyPoints(history);
   const first = history[0]?.overall;
   const last = history[history.length - 1]?.overall;
@@ -130,6 +132,11 @@ export function PlayerCard({ tree, ratings, history, hasProgress, card, onCardCh
             </div>
           )}
           <p className="card-note">{t.playerCard.how}</p>
+          {onShareCard && (
+            <button className="btn player-share" type="button" onClick={onShareCard}>
+              {t.playerCard.share}
+            </button>
+          )}
         </>
       )}
 

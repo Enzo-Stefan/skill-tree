@@ -158,6 +158,10 @@ export const es: Strings = {
     notSaved: "No se pudieron guardar tu posición y tu pie en tu cuenta. Siguen guardados en este dispositivo.",
     /** Button that empties one picker. */
     clear: "Quitar",
+    share: "Compartir mi tarjeta",
+    footLabel: { left: "Pie izquierdo", right: "Pie derecho", both: "Ambos pies" },
+    shareAlt: (overall: number) => `Mi tarjeta de jugador, valoración general ${overall}`,
+    shareText: (overall: number, title: string) => `Mi tarjeta de jugador de ${title}: ${overall} de general.`,
   },
   progressScreen: {
     rankLabel: "Tu rango",

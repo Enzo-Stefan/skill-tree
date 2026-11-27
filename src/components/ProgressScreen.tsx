@@ -45,11 +45,13 @@ interface Props {
   /** Position and preferred foot, and how to change them. */
   card?: Card;
   onCardChange?: (next: Card) => void;
+  /** Opens the share picture of the player card. */
+  onShareCard?: () => void;
 }
 
 /** Rank, your level and streak, training this week, each branch, personal bests on lifts, and the share picture. */
 export function ProgressScreen(props: Props) {
-  const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, weekCanCount, streakWeeks, liftLog, onShare, onPickLevel, onOpenLeaderboard, xp, ratings, ratingHistory, hasProgress, card, onCardChange } = props;
+  const { tree, done, playerLevelName, playerStep, levelTestAhead, practiceDays, today, daysThisWeek, weekCanCount, streakWeeks, liftLog, onShare, onPickLevel, onOpenLeaderboard, xp, ratings, ratingHistory, hasProgress, card, onCardChange, onShareCard } = props;
   const daysLeft = Math.max(0, PRACTICE_DAYS_PER_WEEK - daysThisWeek);
 
   // Picking a level here removes the Pick your level button, so the picker can't hand focus back
@@ -101,7 +103,7 @@ export function ProgressScreen(props: Props) {
         </section>
       )}
 
-      {ratings && <PlayerCard tree={tree} ratings={ratings} history={ratingHistory ?? []} hasProgress={hasProgress} card={card} onCardChange={onCardChange} />}
+      {ratings && <PlayerCard tree={tree} ratings={ratings} history={ratingHistory ?? []} hasProgress={hasProgress} card={card} onCardChange={onCardChange} onShareCard={onShareCard} />}
 
       {onOpenLeaderboard && (
         <section className="card" aria-labelledby="progress-board">

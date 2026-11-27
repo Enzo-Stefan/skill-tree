@@ -17,7 +17,7 @@ import { LevelUpBanner } from "./components/LevelUpBanner";
 import { LevelTestDialog } from "./components/LevelTestDialog";
 import { PracticeBar } from "./components/PracticeBar";
 import { useToday } from "./components/useToday";
-import { ShareDialog } from "./components/ShareDialog";
+import { ShareDialog, type ShareCustom } from "./components/ShareDialog";
 import { shareStats, type ShareStats } from "./components/shareImage";
 import { slideDirection, slideIn } from "./lib/areaSlide";
 import { TREE_PANEL_ID } from "./components/treeView";
@@ -81,6 +81,7 @@ import { completedMissionKeys } from "./lib/missions";
 import { useRatings } from "./lib/useRatings";
 import { levelStepOf } from "./lib/ratings";
 import { useCard } from "./lib/useCard";
+import { cardShareStats, renderCardImage } from "./components/cardShareImage";
 import { LeaderboardScreen } from "./components/LeaderboardScreen";
 import { LeaderboardProfileDialog } from "./components/LeaderboardProfileDialog";
 import { useLeaderboardProfile } from "./lib/useLeaderboardProfile";
@@ -156,6 +157,7 @@ export default function App() {
   const [placementId, setPlacementId] = useState<string | null>(null);
   // Snapshot of the progress when Share was tapped, so the image isn't redrawn on every re-render.
   const [sharing, setSharing] = useState<ShareStats | null>(null);
+  const [sharingCard, setSharingCard] = useState<{ stats: ShareStats; custom: ShareCustom } | null>(null);
   const today = useToday();
   const trainedToday = practiceDays.includes(today);
   const planState = usePlan(tree, done, playerLevelId, today);
@@ -701,6 +703,19 @@ export default function App() {
             hasProgress={done.size > 0}
             card={playerCard}
             onCardChange={setPlayerCard}
+            onShareCard={() => {
+              const card = cardShareStats(tree, ratings, playerCard, playerRungName, window.location.host);
+              setSharingCard({
+                stats: shareStats(tree, done, playerRungName, streak, window.location.host),
+                custom: {
+                  title: t.playerCard.share,
+                  render: () => renderCardImage(card),
+                  alt: t.playerCard.shareAlt(card.overall),
+                  text: t.playerCard.shareText(card.overall, card.title),
+                  fileName: "my-player-card.png",
+                },
+              });
+            }}
             done={done}
             playerLevelName={playerRungName}
             playerStep={playerStep}
@@ -807,6 +822,9 @@ export default function App() {
         />
       )}
       {sharing && <ShareDialog stats={sharing} onClose={() => setSharing(null)} />}
+      {sharingCard && (
+        <ShareDialog stats={sharingCard.stats} custom={sharingCard.custom} onClose={() => setSharingCard(null)} />
+      )}
       <div className={`toast${toast ? " show" : ""}${toast?.action ? " has-action" : ""}`} role="status">
         {toast?.text}
         {toast?.action && (
