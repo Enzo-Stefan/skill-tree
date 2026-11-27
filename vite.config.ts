@@ -37,7 +37,7 @@ export default defineConfig({
         short_name: 'hapi skill',
         description: 'Learn football the way you level up in a game. Pass the test, unlock the next skill.',
         theme_color: '#0a2118',
-        background_color: '#0e2c20',
+        background_color: '#0a0a0a',
         display: 'standalone',
         start_url: '/',
         icons: [
