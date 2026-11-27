@@ -24,6 +24,15 @@ export function useExitTransition(open: boolean, ms = EXIT_MS): { mounted: boole
   return { mounted: open || mounted, closing: !open && mounted && !prefersReducedMotion() };
 }
 
+/** Sets each scrolled element in the copy to the offset of its counterpart in the source. Needs the copy in the DOM. */
+function copyScrollOffsets(from: HTMLElement, copy: HTMLElement): void {
+  const sources = [from, ...from.querySelectorAll<HTMLElement>("*")];
+  const copies = [copy, ...copy.querySelectorAll<HTMLElement>("*")];
+  sources.forEach((el, i) => {
+    if (el.scrollTop && copies[i]) copies[i].scrollTop = el.scrollTop;
+  });
+}
+
 /**
  * Fades out a copy of the screen being left. The copy is taken before React swaps the tab, laid over
  * the new one, inert, and removed when its animation ends.
@@ -35,14 +44,16 @@ export function leaveScreen(content: HTMLElement | null, ms = EXIT_MS): void {
   );
   if (!from) return;
   const copy = from.cloneNode(true) as HTMLElement;
-  // A copy must not repeat ids, keep playing media, or bring the fixed skill sheet along.
-  copy.removeAttribute("id");
-  copy.querySelectorAll("[id]").forEach((el) => el.removeAttribute("id"));
-  copy.querySelectorAll("iframe, video, audio, .panel.sheet, .sheet-backdrop").forEach((el) => el.remove());
   copy.classList.add("screen-leaving");
   copy.setAttribute("aria-hidden", "true");
   copy.setAttribute("inert", "");
   content.appendChild(copy);
+  // A clone starts at scroll 0; the copy must show the same position or it jumps before fading.
+  copyScrollOffsets(from, copy);
+  // A copy must not repeat ids, keep playing media, or bring the fixed skill sheet along.
+  copy.removeAttribute("id");
+  copy.querySelectorAll("[id]").forEach((el) => el.removeAttribute("id"));
+  copy.querySelectorAll("iframe, video, audio, .panel.sheet, .sheet-backdrop").forEach((el) => el.remove());
   const anim = copy.animate([{ opacity: 1, transform: "none" }, { opacity: 0, transform: "translateX(-12px)" }], {
     duration: ms * 0.8,
     easing: "cubic-bezier(0.2, 0.8, 0.2, 1)",
