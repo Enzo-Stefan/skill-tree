@@ -37,7 +37,10 @@ function parse(key: DayKey): Date {
 export function TrainingScreen({ tree, state, levelId, today, practiceDays, onFinish, onPickSkill, suggestedName, allDone, onOpenProgress }: Props) {
   const [view, setView] = useState<"today" | "week">("today");
   const { plan } = state;
-  const empty = plan.days.every((d) => d.items.length === 0) && plan.unplaced.length === 0;
+  // The card is for nothing left to do: every skill passed, or a player with a level and no session planned.
+  // A player with no level always gets the normal plan.
+  const planEmpty = plan.days.every((d) => d.items.length === 0) && plan.unplaced.length === 0;
+  const empty = allDone || (levelId !== null && planEmpty);
   const trained = new Set(trainedPlanDays(plan, practiceDays));
   const skills = new Map(tree.skills.map((s) => [s.id, s]));
 

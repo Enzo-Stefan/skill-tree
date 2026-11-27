@@ -14,14 +14,14 @@ const emptyState = {
   dayMinutes: 60,
 } as unknown as PlanState;
 
-function renderEmpty(props: { allDone: boolean; suggestedName?: string }) {
+function renderEmpty(props: { allDone: boolean; suggestedName?: string; levelId?: string | null }) {
   const onPickSkill = vi.fn();
   const onOpenProgress = vi.fn();
   render(
     <TrainingScreen
       tree={tree}
       state={emptyState}
-      levelId={null}
+      levelId="l1"
       today="2026-11-27"
       practiceDays={[]}
       onFinish={vi.fn()}
@@ -58,5 +58,18 @@ describe("TrainingScreen empty state", () => {
   it("names the suggested skill on the action when one is available", () => {
     renderEmpty({ allDone: false, suggestedName: "Step-over" });
     expect(screen.getByRole("button", { name: "Start with Step-over" })).toBeTruthy();
+  });
+
+  it("shows the normal plan, not the card, to a player with no level", () => {
+    const { onPickSkill } = renderEmpty({ allDone: false, levelId: null });
+    expect(screen.queryByText("No training planned")).toBeNull();
+    expect(screen.queryByRole("button", { name: "Pick a skill" })).toBeNull();
+    expect(screen.getByText("Nothing planned today. Rest up.")).toBeTruthy();
+    expect(onPickSkill).not.toHaveBeenCalled();
+  });
+
+  it("still says every skill is passed to a player with no level", () => {
+    renderEmpty({ allDone: true, levelId: null });
+    expect(screen.getByText("You've passed every skill")).toBeTruthy();
   });
 });
