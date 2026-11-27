@@ -1,7 +1,11 @@
+import type { Challenge } from "../data/challenges";
+import { SEASONS, type Season } from "../data/seasons";
 import type { Skill, Tree } from "../types";
+import { challengeProgress, dailyChallenge, weeklyChallenge, type ChallengeContext } from "./challenges";
 import type { WeekPlan } from "./plan";
 import { exerciseTickKey } from "./missions";
 import { nextSkill } from "./progress";
+import { activeSeason, seasonProgress } from "./seasons";
 import type { SessionEntry } from "./sessions";
 import type { XpEvent } from "./xp";
 
@@ -75,4 +79,36 @@ export function continueTarget(tree: Tree, plan: WeekPlan, ticks: Set<string>, d
   if (open) return { kind: "session", skillId: open.skillId };
   const skill = nextSkill(tree, done);
   return skill ? { kind: "skill", skill } : null;
+}
+
+export type ChallengeCardKind = "daily" | "weekly" | "season";
+
+export interface ChallengeCard {
+  /** The challenge id, which keys its translation. */
+  id: string;
+  kind: ChallengeCardKind;
+  /** The English words; the screen swaps in the player's language by id. */
+  title: string;
+  text: string;
+  have: number;
+  need: number;
+  done: boolean;
+  /** For a season challenge, the season it belongs to. */
+  seasonId?: string;
+  seasonTitle?: string;
+}
+
+/** Today's challenge, this week's challenge, and the active season's challenges, each with progress capped at its goal. */
+export function challengeCards(day: string, ctx: ChallengeContext, seasons: Season[] = SEASONS): ChallengeCard[] {
+  const card = (c: Challenge): ChallengeCard => {
+    const { have, need } = challengeProgress(c, day, ctx);
+    return { id: c.id, kind: c.period, title: c.title, text: c.text, have: Math.min(have, need), need, done: have >= need };
+  };
+  const cards = [card(dailyChallenge(day)), card(weeklyChallenge(day))];
+  const season = activeSeason(day, seasons);
+  for (const c of season?.challenges ?? []) {
+    const { have, need } = seasonProgress(season!, c, ctx);
+    cards.push({ id: c.id, kind: "season", title: c.title, text: c.text, have: Math.min(have, need), need, done: have >= need, seasonId: season!.id, seasonTitle: season!.title });
+  }
+  return cards;
 }

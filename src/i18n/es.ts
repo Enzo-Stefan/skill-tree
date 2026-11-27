@@ -137,6 +137,13 @@ export const es: Strings = {
     passed: "Pasada",
     trained: "Entrenada",
     todayWord: "Hoy",
+    challenges: "Retos",
+    challengeDaily: "Hoy",
+    challengeWeekly: "Esta semana",
+    challengeSeason: (title: string) => `Temporada: ${title}`,
+    challengeProgress: (have: number, need: number) => `${have} de ${need}`,
+    challengeDone: "Hecho",
+    challengeOpen: "Aún no hecho",
   },
   playerCard: {
     title: "Tarjeta de jugador",

@@ -5,6 +5,7 @@ import { Header } from "./components/Header";
 import { SkillTree, type ScrollRequest } from "./components/SkillTree";
 import { branchFocusSkill, revealTarget } from "./components/treeView";
 import { Dashboard } from "./components/Dashboard";
+import { passDaysFromLedger } from "./lib/challengeRewards";
 import { SkillPanel } from "./components/SkillPanel";
 import { SkillPage } from "./components/SkillPage";
 import { usePageFocus } from "./lib/usePageFocus";
@@ -512,6 +513,7 @@ export default function App() {
   // The player's ratings and weekly history (#123), with the mastery tiers from the XP ledger (#121 item 5).
   const { ratings, history: ratingHistory } = useRatings(tree, auth.account?.id ?? null, cloud.status, done, playerLevelId, playerStep, today, xp.mastery);
   const suggested = nextSkill(tree, done);
+  const passDays = useMemo(() => passDaysFromLedger(xp.events), [xp.events]);
 
   /** Train's two scroll areas: the whole tab (phones) and the tree (wider screens). */
   function trainScrollers(): HTMLElement[] {
@@ -618,6 +620,7 @@ export default function App() {
             ticks={planState.ticks}
             sessions={sessions.sessions}
             today={today}
+            challengeContext={{ practiceDays, sessions: sessions.sessions, passDays }}
             rank={levelInfo(tree.levels, done.size).current.name}
             suggested={suggested}
             onOpenToday={() => goTo("plan")}

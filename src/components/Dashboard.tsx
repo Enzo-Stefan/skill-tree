@@ -5,6 +5,8 @@ import type { SessionEntry } from "../lib/sessions";
 import type { WeekPlan } from "../lib/plan";
 import { branchShares, continueTarget, daySessions, recentActivity, weekSessionCount } from "../lib/dashboard";
 import { language, t } from "../i18n";
+import { DashboardChallenges } from "./DashboardChallenges";
+import type { ChallengeContext } from "../lib/challenges";
 import { NextUpCard } from "./NextUpCard";
 
 interface Props {
@@ -15,6 +17,8 @@ interface Props {
   ticks: Set<string>;
   sessions: SessionEntry[];
   today: string;
+  /** What the daily, weekly and season challenges count: the days trained, the skills worked on, the days skills were passed. */
+  challengeContext: ChallengeContext;
   /** The player's rank name ("Rookie"), from the finished skills. */
   rank: string;
   /** The suggested next skill (nextSkill), shown as the Next up card. */
@@ -27,7 +31,7 @@ interface Props {
 const pct = (n: number, of: number) => (of > 0 ? (n / of) * 100 : 0);
 
 /** The top of the Train tab: level and XP, football progress, today's and the week's sessions, recent activity, and Continue training. */
-export function Dashboard({ tree, xp, done, plan, ticks, sessions, today, rank, suggested, onOpenSkill, onOpenToday }: Props) {
+export function Dashboard({ tree, xp, done, plan, ticks, sessions, today, challengeContext, rank, suggested, onOpenSkill, onOpenToday }: Props) {
   const names = new Map(tree.skills.map((s) => [s.id, s.name]));
   const target = continueTarget(tree, plan, ticks, done, today);
   const sessionsToday = daySessions(tree, plan, ticks, today);
@@ -113,6 +117,8 @@ export function Dashboard({ tree, xp, done, plan, ticks, sessions, today, rank, 
           </ul>
         )}
       </div>
+
+      <DashboardChallenges today={today} ctx={challengeContext} />
 
       <div className="card dash-card">
         <h2 className="card-label">{t.dashboard.recent}</h2>

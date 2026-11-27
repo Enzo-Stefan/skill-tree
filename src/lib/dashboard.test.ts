@@ -1,7 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { football } from "../data/football";
 import type { WeekPlan } from "./plan";
-import { branchShares, continueTarget, daySessions, recentActivity, weekSessionCount } from "./dashboard";
+import type { Season } from "../data/seasons";
+import { challengeCards, branchShares, continueTarget, daySessions, recentActivity, weekSessionCount } from "./dashboard";
+import { dailyChallenge, weeklyChallenge, type ChallengeContext } from "./challenges";
 import { exerciseTickKey } from "./missions";
 
 const withRoutine = football.skills.filter((s) => s.routine && s.routine.exercises.length > 0);
@@ -70,5 +72,45 @@ describe("continueTarget", () => {
   });
   it("is null when every skill is done", () => {
     expect(continueTarget(football, plan, new Set(), new Set(football.skills.map((s) => s.id)), "2026-11-25")).toBeNull();
+  });
+});
+
+describe("challengeCards", () => {
+  const season: Season = {
+    id: "s1",
+    title: "Test Season",
+    start: "2026-11-01",
+    end: "2026-11-30",
+    challenges: [{ id: "s1-days2", goal: { kind: "trainDays", count: 2 }, title: "Two days", text: "Train on 2 days." }],
+  };
+  const empty: ChallengeContext = { practiceDays: [], sessions: [], passDays: [] };
+
+  it("gives the day's challenge, the week's challenge and no season outside one", () => {
+    const cards = challengeCards("2026-12-01", empty, [season]);
+    expect(cards.map((c) => c.kind)).toEqual(["daily", "weekly"]);
+    expect(cards[0]!.id).toBe(dailyChallenge("2026-12-01").id);
+    expect(cards[1]!.id).toBe(weeklyChallenge("2026-12-01").id);
+    expect(cards.every((c) => c.have === 0 && !c.done)).toBe(true);
+  });
+
+  it("adds the active season's challenges with progress over the season", () => {
+    const ctx: ChallengeContext = { ...empty, practiceDays: ["2026-11-03", "2026-11-03", "2026-10-30"] };
+    const cards = challengeCards("2026-11-10", ctx, [season]);
+    const s = cards.find((c) => c.kind === "season")!;
+    expect(s).toMatchObject({ id: "s1-days2", have: 1, need: 2, done: false, seasonId: "s1", seasonTitle: "Test Season" });
+  });
+
+  it("marks a challenge done and caps progress at its goal", () => {
+    const ctx: ChallengeContext = { ...empty, practiceDays: ["2026-11-03", "2026-11-04", "2026-11-05"] };
+    const s = challengeCards("2026-11-10", ctx, [season]).find((c) => c.kind === "season")!;
+    expect(s).toMatchObject({ have: 2, need: 2, done: true });
+  });
+
+  it("counts today's training toward the daily challenge", () => {
+    // Find a day whose daily challenge is "train today", so the test does not depend on the rotation.
+    const day = Array.from({ length: 30 }, (_, i) => `2026-11-${String(i + 1).padStart(2, "0")}`).find((d) => dailyChallenge(d).goal.kind === "trainDay")!;
+    const trained: ChallengeContext = { ...empty, practiceDays: [day] };
+    const daily = challengeCards(day, trained, []).find((c) => c.kind === "daily")!;
+    expect(daily).toMatchObject({ have: 1, need: 1, done: true });
   });
 });
