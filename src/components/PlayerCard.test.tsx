@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import type { Tree } from "../types";
 import { PlayerCard } from "./PlayerCard";
 import { chartRange, historyPoints } from "./playerCardChart";
@@ -86,6 +86,74 @@ describe("PlayerCard", () => {
     expect(points).toHaveLength(20);
     expect(container.querySelectorAll(".player-history .sr-only li")).toHaveLength(20);
     expect(container.querySelector(".card-aside")?.textContent).toBe("20 weeks tracked");
+  });
+});
+
+describe("PlayerCard pickers", () => {
+  const r = { branches: { bc: 0, ps: 0 }, overall: 0 };
+
+  it("shows the pickers even before the first skill, with the chosen ones marked", () => {
+    render(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: "MID", foot: null }} onCardChange={() => undefined} hasProgress={false} />);
+    expect(screen.getByRole("radio", { name: "MID" }).getAttribute("aria-checked")).toBe("true");
+    expect(screen.getByRole("radio", { name: "GK" }).getAttribute("aria-checked")).toBe("false");
+    expect(screen.getByRole("radio", { name: "Left" }).getAttribute("aria-checked")).toBe("false");
+  });
+
+  it("picks a value, and pressing the chosen one again keeps it", () => {
+    const onChange = vi.fn();
+    render(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: null, foot: "left" }} onCardChange={onChange} hasProgress />);
+    fireEvent.click(screen.getByRole("radio", { name: "FWD" }));
+    expect(onChange).toHaveBeenLastCalledWith({ position: "FWD", foot: "left" });
+    fireEvent.click(screen.getByRole("radio", { name: "Left" }));
+    expect(onChange).toHaveBeenLastCalledWith({ position: null, foot: "left" });
+  });
+
+  it("names each radiogroup from its visible label, not a second aria-label", () => {
+    render(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: null, foot: null }} onCardChange={() => undefined} hasProgress />);
+    const groups = screen.getAllByRole("radiogroup");
+    expect(groups.map((g) => g.getAttribute("aria-label"))).toEqual([null, null]);
+    expect(screen.getByRole("radiogroup", { name: "Position" })).toBeTruthy();
+    expect(screen.getByRole("radiogroup", { name: "Preferred foot" })).toBeTruthy();
+  });
+
+  it("shows a Clear button of at least 44px only when a value is set, and it clears just that picker", () => {
+    const onChange = vi.fn();
+    const { rerender } = render(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: null, foot: null }} onCardChange={onChange} hasProgress />);
+    expect(screen.queryByRole("button", { name: /Clear/ })).toBeNull();
+    rerender(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: "FWD", foot: "left" }} onCardChange={onChange} hasProgress />);
+    const clear = screen.getByRole("button", { name: "Clear Position" });
+    expect(clear.className).toContain("player-pick-clear");
+    fireEvent.click(clear);
+    expect(onChange).toHaveBeenLastCalledWith({ position: null, foot: "left" });
+    fireEvent.click(screen.getByRole("button", { name: "Clear Preferred foot" }));
+    expect(onChange).toHaveBeenLastCalledWith({ position: "FWD", foot: null });
+  });
+
+  it("makes only the chosen button (or the first) a tab stop", () => {
+    const { rerender } = render(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: null, foot: null }} onCardChange={() => undefined} hasProgress />);
+    expect(screen.getByRole("radio", { name: "GK" }).tabIndex).toBe(0);
+    expect(screen.getByRole("radio", { name: "DEF" }).tabIndex).toBe(-1);
+    rerender(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: "MID", foot: null }} onCardChange={() => undefined} hasProgress />);
+    expect(screen.getByRole("radio", { name: "GK" }).tabIndex).toBe(-1);
+    expect(screen.getByRole("radio", { name: "MID" }).tabIndex).toBe(0);
+  });
+
+  it("moves and chooses with the arrow keys, wrapping around, and ignores Backspace and Delete", () => {
+    const onChange = vi.fn();
+    render(<PlayerCard tree={tree} ratings={r} history={[]} card={{ position: "FWD", foot: "left" }} onCardChange={onChange} hasProgress />);
+    fireEvent.keyDown(screen.getByRole("radio", { name: "FWD" }), { key: "ArrowRight" });
+    expect(onChange).toHaveBeenLastCalledWith({ position: "GK", foot: "left" });
+    fireEvent.keyDown(screen.getByRole("radio", { name: "FWD" }), { key: "ArrowLeft" });
+    expect(onChange).toHaveBeenLastCalledWith({ position: "MID", foot: "left" });
+    onChange.mockClear();
+    fireEvent.keyDown(screen.getByRole("radio", { name: "Left" }), { key: "Backspace" });
+    fireEvent.keyDown(screen.getByRole("radio", { name: "FWD" }), { key: "Delete" });
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("hides the pickers when no card is given", () => {
+    render(<PlayerCard tree={tree} ratings={r} history={[]} hasProgress />);
+    expect(screen.queryByRole("radiogroup")).toBeNull();
   });
 });
 

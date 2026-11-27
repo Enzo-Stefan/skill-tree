@@ -80,6 +80,7 @@ import { useXp } from "./lib/useXp";
 import { completedMissionKeys } from "./lib/missions";
 import { useRatings } from "./lib/useRatings";
 import { levelStepOf } from "./lib/ratings";
+import { useCard } from "./lib/useCard";
 import { LeaderboardScreen } from "./components/LeaderboardScreen";
 import { LeaderboardProfileDialog } from "./components/LeaderboardProfileDialog";
 import { useLeaderboardProfile } from "./lib/useLeaderboardProfile";
@@ -177,6 +178,7 @@ export default function App() {
     if (!hasLeaderboard) setBoardOpen(false);
   }, [hasLeaderboard]);
   const cloud = useCloudSync({ tree, userId: auth.account?.id ?? null, progress, apply: applySaved, onMessage: showToast });
+  const { card: playerCard, setCard: setPlayerCard } = useCard(auth.account?.id ?? null, cloud.status, showToast);
   const accountAuth = {
     ...auth,
     // Send any waiting save before signing out, while the account can still be written to.
@@ -692,6 +694,8 @@ export default function App() {
             ratings={hasLevels ? ratings : undefined}
             ratingHistory={ratingHistory}
             hasProgress={done.size > 0}
+            card={playerCard}
+            onCardChange={setPlayerCard}
             done={done}
             playerLevelName={playerRungName}
             playerStep={playerStep}

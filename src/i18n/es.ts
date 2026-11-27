@@ -131,6 +131,15 @@ export const es: Strings = {
     weekRow: (week: string, overall: number) => `Semana del ${week}: general ${overall}`,
     empty: "Pasa tu primera habilidad para ver tu tarjeta.",
     how: "Se calcula en este dispositivo con las habilidades que has pasado y tu nivel.",
+    position: "Posición",
+    foot: "Pie preferido",
+    positions: { GK: "POR", DEF: "DFC", MID: "MED", FWD: "DEL" },
+    feet: { left: "Izquierdo", right: "Derecho", both: "Ambos" },
+    private: "Solo tú puedes verlo. Se guarda en tu cuenta cuando has iniciado sesión.",
+    /** Shown once when saving the position or foot to the account fails. */
+    notSaved: "No se pudieron guardar tu posición y tu pie en tu cuenta. Siguen guardados en este dispositivo.",
+    /** Button that empties one picker. */
+    clear: "Quitar",
   },
   progressScreen: {
     rankLabel: "Tu rango",
