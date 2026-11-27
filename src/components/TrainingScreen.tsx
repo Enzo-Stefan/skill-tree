@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Skill, Tree } from "../types";
 import { DEFAULT_REMINDER_MINUTES, calendarLink, trainingIcs } from "../lib/ics";
 import { saveTextFile } from "../lib/saveFile";
+import { exerciseDifficulty, exerciseMinutes, sessionEstimate } from "../lib/missions";
 import { MAX_DAY_MINUTES, MIN_DAY_MINUTES, trainedPlanDays, type PlanDay } from "../lib/plan";
 import type { DayKey } from "../lib/streak";
 import { language, t } from "../i18n";
@@ -72,11 +73,13 @@ function TodayView({ day, skills, levelId, state, finished, onFinish }: { day: P
       {day.items.map((item) => {
         const skill = skills.get(item.skillId)!;
         const routine = skill.routine!;
+        const estimate = sessionEstimate(routine, levelId, item.heavy);
         return (
           <section key={item.skillId} className="session" aria-labelledby={`session-${item.skillId}`}>
             <h2 id={`session-${item.skillId}`} className="session-title">
               {t.training.sessionOf(skill.name, item.minutes)}
             </h2>
+            <p className="routine-est">{t.training.sessionEstimate(estimate.minutes, t.training.difficulty[estimate.difficulty])}</p>
             <p>
               <strong>{t.training.warmUp}.</strong> {routine.warmUp}
             </p>
@@ -84,6 +87,7 @@ function TodayView({ day, skills, levelId, state, finished, onFinish }: { day: P
               {routine.exercises.map((ex, i) => {
                 const key = `${day.date}|${item.skillId}|${i}`;
                 const id = `ex-${item.skillId}-${i}`;
+                const exMinutes = exerciseMinutes(ex, levelId);
                 return (
                   <li key={key}>
                     <input id={id} type="checkbox" checked={state.ticks.has(key)} onChange={() => state.toggleTick(key)} />
@@ -92,6 +96,7 @@ function TodayView({ day, skills, levelId, state, finished, onFinish }: { day: P
                       <span className="routine-amount">
                         {exerciseLine(ex, levelId)}
                       </span>
+                      <span className="routine-est">{t.training.estimate(exMinutes, t.training.difficulty[exerciseDifficulty(exMinutes)])}</span>
                       <span className="routine-how">{ex.howTo}</span>
                     </label>
                     {ex.restSeconds > 0 && (
