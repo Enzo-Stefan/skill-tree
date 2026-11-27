@@ -350,3 +350,18 @@
   /* Flush with the screen edges, so the notch, home bar and landscape cutout are cleared inside the panel. */
   padding: calc(24px + env(safe-area-inset-top)) max(24px, env(safe-area-inset-right)) calc(24px + env(safe-area-inset-bottom)) 24px;
 }
+
+/* Train tab dashboard (#122): the Continue button, then cards for level, progress, missions and recent activity. */
+.dash { display: flex; flex-direction: column; gap: 12px; margin: 14px max(24px, env(safe-area-inset-right)) 0 max(24px, env(safe-area-inset-left)); }
+.dash .next-up { margin: 0; }
+.dash-card { padding: 16px; }
+.dash-continue { display: flex; flex-direction: column; align-items: center; gap: 2px; min-height: 64px; padding: 10px 16px; border-radius: var(--radius-card); }
+.dash-continue-title { font-size: 1.25rem; font-weight: 700; }
+.dash-continue-sub { font-size: 0.9375rem; opacity: 0.85; }
+.dash-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.dash-list li { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; }
+.dash-list li.done { color: var(--text-2); }
+.dash-check { flex: none; width: 22px; height: 22px; border: 2px solid var(--glass-border); border-radius: 50%; display: inline-grid; place-items: center; font-size: 0.8125rem; }
+.dash-list li.done .dash-check { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.dash-check + span { flex: 1; }
+@media (max-width: 700px) { .dash { margin-inline: max(16px, env(safe-area-inset-left)) max(16px, env(safe-area-inset-right)); } }
