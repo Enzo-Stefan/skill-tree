@@ -7,7 +7,7 @@ interface Props {
 /** Placeholder rows for a list that is still loading, in the same grey glass as the real rows. */
 export function SkeletonRows({ label, rows = 5 }: Props) {
   return (
-    <div className="skeleton-list" role="status">
+    <div className="skeleton-list" role="status" aria-busy="true">
       <span className="sr-only">{label}</span>
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="skeleton-row" aria-hidden="true">

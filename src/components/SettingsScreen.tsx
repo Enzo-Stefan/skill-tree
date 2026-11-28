@@ -45,7 +45,7 @@ export function SettingsScreen({ auth, treeName, playerLevelName, onChangeLevel,
 
       {auth.configured && auth.loading && (
         <Group title={t.settings.account}>
-          <SkeletonRows label={t.settings.account} rows={1} />
+          <SkeletonRows label={t.settings.loadingAccount} rows={1} />
         </Group>
       )}
 

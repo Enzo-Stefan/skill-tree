@@ -25,10 +25,10 @@
     <meta name="twitter:card" content="summary_large_image" />
     <!-- Splash: shown by the browser as soon as the page loads, replaced when React renders. -->
     <style>
-      .splash { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 1.5rem; text-align: center; background: #0a0a0a; color: #f2f2f2; }
-      .splash-brand { font: 700 2rem/1.2 system-ui, -apple-system, "Segoe UI", sans-serif; letter-spacing: -0.03em; }
-      .splash-note, .splash-retry { margin: 0; font: 500 0.95rem/1.4 system-ui, -apple-system, "Segoe UI", sans-serif; }
-      .splash-retry { padding: 0.5rem 1rem; border: 1px solid currentColor; border-radius: 999px; background: none; color: inherit; cursor: pointer; }
+      .splash { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1rem; padding: 1.5rem; text-align: center; background: #0a0a0a; color: #f2f2f2; font-family: -apple-system, BlinkMacSystemFont, "Inter", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+      .splash-brand { font-size: 2rem; font-weight: 700; line-height: 1.2; letter-spacing: -0.03em; }
+      .splash-note, .splash-retry { margin: 0; font-size: 0.95rem; font-weight: 500; line-height: 1.4; }
+      .splash-retry { font-family: inherit; padding: 0.5rem 1rem; border: 1px solid currentColor; border-radius: 999px; background: none; color: inherit; cursor: pointer; }
       @media (prefers-color-scheme: light) { .splash { background: #f2f2f2; color: #0a0a0a; } }
       @media (prefers-reduced-motion: no-preference) { .splash-brand { animation: splash-pulse 1.2s ease-in-out infinite; } }
       @keyframes splash-pulse { 50% { opacity: 0.45; } }
