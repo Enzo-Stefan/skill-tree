@@ -719,3 +719,22 @@ a.btn { color: inherit; text-decoration: none; display: inline-flex; align-items
 .player-pick .btn { min-height: 44px; }
 .player-pick .player-pick-clear { min-width: 44px; margin-left: auto; opacity: 0.8; }
 .player-pick .btn.on { outline: 2px solid currentColor; outline-offset: -2px; font-weight: 600; }
+
+/* Career view (#124), inside the Progress tab */
+.career-seg { align-self: flex-start; }
+.career-seg .seg-btn { min-height: 44px; }
+.career-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 8px 0; }
+.career-stats div { min-width: 0; }
+.career-stats dt { font-size: 0.8125rem; color: var(--text-2); }
+.career-stats dd { margin: 2px 0 0; font-size: 1.25rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.career-weeks, .career-lines, .career-ranks { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 10px; }
+.career-weeks li { display: grid; grid-template-columns: 6.5rem 1fr 4.5rem; align-items: center; gap: 10px; font-size: 0.875rem; font-variant-numeric: tabular-nums; }
+.career-week-track { height: 8px; border-radius: 4px; background: var(--glass-border-strong); overflow: hidden; }
+.career-week-track > span { display: block; height: 100%; border-radius: 4px; background: var(--text); }
+.career-week-xp { text-align: right; }
+.career-line-name { font-weight: 600; }
+.career-line-values { font-size: 0.875rem; color: var(--text-2); font-variant-numeric: tabular-nums; }
+.career-lines svg { display: block; width: 100%; height: 64px; margin-top: 4px; }
+.career-ranks li { display: flex; justify-content: space-between; gap: 12px; min-height: 44px; align-items: center; border-bottom: 1px solid var(--glass-border-strong); }
+.career-rank-name { font-weight: 600; }
+.career-rank-day { color: var(--text-2); font-size: 0.875rem; }
