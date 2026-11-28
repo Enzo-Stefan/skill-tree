@@ -187,6 +187,7 @@ export const en = {
     training: "Training",
     yourLevel: "Your level",
     pickLevel: "Pick",
+    loadingAccount: "Loading your account…",
     account: "Account",
     signIn: "Sign in with Google",
     signInSub: "Keep your progress on every device",

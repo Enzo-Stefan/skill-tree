@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { SkeletonRows } from "./Skeleton";
 import type { Auth } from "../auth/useAuth";
 import { AccountDialog } from "./AccountDialog";
 import { SignInDialog } from "./SignInDialog";
@@ -39,6 +40,12 @@ export function SettingsScreen({ auth, treeName, playerLevelName, onChangeLevel,
       {onChangeLevel && (
         <Group title={t.settings.training}>
           <Row label={t.settings.yourLevel} value={playerLevelName ?? t.settings.pickLevel} chevron onClick={onChangeLevel} />
+        </Group>
+      )}
+
+      {auth.configured && auth.loading && (
+        <Group title={t.settings.account}>
+          <SkeletonRows label={t.settings.loadingAccount} rows={1} />
         </Group>
       )}
 

@@ -183,6 +183,7 @@ export const es: Strings = {
     training: "Entrenamiento",
     yourLevel: "Tu nivel",
     pickLevel: "Elegir",
+    loadingAccount: "Cargando tu cuenta…",
     account: "Cuenta",
     signIn: "Iniciar sesión con Google",
     signInSub: "Guarda tu progreso en todos tus dispositivos",
