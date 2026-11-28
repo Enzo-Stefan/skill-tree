@@ -110,6 +110,7 @@ export function CareerView({ tree, done, practiceDays, today, sessions, results,
             })}
           </ul>
         )}
+        {lines.length > 0 && <p className="card-note">{t.career.ratingsNote}</p>}
       </section>
 
       <section className="card" aria-labelledby="career-ranks">
